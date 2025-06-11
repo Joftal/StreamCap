@@ -60,65 +60,124 @@ async def extract_speed_from_ffmpeg_output(ffmpeg_process):
             return None
     return None
 
-# 方法2：从文件大小变化监测速度
-async def monitor_file_size_change(file_path, interval=1.0):
-    """通过监测文件大小变化来计算写入速度"""
-    try:
-        if not os.path.exists(file_path):
-            print(f"文件不存在: {file_path}")
-            return "0 KB/s"
-        
-        initial_size = os.path.getsize(file_path)
-        await asyncio.sleep(interval)
-        
-        if not os.path.exists(file_path):  # 再次检查，文件可能被删除
-            return "0 KB/s"
-            
-        new_size = os.path.getsize(file_path)
-        size_diff = new_size - initial_size
-        
-        # 计算每秒KB
-        kb_per_sec = size_diff / interval / 1024
-        
-        # 根据大小选择合适的单位
-        if kb_per_sec >= 1024:
-            return f"{kb_per_sec/1024:.2f} MB/s"
-        else:
-            return f"{kb_per_sec:.2f} KB/s"
-    except Exception as e:
-        print(f"监测文件大小变化出错: {e}")
-        return "0 KB/s"
-
-# 方法3：使用psutil监测进程IO
+# 方法3：使用psutil监测进程IO（改进版）
 async def monitor_process_io(pid, interval=1.0):
     """使用psutil监测进程的IO读写速度"""
     try:
         if not psutil.pid_exists(pid):
             print(f"进程不存在: {pid}")
             return "0 KB/s"
-            
+        
+        # 获取进程对象
         process = psutil.Process(pid)
-        initial_io = process.io_counters()
+        
+        # 获取初始IO计数
+        try:
+            initial_io = process.io_counters()
+        except (psutil.AccessDenied, psutil.NoSuchProcess) as e:
+            print(f"无法访问进程IO信息: {e}")
+            return "0 KB/s"
+        
+        # 等待指定的时间间隔
         await asyncio.sleep(interval)
         
-        if not psutil.pid_exists(pid):  # 再次检查，进程可能已终止
+        # 再次检查进程是否存在
+        if not psutil.pid_exists(pid):
+            print(f"进程已终止: {pid}")
             return "0 KB/s"
-            
-        current_io = process.io_counters()
         
-        # 计算写入速度 (bytes per second)
+        # 获取当前IO计数
+        try:
+            current_io = process.io_counters()
+        except (psutil.AccessDenied, psutil.NoSuchProcess) as e:
+            print(f"无法访问进程IO信息: {e}")
+            return "0 KB/s"
+        
+        # 计算读写速度
+        read_bytes = current_io.read_bytes - initial_io.read_bytes
         write_bytes = current_io.write_bytes - initial_io.write_bytes
-        bytes_per_sec = write_bytes / interval
+        total_bytes = read_bytes + write_bytes  # 总IO流量
         
-        # 转换为适当的单位
-        if bytes_per_sec >= 1024 * 1024:
+        # 计算每秒字节数
+        bytes_per_sec = total_bytes / interval
+        
+        # 根据速度大小选择合适的单位
+        if bytes_per_sec >= 1024 * 1024 * 1024:  # GB/s
+            return f"{bytes_per_sec / (1024 * 1024 * 1024):.2f} GB/s"
+        elif bytes_per_sec >= 1024 * 1024:  # MB/s
             return f"{bytes_per_sec / (1024 * 1024):.2f} MB/s"
-        elif bytes_per_sec >= 1024:
+        elif bytes_per_sec >= 1024:  # KB/s
             return f"{bytes_per_sec / 1024:.2f} KB/s"
-        else:
+        else:  # B/s
             return f"{bytes_per_sec:.2f} B/s"
     except Exception as e:
         print(f"监测进程IO出错: {e}")
+        return "0 KB/s"
+
+# 监测子进程的IO（递归）
+async def monitor_process_tree_io(pid, interval=1.0):
+    """监测进程及其所有子进程的IO总和"""
+    try:
+        if not psutil.pid_exists(pid):
+            return "0 KB/s"
+        
+        # 获取主进程和所有子进程
+        process = psutil.Process(pid)
+        all_processes = [process]
+        
+        try:
+            children = process.children(recursive=True)
+            all_processes.extend(children)
+        except (psutil.AccessDenied, psutil.NoSuchProcess) as e:
+            print(f"获取子进程时出错: {e}")
+        
+        # 获取所有进程的初始IO计数
+        initial_io_total = {"read_bytes": 0, "write_bytes": 0}
+        for proc in all_processes:
+            try:
+                if proc.is_running():
+                    io = proc.io_counters()
+                    initial_io_total["read_bytes"] += io.read_bytes
+                    initial_io_total["write_bytes"] += io.write_bytes
+            except (psutil.AccessDenied, psutil.NoSuchProcess) as e:
+                continue
+        
+        # 等待指定的时间间隔
+        await asyncio.sleep(interval)
+        
+        # 获取所有进程的当前IO计数
+        current_io_total = {"read_bytes": 0, "write_bytes": 0}
+        for proc in all_processes:
+            try:
+                if proc.is_running():
+                    io = proc.io_counters()
+                    current_io_total["read_bytes"] += io.read_bytes
+                    current_io_total["write_bytes"] += io.write_bytes
+            except (psutil.AccessDenied, psutil.NoSuchProcess) as e:
+                continue
+        
+        # 计算总IO速度
+        read_diff = current_io_total["read_bytes"] - initial_io_total["read_bytes"]
+        write_diff = current_io_total["write_bytes"] - initial_io_total["write_bytes"]
+        total_diff = read_diff + write_diff
+        
+        # 计算每秒字节数
+        bytes_per_sec = total_diff / interval
+        
+        # 输出详细信息
+        print(f"IO详情 - 读取: {read_diff/interval/1024:.2f} KB/s, 写入: {write_diff/interval/1024:.2f} KB/s, 总计: {bytes_per_sec/1024:.2f} KB/s")
+        
+        # 根据速度大小选择合适的单位
+        if bytes_per_sec >= 1024 * 1024 * 1024:  # GB/s
+            return f"{bytes_per_sec / (1024 * 1024 * 1024):.2f} GB/s"
+        elif bytes_per_sec >= 1024 * 1024:  # MB/s
+            return f"{bytes_per_sec / (1024 * 1024):.2f} MB/s"
+        elif bytes_per_sec >= 1024:  # KB/s
+            return f"{bytes_per_sec / 1024:.2f} KB/s"
+        else:  # B/s
+            return f"{bytes_per_sec:.2f} B/s"
+    except Exception as e:
+        print(f"监测进程树IO出错: {e}")
         return "0 KB/s"
 
 # 主函数：运行测试
@@ -154,27 +213,20 @@ async def run_test():
     start_time = time.time()
     try:
         while recording.recording and time.time() - start_time < 30:  # 最多运行30秒
-            # 方法1: 从ffmpeg输出获取速度
+            # 优先使用方法1: 监测进程树的IO（包括子进程）
+            if psutil.pid_exists(ffmpeg_process.pid):
+                process_tree_speed = await monitor_process_tree_io(ffmpeg_process.pid)
+                print(f"从进程树IO获取速度: {process_tree_speed}")
+                # 优先使用IO监测的速度
+                recording.speed = process_tree_speed
+            
+            # 备选方法2: 从ffmpeg输出获取速度
             speed_from_output = await extract_speed_from_ffmpeg_output(ffmpeg_process)
             if speed_from_output:
                 print(f"从FFmpeg输出获取速度: {speed_from_output}")
-                recording.speed = speed_from_output
-            
-            # 方法2: 从文件大小变化获取速度
-            if os.path.exists(output_file):
-                file_speed = await monitor_file_size_change(output_file)
-                print(f"从文件大小变化获取速度: {file_speed}")
-                # 如果没有从输出获取到速度，就使用文件监测的速度
-                if not speed_from_output:
-                    recording.speed = file_speed
-            
-            # 方法3: 使用psutil监测进程IO
-            if psutil.pid_exists(ffmpeg_process.pid):
-                process_speed = await monitor_process_io(ffmpeg_process.pid)
-                print(f"从进程IO获取速度: {process_speed}")
-                # 如果其他方法都没获取到速度，就使用进程IO监测的速度
-                if not speed_from_output and not os.path.exists(output_file):
-                    recording.speed = process_speed
+                # 只有当IO监测失败时才使用
+                if recording.speed == "0 KB/s" or recording.speed == "0.00 B/s":
+                    recording.speed = speed_from_output
             
             print(f"当前Recording对象速度: {recording.speed}")
             print("-" * 50)
@@ -199,5 +251,6 @@ async def run_test():
 # 运行测试
 if __name__ == "__main__":
     print(f"开始测试速度监测功能，时间: {datetime.now()}")
+    print(f"优先使用IO监测获取速度，备选使用FFmpeg输出")
     asyncio.run(run_test())
     print(f"测试完成，时间: {datetime.now()}") 
