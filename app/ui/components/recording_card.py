@@ -242,6 +242,9 @@ class RecordingCardManager:
             return ft.colors.GREEN
         elif recording.status_info == RecordingStatus.RECORDING_ERROR:
             return ft.colors.RED
+        elif recording.is_live and recording.monitor_status and not recording.recording:
+            # 为"直播中（未录制）"状态添加青色边框
+            return ft.colors.CYAN
         elif not recording.is_live and recording.monitor_status:
             return ft.colors.AMBER
         elif not recording.monitor_status:
