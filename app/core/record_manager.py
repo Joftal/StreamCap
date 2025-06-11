@@ -576,7 +576,7 @@ class RecordingManager:
         else:
             # If stopped, show the last recorded total duration.
             total_duration = recording.last_duration
-            return str(total_duration).split(".")[0]
+            return self._["duration"] + " " + str(total_duration).split(".")[0]
 
     async def delete_recording_cards(self, recordings: list[Recording]):
         self.app.page.run_task(self.app.record_card_manager.remove_recording_card, recordings)
