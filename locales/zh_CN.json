@@ -91,6 +91,8 @@
     "is_live": "直播中",
     "live_room": "直播间",
     "recorded": "已录制",
+    "duration": "时长",
+    "speed": "速度",
     "push_content": "直播间状态更新：[room_name] 正在直播中，时间：[time]",
     "push_content_end": "直播间状态更新：[room_name] 直播已结束，时间：[time]",
     "status_notify": "直播间状态更新通知",
@@ -112,8 +114,7 @@
     "check_later": "稍后处理",
     "processed": "已处理",
     "current_free_space": "当前剩余空间",
-    "recording_in_progress_tip": "直播间正在录制中，无法删除",
-    "duration": "时长"
+    "recording_in_progress_tip": "直播间正在录制中，无法删除"
   },
   "stream_manager": {
     "record_stream_error": "直播源录制出错"

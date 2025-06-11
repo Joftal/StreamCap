@@ -131,7 +131,7 @@ class RecordingCardManager:
             tooltip=self._["recording_info"],
             on_click=partial(self.recording_info_button_on_click, recording=recording),
         )
-        speed_text_label = ft.Text(speed, size=12)
+        speed_text_label = ft.Text(f"{self._['speed']} {speed}", size=12)
 
         status_label = self.create_status_label(recording)
 
@@ -363,7 +363,7 @@ class RecordingCardManager:
                 recording_card["duration_label"].value = self.app.record_manager.get_duration(recording)
             
             if recording_card.get("speed_label"):
-                recording_card["speed_label"].value = recording.speed
+                recording_card["speed_label"].value = f"{self._['speed']} {recording.speed}"
             
             # 全面刷新所有按钮和文本的国际化内容
             if recording_card.get("record_button"):

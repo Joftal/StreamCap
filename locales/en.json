@@ -92,6 +92,7 @@
     "live_room": "Live Room",
     "recorded": "Recorded",
     "duration": "Duration",
+    "speed": "Speed",
     "push_content": "Live room status update: [room_name] is live, time: [time]",
     "push_content_end": "Live room status update: [room_name] is live completed, time: [time]",
     "status_notify": "Live room status update notification",
