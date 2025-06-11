@@ -63,7 +63,7 @@ class LoginPage:
         )
         
         self.error_text = ft.Text(
-            color=ft.colors.RED_500,
+            color=ft.Colors.RED_500,
             size=14,
             visible=False,
         )
@@ -124,12 +124,12 @@ class LoginPage:
             width=400,
             height=600,
             padding=30,
-            bgcolor=ft.colors.WHITE,
+            bgcolor=ft.Colors.WHITE,
             border_radius=12,
             shadow=ft.BoxShadow(
                 spread_radius=1,
                 blur_radius=15,
-                color=ft.colors.with_opacity(0.1, "#000000"),
+                color=ft.Colors.with_opacity(0.1, "#000000"),
                 offset=ft.Offset(0, 4),
             ),
         )

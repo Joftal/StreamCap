@@ -187,8 +187,8 @@ class HomePage(PageBase):
                 ft.ElevatedButton(
                     self._["filter_all_platforms"],
                     on_click=lambda e: self.page.run_task(self.filter_all_platforms_on_click, e),
-                    bgcolor=ft.colors.BLUE if self.current_platform_filter == "all" else None,
-                    color=ft.colors.WHITE if self.current_platform_filter == "all" else None,
+                    bgcolor=ft.Colors.BLUE if self.current_platform_filter == "all" else None,
+                    color=ft.Colors.WHITE if self.current_platform_filter == "all" else None,
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5)),
                 )
             ]
@@ -198,8 +198,8 @@ class HomePage(PageBase):
                     ft.ElevatedButton(
                         get_display_name(key),
                         on_click=lambda e, k=key: self.page.run_task(self.on_platform_button_click, k),
-                        bgcolor=ft.colors.BLUE if selected else None,
-                        color=ft.colors.WHITE if selected else None,
+                        bgcolor=ft.Colors.BLUE if selected else None,
+                        color=ft.Colors.WHITE if selected else None,
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5)),
                     )
                 )
@@ -222,43 +222,43 @@ class HomePage(PageBase):
                         ft.ElevatedButton(
                             self._["filter_all"],
                             on_click=self.filter_all_on_click,
-                            bgcolor=ft.colors.BLUE if self.current_filter == "all" else None,
-                            color=ft.colors.WHITE if self.current_filter == "all" else None,
+                            bgcolor=ft.Colors.BLUE if self.current_filter == "all" else None,
+                            color=ft.Colors.WHITE if self.current_filter == "all" else None,
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5)),
                         ),
                         ft.ElevatedButton(
                             self._["filter_recording"],
                             on_click=self.filter_recording_on_click,
-                            bgcolor=ft.colors.GREEN if self.current_filter == "recording" else None,
-                            color=ft.colors.WHITE if self.current_filter == "recording" else None,
+                            bgcolor=ft.Colors.GREEN if self.current_filter == "recording" else None,
+                            color=ft.Colors.WHITE if self.current_filter == "recording" else None,
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5)),
                             ),
                         ft.ElevatedButton(
                             self._["filter_live_monitoring_not_recording"],
                             on_click=self.filter_live_monitoring_not_recording_on_click,
-                            bgcolor=ft.colors.CYAN if self.current_filter == "live_monitoring_not_recording" else None,
-                            color=ft.colors.WHITE if self.current_filter == "live_monitoring_not_recording" else None,
+                            bgcolor=ft.Colors.CYAN if self.current_filter == "live_monitoring_not_recording" else None,
+                            color=ft.Colors.WHITE if self.current_filter == "live_monitoring_not_recording" else None,
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5)),
                         ),
                         ft.ElevatedButton(
                             self._["filter_offline"],
                             on_click=self.filter_offline_on_click,
-                            bgcolor=ft.colors.AMBER if self.current_filter == "offline" else None,
-                            color=ft.colors.WHITE if self.current_filter == "offline" else None,
+                            bgcolor=ft.Colors.AMBER if self.current_filter == "offline" else None,
+                            color=ft.Colors.WHITE if self.current_filter == "offline" else None,
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5)),
                         ),
                         ft.ElevatedButton(
                             self._["filter_error"],
                             on_click=self.filter_error_on_click,
-                            bgcolor=ft.colors.RED if self.current_filter == "error" else None,
-                            color=ft.colors.WHITE if self.current_filter == "error" else None,
+                            bgcolor=ft.Colors.RED if self.current_filter == "error" else None,
+                            color=ft.Colors.WHITE if self.current_filter == "error" else None,
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5)),
                         ),
                         ft.ElevatedButton(
                             self._["filter_stopped"],
                             on_click=self.filter_stopped_on_click,
-                            bgcolor=ft.colors.GREY if self.current_filter == "stopped" else None,
-                            color=ft.colors.WHITE if self.current_filter == "stopped" else None,
+                            bgcolor=ft.Colors.GREY if self.current_filter == "stopped" else None,
+                            color=ft.Colors.WHITE if self.current_filter == "stopped" else None,
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5)),
                         ),
                     ],
