@@ -141,8 +141,31 @@ class RecordingCardManager:
             spacing=5,
             tight=True,
         )
-
-        card_container = ft.Container(
+        
+        # 获取平台logo路径
+        _, platform_key = get_platform_info(recording.url)
+        logo_path = self.app.platform_logo_cache.get_logo_path(recording.rec_id, platform_key)
+        
+        # 创建平台logo图片组件
+        platform_logo = ft.Image(
+            src=logo_path if logo_path else None,
+            width=50,
+            height=50,
+            fit=ft.ImageFit.CONTAIN,
+            border_radius=ft.border_radius.all(5),
+        )
+        
+        # 创建左侧logo容器
+        logo_container = ft.Container(
+            content=platform_logo,
+            width=60,
+            height=100,
+            alignment=ft.alignment.center,
+            padding=ft.padding.all(5),
+        )
+        
+        # 创建右侧内容容器
+        content_container = ft.Container(
             content=ft.Column(
                 [
                     title_row,
@@ -167,6 +190,19 @@ class RecordingCardManager:
                 spacing=3,
                 tight=True
             ),
+            expand=True,
+        )
+        
+        # 创建卡片内容行，包含左侧logo和右侧内容
+        card_content_row = ft.Row(
+            [logo_container, content_container],
+            alignment=ft.MainAxisAlignment.START,
+            vertical_alignment=ft.CrossAxisAlignment.START,
+            spacing=0,
+        )
+
+        card_container = ft.Container(
+            content=card_content_row,
             padding=8,
             on_click=partial(self.recording_card_on_click, recording=recording),
             bgcolor=self.get_card_background_color(recording),
@@ -190,6 +226,7 @@ class RecordingCardManager:
             "play_button": play_button,
             "preview_button": preview_button,
             "delete_button": delete_button,
+            "platform_logo": platform_logo,
         }
         
     def get_card_background_color(self, recording: Recording):
@@ -275,7 +312,15 @@ class RecordingCardManager:
             new_status_label = self.create_status_label(recording)
             
             if recording_card["card"] and recording_card["card"].content and recording_card["card"].content.content:
-                title_row = recording_card["card"].content.content.controls[0]
+                # 获取卡片内容行（包含logo和内容的Row）
+                card_content_row = recording_card["card"].content.content
+                # 获取右侧内容区域（第二个控件）
+                content_container = card_content_row.controls[1]
+                # 获取内容区域的Column
+                content_column = content_container.content
+                # 获取标题行（Column的第一个控件）
+                title_row = content_column.controls[0]
+                
                 title_row.alignment = ft.MainAxisAlignment.START
                 title_row.spacing = 5
                 title_row.tight = True
@@ -288,6 +333,15 @@ class RecordingCardManager:
                         title_row_controls.pop(1)
                 elif new_status_label:
                     title_row_controls.append(new_status_label)
+                
+                # 更新平台logo
+                if recording_card.get("platform_logo"):
+                    # 获取平台信息
+                    _, platform_key = get_platform_info(recording.url)
+                    # 获取logo路径
+                    logo_path = self.app.platform_logo_cache.get_logo_path(recording.rec_id, platform_key)
+                    # 更新logo图片
+                    recording_card["platform_logo"].src = logo_path if logo_path else None
             
             recording_card["status_label"] = new_status_label
             
@@ -344,7 +398,7 @@ class RecordingCardManager:
                 recording_card["card"].content.border = ft.border.all(2, self.get_card_border_color(recording))
                 recording_card["card"].update()
         except Exception as e:
-            print(f"Error updating card: {e}")
+            logger.error(f"Error updating card: {str(e)}", exc_info=True)
 
     async def update_monitor_state(self, recording: Recording):
         """Update the monitor button state based on the current monitoring status."""
@@ -576,6 +630,9 @@ class RecordingCardManager:
                         need_switch_to_all = True
                         logger.info(f"删除后平台 {current_platform} 下没有剩余直播间，将切换到全部平台视图")
             
+            # 删除平台logo缓存
+            self.app.platform_logo_cache.remove_logo_cache(recording.rec_id)
+            
             # 执行删除操作
             await self.app.record_manager.delete_recording_cards([recording])
             
@@ -594,6 +651,9 @@ class RecordingCardManager:
         existing_ids = {rec.rec_id for rec in self.app.record_manager.recordings}
         remove_ids = {rec.rec_id for rec in recordings}
         keep_ids = existing_ids - remove_ids
+        
+        # 批量删除平台logo缓存
+        self.app.platform_logo_cache.remove_multiple_logo_cache(list(remove_ids))
 
         cards_to_remove = [
             card_data["card"]

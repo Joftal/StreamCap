@@ -3,6 +3,7 @@ import time
 import asyncio
 import gc
 import psutil
+from datetime import datetime
 
 import flet as ft
 
@@ -23,15 +24,16 @@ from .ui.views.settings_view import SettingsPage
 from .ui.views.storage_view import StoragePage
 from .utils import utils
 from .utils.logger import logger
+from .models.platform_logo_cache import PlatformLogoCache
 
 # 定义内存清理阈值，当内存使用率超过这个值时执行更激进的清理
 MEMORY_CLEANUP_THRESHOLD = 75  # 百分比
 # 定义内存警告阈值，当内存使用率超过这个值时记录警告日志
 MEMORY_WARNING_THRESHOLD = 85  # 百分比
 # 定义轻量级清理间隔(秒)
-LIGHT_CLEANUP_INTERVAL = 180  # 3分钟
+LIGHT_CLEANUP_INTERVAL = 35 * 60  # 35分钟
 # 定义完整清理间隔(秒)
-FULL_CLEANUP_INTERVAL = 1800  # 30分钟
+FULL_CLEANUP_INTERVAL = 60 * 60  # 60分钟
 
 
 class App:
@@ -79,6 +81,10 @@ class App:
         )
         self.snack_bar = ShowSnackBar(self.page)
         self.subprocess_start_up_info = utils.get_startup_info()
+        
+        # 初始化平台logo缓存管理器
+        self.platform_logo_cache = PlatformLogoCache()
+        
         self.record_card_manager = RecordingCardManager(self)
         self.record_manager = RecordingManager(self)
         self.current_page = None
@@ -136,6 +142,11 @@ class App:
             return
             
         try:
+            # 保存平台logo缓存
+            if hasattr(self, 'platform_logo_cache'):
+                logger.info("保存平台logo缓存...")
+                self.platform_logo_cache.save_cache()
+                
             await self.process_manager.cleanup()
             # 执行更完整的清理
             await self._perform_full_cleanup()
