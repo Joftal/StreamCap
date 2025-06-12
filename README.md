@@ -33,7 +33,8 @@ StreamCap 是一个基于FFmpeg和StreamGet的多平台直播流录制客户端�
 
 ## 📸录制界面
 
-![StreamCap Interface](./assets/images/example01.png)
+![image](https://github.com/user-attachments/assets/615e9a69-e6db-4822-bfb5-99f675d1700c)
+
 
 ## 🛠️快速开始
 
