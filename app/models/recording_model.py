@@ -53,7 +53,7 @@ class Recording:
         self.enabled_message_push = enabled_message_push
         self.scheduled_time_range = None
         self.title = f"{streamer_name} - {self.quality}"
-        self.speed = "X KB/s"
+        self.speed = "0 KB/s"
         self.is_live = False
         self.recording = False  # Record status
         self.start_time = None
