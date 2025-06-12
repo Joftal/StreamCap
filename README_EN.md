@@ -22,12 +22,13 @@ StreamCap is a multi-platform live stream recording client based on FFmpeg and S
 
 ## ✨Features
 
-- **Multi-Platform Support**: Compatible with Windows, macOS, and Web environments.
-- **Loop Monitoring**: Real-time monitoring of live stream status. Recording starts immediately when a stream goes live.
-- **Scheduled Tasks**: Checks live stream status within a set time range.
-- **Multiple Output Formats**: Supports ts, flv, mkv, mov, mp4, mp3, m4a, and other formats.
-- **Automatic Transcoding**: Automatically transcodes recorded files to mp4 format after recording.
-- **Message Push**: Supports live stream status push notifications to keep you informed of live status.
+- **Multi-platform Support**: Works on Windows/MacOS/Web.
+- **Continuous Monitoring**: Real-time monitoring of live stream status, auto-recording when live.
+- **Scheduled Tasks**: Check live room status based on set time ranges.
+- **Multiple Output Formats**: Supports ts, flv, mkv, mov, mp4, mp3, m4a, and more.
+- **Auto Transcoding**: Automatically convert recordings to mp4 format.
+- **Push Notifications**: Get notified when streams go live.
+- **Windows Notifications**: Support for native Windows notifications with platform icons.
 
 ## 📸Recording Interface
 
@@ -303,3 +304,36 @@ Special thanks to the following open-source projects and technologies for their 
 - [streamget](https://github.com/ihmily/streamget)
 
 If you have any questions or suggestions, please feel free to contact us via GitHub Issues.
+
+## Installation
+
+### Dependencies
+
+StreamCap provides platform-specific dependency files:
+
+- Windows: `requirements-win.txt`
+- macOS: `requirements-mac.txt`
+- Linux: `requirements-linux.txt`
+
+You can install the dependencies using the following commands:
+
+```bash
+# Automatically detect platform and install appropriate dependencies
+python install_deps.py
+
+# Web environment dependencies
+python install_deps.py --web
+
+# Or manually specify the platform
+# Windows
+pip install -r requirements-win.txt
+
+# macOS
+pip install -r requirements-mac.txt
+
+# Linux
+pip install -r requirements-linux.txt
+
+# Web environment
+pip install -r requirements-web.txt
+```

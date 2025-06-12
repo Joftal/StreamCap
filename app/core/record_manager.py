@@ -4,6 +4,7 @@ import threading
 from datetime import datetime, timedelta
 from typing import Any, Callable
 import time
+import sys
 
 from ..messages.message_pusher import MessagePusher
 from ..models.recording_model import Recording
@@ -341,11 +342,12 @@ class RecordingManager:
                         telegram_enabled = user_config.get("telegram_enabled", False)
                         email_enabled = user_config.get("email_enabled", False)
                         serverchan_enabled = user_config.get("serverchan_enabled", False)
+                        windows_notify_enabled = user_config.get("windows_notify_enabled", False)
                         
                         any_channel_enabled = (
                             bark_enabled or wechat_enabled or dingtalk_enabled or 
                             ntfy_enabled or telegram_enabled or email_enabled or
-                            serverchan_enabled
+                            serverchan_enabled or windows_notify_enabled
                         )
                         
                         if any_channel_enabled:
@@ -363,7 +365,16 @@ class RecordingManager:
 
                             logger.info(f"直播结束通知: {msg_title} - {push_content}")
                             msg_manager = MessagePusher(self.settings)
-                            self.app.page.run_task(msg_manager.push_messages, msg_title, push_content)
+                            
+                            # 优化: 只在Windows系统且启用Windows通知时才获取平台代码
+                            if self.settings.user_config.get("windows_notify_enabled") and sys.platform == "win32":
+                                # 获取平台代码用于显示对应图标
+                                _, platform_code = get_platform_info(recording.url)
+                                self.app.page.run_task(msg_manager.push_messages, msg_title, push_content, platform_code)
+                            else:
+                                # 其他情况不传递平台代码
+                                self.app.page.run_task(msg_manager.push_messages, msg_title, push_content)
+                            
                             # 设置已发送关闭通知标志，避免重复发送
                             recording.end_notification_sent = True
                         else:
@@ -410,17 +421,18 @@ class RecordingManager:
                         telegram_enabled = user_config.get("telegram_enabled", False)
                         email_enabled = user_config.get("email_enabled", False)
                         serverchan_enabled = user_config.get("serverchan_enabled", False)
+                        windows_notify_enabled = user_config.get("windows_notify_enabled", False)
                         
                         any_channel_enabled = (
                             bark_enabled or wechat_enabled or dingtalk_enabled or 
                             ntfy_enabled or telegram_enabled or email_enabled or
-                            serverchan_enabled
+                            serverchan_enabled or windows_notify_enabled
                         )
                         
                         logger.info(f"推送渠道状态: bark={bark_enabled}, wechat={wechat_enabled}, "
                                    f"dingtalk={dingtalk_enabled}, ntfy={ntfy_enabled}, "
                                    f"telegram={telegram_enabled}, email={email_enabled}, "
-                                   f"serverchan={serverchan_enabled}")
+                                   f"serverchan={serverchan_enabled}, windows={windows_notify_enabled}")
                         
                         # 检查是否已经发送过通知，避免重复发送
                         if any_channel_enabled and not recording.notification_sent:
@@ -438,7 +450,16 @@ class RecordingManager:
 
                             logger.info(f"自动录制模式下触发消息推送: {msg_title} - {push_content}")
                             msg_manager = MessagePusher(self.settings)
-                            self.app.page.run_task(msg_manager.push_messages, msg_title, push_content)
+                            
+                            # 优化: 只在Windows系统且启用Windows通知时才获取平台代码
+                            if self.settings.user_config.get("windows_notify_enabled") and sys.platform == "win32":
+                                # 获取平台代码用于显示对应图标
+                                _, platform_code = get_platform_info(recording.url)
+                                self.app.page.run_task(msg_manager.push_messages, msg_title, push_content, platform_code)
+                            else:
+                                # 其他情况不传递平台代码
+                                self.app.page.run_task(msg_manager.push_messages, msg_title, push_content)
+                            
                             # 设置通知已发送标志
                             recording.notification_sent = True
                         elif recording.notification_sent:
@@ -470,17 +491,18 @@ class RecordingManager:
                         telegram_enabled = user_config.get("telegram_enabled", False)
                         email_enabled = user_config.get("email_enabled", False)
                         serverchan_enabled = user_config.get("serverchan_enabled", False)
+                        windows_notify_enabled = user_config.get("windows_notify_enabled", False)
                         
                         any_channel_enabled = (
                             bark_enabled or wechat_enabled or dingtalk_enabled or 
                             ntfy_enabled or telegram_enabled or email_enabled or
-                            serverchan_enabled
+                            serverchan_enabled or windows_notify_enabled
                         )
                         
                         logger.info(f"推送渠道状态: bark={bark_enabled}, wechat={wechat_enabled}, "
                                   f"dingtalk={dingtalk_enabled}, ntfy={ntfy_enabled}, "
                                   f"telegram={telegram_enabled}, email={email_enabled}, "
-                                  f"serverchan={serverchan_enabled}")
+                                  f"serverchan={serverchan_enabled}, windows={windows_notify_enabled}")
                         
                         # 检查是否已经发送过通知，避免重复发送
                         # 如果是从"录制中"状态变为"直播中（未录制）"状态，则不发送通知
@@ -499,7 +521,16 @@ class RecordingManager:
 
                             logger.info(f"手动录制模式下直播中（未录制）状态触发消息推送: {msg_title} - {push_content}")
                             msg_manager = MessagePusher(self.settings)
-                            self.app.page.run_task(msg_manager.push_messages, msg_title, push_content)
+                            
+                            # 优化: 只在Windows系统且启用Windows通知时才获取平台代码
+                            if self.settings.user_config.get("windows_notify_enabled") and sys.platform == "win32":
+                                # 获取平台代码用于显示对应图标
+                                _, platform_code = get_platform_info(recording.url)
+                                self.app.page.run_task(msg_manager.push_messages, msg_title, push_content, platform_code)
+                            else:
+                                # 其他情况不传递平台代码
+                                self.app.page.run_task(msg_manager.push_messages, msg_title, push_content)
+                            
                             # 设置通知已发送标志
                             recording.notification_sent = True
                         elif recording.notification_sent:
@@ -576,7 +607,7 @@ class RecordingManager:
         else:
             # If stopped, show the last recorded total duration.
             total_duration = recording.last_duration
-            return str(total_duration).split(".")[0]
+            return self._["duration"] + " " + str(total_duration).split(".")[0]
 
     async def delete_recording_cards(self, recordings: list[Recording]):
         self.app.page.run_task(self.app.record_card_manager.remove_recording_card, recordings)
@@ -683,11 +714,12 @@ class RecordingManager:
             telegram_enabled = user_config.get("telegram_enabled", False)
             email_enabled = user_config.get("email_enabled", False)
             serverchan_enabled = user_config.get("serverchan_enabled", False)
+            windows_notify_enabled = user_config.get("windows_notify_enabled", False)
             
             any_channel_enabled = (
                 bark_enabled or wechat_enabled or dingtalk_enabled or 
                 ntfy_enabled or telegram_enabled or email_enabled or
-                serverchan_enabled
+                serverchan_enabled or windows_notify_enabled
             )
             
             if not any_channel_enabled:
@@ -698,7 +730,7 @@ class RecordingManager:
             logger.info(f"推送渠道状态: bark={bark_enabled}, wechat={wechat_enabled}, "
                        f"dingtalk={dingtalk_enabled}, ntfy={ntfy_enabled}, "
                        f"telegram={telegram_enabled}, email={email_enabled}, "
-                       f"serverchan={serverchan_enabled}")
+                       f"serverchan={serverchan_enabled}, windows={windows_notify_enabled}")
             
             # 准备推送内容
             msg_title = self._["disk_space_insufficient_title"]
@@ -709,7 +741,15 @@ class RecordingManager:
             
             logger.info(f"发送磁盘空间不足通知: {msg_title} - {push_content}")
             msg_manager = MessagePusher(self.settings)
-            await msg_manager.push_messages(msg_title, push_content)
+            
+            # 优化: 只在Windows系统且启用Windows通知时才传递平台代码
+            if self.settings.user_config.get("windows_notify_enabled") and sys.platform == "win32":
+                # 系统通知使用"system"作为图标代码
+                self.app.page.run_task(msg_manager.push_messages, msg_title, push_content, "system")
+            else:
+                # 其他情况不传递平台代码
+                self.app.page.run_task(msg_manager.push_messages, msg_title, push_content)
+            
             logger.info("磁盘空间不足通知已发送")
             
         except Exception as e:

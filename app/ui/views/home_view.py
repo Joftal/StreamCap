@@ -187,8 +187,8 @@ class HomePage(PageBase):
                 ft.ElevatedButton(
                     self._["filter_all_platforms"],
                     on_click=lambda e: self.page.run_task(self.filter_all_platforms_on_click, e),
-                    bgcolor=ft.colors.BLUE if self.current_platform_filter == "all" else None,
-                    color=ft.colors.WHITE if self.current_platform_filter == "all" else None,
+                    bgcolor=ft.Colors.BLUE if self.current_platform_filter == "all" else None,
+                    color=ft.Colors.WHITE if self.current_platform_filter == "all" else None,
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5)),
                 )
             ]
@@ -198,8 +198,8 @@ class HomePage(PageBase):
                     ft.ElevatedButton(
                         get_display_name(key),
                         on_click=lambda e, k=key: self.page.run_task(self.on_platform_button_click, k),
-                        bgcolor=ft.colors.BLUE if selected else None,
-                        color=ft.colors.WHITE if selected else None,
+                        bgcolor=ft.Colors.BLUE if selected else None,
+                        color=ft.Colors.WHITE if selected else None,
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5)),
                     )
                 )
@@ -222,43 +222,43 @@ class HomePage(PageBase):
                         ft.ElevatedButton(
                             self._["filter_all"],
                             on_click=self.filter_all_on_click,
-                            bgcolor=ft.colors.BLUE if self.current_filter == "all" else None,
-                            color=ft.colors.WHITE if self.current_filter == "all" else None,
+                            bgcolor=ft.Colors.BLUE if self.current_filter == "all" else None,
+                            color=ft.Colors.WHITE if self.current_filter == "all" else None,
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5)),
                         ),
                         ft.ElevatedButton(
                             self._["filter_recording"],
                             on_click=self.filter_recording_on_click,
-                            bgcolor=ft.colors.GREEN if self.current_filter == "recording" else None,
-                            color=ft.colors.WHITE if self.current_filter == "recording" else None,
+                            bgcolor=ft.Colors.GREEN if self.current_filter == "recording" else None,
+                            color=ft.Colors.WHITE if self.current_filter == "recording" else None,
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5)),
                             ),
                         ft.ElevatedButton(
                             self._["filter_live_monitoring_not_recording"],
                             on_click=self.filter_live_monitoring_not_recording_on_click,
-                            bgcolor=ft.colors.CYAN if self.current_filter == "live_monitoring_not_recording" else None,
-                            color=ft.colors.WHITE if self.current_filter == "live_monitoring_not_recording" else None,
+                            bgcolor=ft.Colors.CYAN if self.current_filter == "live_monitoring_not_recording" else None,
+                            color=ft.Colors.WHITE if self.current_filter == "live_monitoring_not_recording" else None,
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5)),
                         ),
                         ft.ElevatedButton(
                             self._["filter_offline"],
                             on_click=self.filter_offline_on_click,
-                            bgcolor=ft.colors.AMBER if self.current_filter == "offline" else None,
-                            color=ft.colors.WHITE if self.current_filter == "offline" else None,
+                            bgcolor=ft.Colors.AMBER if self.current_filter == "offline" else None,
+                            color=ft.Colors.WHITE if self.current_filter == "offline" else None,
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5)),
                         ),
                         ft.ElevatedButton(
                             self._["filter_error"],
                             on_click=self.filter_error_on_click,
-                            bgcolor=ft.colors.RED if self.current_filter == "error" else None,
-                            color=ft.colors.WHITE if self.current_filter == "error" else None,
+                            bgcolor=ft.Colors.RED if self.current_filter == "error" else None,
+                            color=ft.Colors.WHITE if self.current_filter == "error" else None,
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5)),
                         ),
                         ft.ElevatedButton(
                             self._["filter_stopped"],
                             on_click=self.filter_stopped_on_click,
-                            bgcolor=ft.colors.GREY if self.current_filter == "stopped" else None,
-                            color=ft.colors.WHITE if self.current_filter == "stopped" else None,
+                            bgcolor=ft.Colors.GREY if self.current_filter == "stopped" else None,
+                            color=ft.Colors.WHITE if self.current_filter == "stopped" else None,
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5)),
                         ),
                     ],
@@ -462,17 +462,52 @@ class HomePage(PageBase):
             return _card, _recording
         
         if cards_to_create:
-            results = await asyncio.gather(*[
-                create_card_with_time_range(recording)
-                for recording in cards_to_create
-            ])
+            # 批量加载卡片，每批最多加载10个
+            batch_size = 10
+            total_batches = (len(cards_to_create) + batch_size - 1) // batch_size
             
-            for card, recording in results:
-                self.recording_card_area.content.controls.append(card)
-                self.app.record_card_manager.cards_obj[recording.rec_id]["card"] = card
+            logger.info(f"开始批量加载录制卡片，共 {len(cards_to_create)} 个，分 {total_batches} 批处理")
+            
+            for batch_index in range(total_batches):
+                start_idx = batch_index * batch_size
+                end_idx = min(start_idx + batch_size, len(cards_to_create))
+                batch_recordings = cards_to_create[start_idx:end_idx]
+                
+                logger.debug(f"加载第 {batch_index+1}/{total_batches} 批卡片，{len(batch_recordings)} 个")
+                
+                # 处理当前批次
+                results = await asyncio.gather(*[
+                    create_card_with_time_range(recording)
+                    for recording in batch_recordings
+                ])
+                
+                for card, recording in results:
+                    self.recording_card_area.content.controls.append(card)
+                    self.app.record_card_manager.cards_obj[recording.rec_id]["card"] = card
+                
+                # 更新UI，显示当前批次的卡片
+                self.recording_card_area.update()
+                
+                # 如果不是最后一批，添加短暂延迟让UI有时间响应
+                if batch_index < total_batches - 1:
+                    await asyncio.sleep(0.05)
         
         if existing_cards:
-            self.recording_card_area.content.controls.extend(existing_cards)
+            # 批量添加现有卡片，每批最多添加20个
+            batch_size = 20
+            total_batches = (len(existing_cards) + batch_size - 1) // batch_size
+            
+            for batch_index in range(total_batches):
+                start_idx = batch_index * batch_size
+                end_idx = min(start_idx + batch_size, len(existing_cards))
+                batch_cards = existing_cards[start_idx:end_idx]
+                
+                self.recording_card_area.content.controls.extend(batch_cards)
+                
+                # 更新UI，显示当前批次的卡片
+                if batch_index < total_batches - 1:
+                    self.recording_card_area.update()
+                    await asyncio.sleep(0.02)
 
         self.loading_indicator.visible = False
         self.loading_indicator.update()
@@ -607,9 +642,34 @@ class HomePage(PageBase):
             self.recording_card_area.controls.remove(card["card"])
         await self.show_all_cards()
 
-        for recording in recordings:
-            await self.app.record_card_manager.update_card(recording)
-            await asyncio.sleep(0.05)
+        # 批量更新卡片，每批最多更新15个
+        batch_size = 15
+        total_recordings = len(recordings)
+        total_batches = (total_recordings + batch_size - 1) // batch_size
+        
+        logger.info(f"开始批量刷新录制卡片，共 {total_recordings} 个，分 {total_batches} 批处理")
+        
+        for batch_index in range(total_batches):
+            start_idx = batch_index * batch_size
+            end_idx = min(start_idx + batch_size, total_recordings)
+            batch_recordings = recordings[start_idx:end_idx]
+            
+            logger.debug(f"刷新第 {batch_index+1}/{total_batches} 批卡片，{len(batch_recordings)} 个")
+            
+            # 并行更新当前批次的卡片
+            update_tasks = []
+            for recording in batch_recordings:
+                update_tasks.append(self.app.record_card_manager.update_card(recording))
+            
+            if update_tasks:
+                await asyncio.gather(*update_tasks)
+                
+                # 更新UI
+                self.recording_card_area.update()
+                
+                # 如果不是最后一批，添加短暂延迟让UI有时间响应
+                if batch_index < total_batches - 1:
+                    await asyncio.sleep(0.05)
 
         self.loading_indicator.visible = False
         self.loading_indicator.update()

@@ -4,8 +4,10 @@ import re
 import shutil
 import subprocess
 import time
+import psutil
 from datetime import datetime
 from typing import Any
+import sys
 
 from ..messages.message_pusher import MessagePusher
 from ..models.recording_status_model import RecordingStatus
@@ -13,8 +15,9 @@ from ..models.video_quality_model import VideoQuality
 from ..process_manager import BackgroundService
 from ..utils import utils
 from ..utils.logger import logger
+from ..ui.views.home_view import HomePage
 from . import ffmpeg_builders, platform_handlers
-from .platform_handlers import StreamData
+from .platform_handlers import StreamData, get_platform_info
 
 
 class LiveStreamRecorder:
@@ -530,9 +533,18 @@ class LiveStreamRecorder:
             logger.info(f"Recording in Progress: {live_url}")
             logger.log("STREAM", f"Recording Stream URL: {record_url}")
             
+            # 启动速度监测任务
+            speed_monitor_task = None
+            try:
+                speed_monitor_task = asyncio.create_task(
+                    self.update_recording_speed(process)
+                )
+                speed_monitor_task.set_name(f"speed_monitor_{process.pid}")
+            except Exception as e:
+                logger.error(f"创建速度监测任务失败: {e}")
+            
             # 验证进程是否真正在运行
             try:
-                import psutil
                 if psutil.pid_exists(process.pid):
                     proc = psutil.Process(process.pid)
                     logger.info(f"FFmpeg进程状态验证: PID={process.pid}, 名称={proc.name()}, 状态={proc.status()}")
@@ -569,7 +581,6 @@ class LiveStreamRecorder:
 
                 # 定期检查进程状态
                 try:
-                    import psutil
                     if not psutil.pid_exists(process.pid):
                         logger.warning(f"FFmpeg进程已不存在于系统中: PID={process.pid}")
                         break
@@ -577,6 +588,23 @@ class LiveStreamRecorder:
                     pass
 
                 await asyncio.sleep(1)
+            
+            # 取消速度监测任务
+            if speed_monitor_task and not speed_monitor_task.done():
+                try:
+                    # 先设置标志位，让任务快速结束
+                    self.recording._speed_monitor_active = False
+                    # 然后取消任务
+                    speed_monitor_task.cancel()
+                    # 等待任务完成，但设置较短的超时时间
+                    await asyncio.wait_for(asyncio.shield(speed_monitor_task), timeout=1.0)
+                except (asyncio.CancelledError, asyncio.TimeoutError):
+                    logger.debug(f"速度监测任务已取消: PID={process.pid}")
+                except Exception as e:
+                    logger.error(f"取消速度监测任务时出错: {e}")
+                finally:
+                    # 确保标志位被重置
+                    self.recording._speed_monitor_active = False
 
             return_code = process.returncode
             safe_return_code = [0, 255]
@@ -587,8 +615,10 @@ class LiveStreamRecorder:
 
                 try:
                     self.app.record_manager.stop_recording(self.recording)
-                    await self.app.record_card_manager.update_card(self.recording)
-                    self.app.page.pubsub.send_others_on_topic("update", self.recording)
+                    # 检查当前页面是否为主页面，只有在主页面时才更新UI
+                    if isinstance(self.app.current_page, HomePage):
+                        await self.app.record_card_manager.update_card(self.recording)
+                        self.app.page.pubsub.send_others_on_topic("update", self.recording)
                     await self.app.snack_bar.show_snack_bar(
                         record_name + " " + self._["record_stream_error"], duration=2000
                     )
@@ -631,13 +661,24 @@ class LiveStreamRecorder:
                         # 使用队列方式处理消息推送
                         logger.info(f"关播推送：{self.recording.streamer_name}，将消息加入推送队列")
                         msg_manager = MessagePusher(self.settings)
-                        self.app.page.run_task(msg_manager.push_messages, msg_title, push_content)
+                        
+                        # 优化: 只在Windows系统且启用Windows通知时才获取平台代码
+                        if self.settings.user_config.get("windows_notify_enabled") and sys.platform == "win32":
+                            # 获取平台代码用于显示对应图标
+                            _, platform_code = get_platform_info(self.recording.url)
+                            self.app.page.run_task(msg_manager.push_messages, msg_title, push_content, platform_code)
+                        else:
+                            # 其他情况不传递平台代码
+                            self.app.page.run_task(msg_manager.push_messages, msg_title, push_content)
+                        
                         # 标记已发送关闭通知，避免重复发送
                         self.recording.end_notification_sent = True
                 try:
                     self.recording.update({"display_title": display_title})
-                    await self.app.record_card_manager.update_card(self.recording)
-                    self.app.page.pubsub.send_others_on_topic("update", self.recording)
+                    # 检查当前页面是否为主页面，只有在主页面时才更新UI
+                    if isinstance(self.app.current_page, HomePage):
+                        await self.app.record_card_manager.update_card(self.recording)
+                        self.app.page.pubsub.send_others_on_topic("update", self.recording)
                     if self.app.recording_enabled and process in self.app.process_manager.ffmpeg_processes:
                         self.app.page.run_task(self.app.record_manager.check_if_live, self.recording)
                     else:
@@ -926,3 +967,97 @@ class LiveStreamRecorder:
             self.app.page.run_task(home_page.refresh_cards_on_click, None)
             
         logger.info(f"已更新所有录制卡片的默认分段时间为: {default_segment_time}")
+
+    async def update_recording_speed(self, process, interval=1.0):
+        """
+        更新录制速度信息，使用进程IO监测方法
+        
+        Args:
+            process: ffmpeg进程
+            interval: 更新间隔（秒）
+        """
+        try:
+            pid = process.pid
+            logger.debug(f"开始监测录制速度，进程ID: {pid}")
+            
+            # 初始化速度
+            self.recording.speed = "0 KB/s"
+            last_update_time = 0
+            
+            # 添加一个标志位，用于快速响应取消请求
+            self.recording._speed_monitor_active = True
+            
+            while process.returncode is None and self.recording.recording and getattr(self.recording, '_speed_monitor_active', True):
+                current_time = time.time()
+                speed = await self._get_current_speed(process, interval)
+                
+                if speed:
+                    self.recording.speed = speed
+                    # 每3秒更新一次UI，减少UI更新频率
+                    if current_time - last_update_time >= 3:
+                        if hasattr(self.app, 'record_card_manager'):
+                            # 检查当前页面是否为主页面，只有在主页面时才更新UI
+                            if isinstance(self.app.current_page, HomePage):
+                                try:
+                                    self.app.page.run_task(self.app.record_card_manager.update_card, self.recording)
+                                    last_update_time = current_time
+                                except Exception as e:
+                                    logger.debug(f"更新录制卡片速度时出错: {str(e)}")
+            
+            await asyncio.sleep(interval)
+        except asyncio.CancelledError:
+            logger.debug(f"录制速度监测任务被取消，进程ID: {pid}")
+        except Exception as e:
+            logger.error(f"录制速度监测出错: {str(e)}")
+        finally:
+            # 重置速度监控状态
+            self.recording._speed_monitor_active = False
+            self.recording.speed = "0 KB/s"
+            logger.debug(f"录制速度监测结束，进程ID: {pid}")
+    
+    async def _get_current_speed(self, process, interval=1.0):
+        """
+        获取当前录制速度，使用psutil监测进程IO
+        
+        Args:
+            process: ffmpeg进程
+            interval: 监测间隔（秒）
+            
+        Returns:
+            格式化的速度字符串，例如 "1.2 MB/s"
+        """
+        speed = "0 KB/s"
+        try:
+            # 检查进程是否存在
+            if not psutil.pid_exists(process.pid):
+                return speed
+                
+            proc = psutil.Process(process.pid)
+            # 获取初始IO计数
+            initial_io = proc.io_counters()
+            # 等待指定间隔
+            await asyncio.sleep(interval)
+            # 再次检查进程是否存在
+            if not psutil.pid_exists(process.pid):
+                return speed
+                
+            # 获取当前IO计数
+            current_io = proc.io_counters()
+            # 计算写入速度 (bytes per second)
+            write_bytes = current_io.write_bytes - initial_io.write_bytes
+            bytes_per_sec = write_bytes / interval
+            
+            # 转换为合适的单位
+            if bytes_per_sec >= 1024 * 1024:
+                speed = f"{bytes_per_sec / (1024 * 1024):.1f} MB/s"
+            elif bytes_per_sec >= 1024:
+                speed = f"{bytes_per_sec / 1024:.1f} KB/s"
+            else:
+                speed = f"{bytes_per_sec:.1f} B/s"
+                
+            logger.debug(f"进程IO - 速度: {speed}, 进程ID: {process.pid}")
+            return speed
+        except Exception as e:
+            # 只记录调试级别日志，避免大量错误日志
+            logger.debug(f"监测进程IO出错: {str(e)}")
+            return speed

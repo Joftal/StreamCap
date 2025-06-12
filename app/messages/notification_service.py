@@ -5,15 +5,46 @@ from email.header import Header
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Any, Optional
+import os
+import sys
+from pathlib import Path
 
 import httpx
 
 from ..utils.logger import logger
 
+# 根据系统判断是否导入winotify
+WINDOWS_NOTIFY_AVAILABLE = False
+if sys.platform == "win32":
+    try:
+        from winotify import Notification, audio
+        WINDOWS_NOTIFY_AVAILABLE = True
+        logger.info("成功导入winotify库")
+    except ImportError:
+        logger.warning("未安装winotify库，Windows通知功能将不可用")
+    except Exception as e:
+        logger.error(f"导入winotify库时出错: {str(e)}")
+
 
 class NotificationService:
     def __init__(self):
         self.headers = {"Content-Type": "application/json"}
+        # 初始化Windows通知相关变量
+        self.win_notifier_available = WINDOWS_NOTIFY_AVAILABLE
+        # 获取应用程序基础路径
+        self.base_path = self._get_base_path()
+
+    def _get_base_path(self):
+        """获取应用程序基础路径，考虑打包和开发环境"""
+        if getattr(sys, 'frozen', False):
+            # 如果是打包后的可执行文件，使用可执行文件所在目录
+            base_path = os.path.dirname(sys.executable)
+            logger.info(f"通知服务运行在打包环境中，基础路径: {base_path}")
+        else:
+            # 开发环境，使用项目根目录
+            base_path = Path(__file__).parent.parent.parent
+            logger.info(f"通知服务运行在开发环境中，基础路径: {base_path}")
+        return base_path
 
     async def _async_post(self, url: str, json_data: dict[str, Any]) -> dict[str, Any]:
         try:
@@ -266,3 +297,88 @@ class NotificationService:
                 logger.info(f"ServerChan push failed, SCKEY/SendKey: {key}, Error message: {resp.get('message')}")
 
         return results
+
+    def send_to_windows(
+        self,
+        title: str = "StreamCap",
+        content: str = "通知内容",
+        icon_path: str = "",
+        duration: int = 5,
+        threaded: bool = True
+    ) -> dict[str, Any]:
+        """发送Windows系统通知"""
+        results = {"success": [], "error": []}
+        
+        if sys.platform != "win32":
+            results["error"].append("不支持的系统平台")
+            return results
+            
+        if not self.win_notifier_available:
+            results["error"].append("Windows通知功能不可用")
+            return results
+            
+        try:
+            # 尝试使用默认图标
+            if not icon_path:
+                # 首先尝试查找ico格式的默认图标
+                possible_icons = [
+                    os.path.join(self.base_path, "assets", "icons", "icoplatforms", "moren.ico"),
+                    os.path.join(self.base_path, "assets", "icon.ico"),
+                ]
+                
+                for icon in possible_icons:
+                    if os.path.exists(icon):
+                        icon_path = icon
+                        logger.info(f"使用默认图标: {icon_path}")
+                        break
+            else:
+                # 验证指定的图标路径是否存在
+                if not os.path.exists(icon_path):
+                    # 尝试从路径中提取文件名
+                    try:
+                        file_name = os.path.basename(icon_path)
+                        new_icon_path = os.path.join(self.base_path, "assets", "icons", "icoplatforms", file_name)
+                        if os.path.exists(new_icon_path):
+                            icon_path = new_icon_path
+                            logger.info(f"已修复图标路径: {icon_path}")
+                        else:
+                            icon_path = None
+                    except:
+                        icon_path = None
+                    
+                    # 如果指定的图标不存在，尝试使用默认图标
+                    if not icon_path:
+                        possible_icons = [
+                            os.path.join(self.base_path, "assets", "icons", "icoplatforms", "moren.ico"),
+                            os.path.join(self.base_path, "assets", "icon.ico"),
+                        ]
+                        for icon in possible_icons:
+                            if os.path.exists(icon):
+                                icon_path = icon
+                                logger.info(f"使用默认图标: {icon_path}")
+                                break
+            
+            # 使用winotify库发送通知
+            from winotify import Notification, audio
+            import time
+            
+            # 生成唯一标识符，确保多个通知不会覆盖
+            unique_id = f"StreamCap-{int(time.time() * 1000)}"
+            
+            toast = Notification(
+                app_id=unique_id,  # 为每个通知生成唯一的app_id
+                title=title,
+                msg=content,
+                icon=icon_path if icon_path else None
+            )
+            toast.set_audio(audio.Default, loop=False)
+            toast.show()
+            
+            # 短暂停顿，让系统有时间显示通知
+            time.sleep(0.2)
+            
+            results["success"].append(f"通知已发送")
+            return results
+        except Exception as e:
+            results["error"].append(str(e))
+            return results

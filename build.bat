@@ -40,7 +40,7 @@ if not exist assets\icon.ico (
 
 REM Install dependencies
 echo [Step 1] Installing dependencies...
-pip install -r requirements.txt
+pip install -r requirements-win.txt
 
 REM Clean previous build
 echo [Step 2] Cleaning build...

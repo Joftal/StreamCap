@@ -1,11 +1,13 @@
 import asyncio
 import os
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 import flet as ft
 from dotenv import find_dotenv, load_dotenv
 
 from ...utils.logger import logger
+from ...core.platform_handlers import get_platform_info
 from ..base_page import PageBase as BasePage
 
 dotenv_path = find_dotenv()
@@ -37,12 +39,12 @@ class StoragePage(BasePage):
         # 创建导航栏
         navigation_bar = ft.Row(
             controls=[
-                ft.Icon(ft.icons.FOLDER, color=ft.colors.BLUE),
+                ft.Icon(ft.icons.FOLDER, color=ft.Colors.BLUE),
                 ft.Text(
                     self._["storage_path"] + ":",
                     size=14,
                     weight=ft.FontWeight.BOLD,
-                    color=ft.colors.BLUE_700
+                    color=ft.Colors.BLUE_700
                 ),
             ],
             alignment=ft.MainAxisAlignment.START,
@@ -53,7 +55,7 @@ class StoragePage(BasePage):
         self.path_display = ft.Text(
             self.current_path,
             size=14,
-            color=ft.colors.GREY_800,
+            color=ft.Colors.GREY_800,
             overflow=ft.TextOverflow.ELLIPSIS,
             max_lines=1,
             expand=True,
@@ -70,7 +72,7 @@ class StoragePage(BasePage):
             padding=ft.padding.only(left=16, right=16, top=10, bottom=10),
             margin=ft.margin.only(bottom=5),
             border_radius=8,
-            bgcolor=ft.colors.with_opacity(0.05, ft.colors.BLUE_GREY),
+            bgcolor=ft.Colors.with_opacity(0.05, ft.Colors.BLUE_GREY),
         )
         
         # 创建文件列表区域
@@ -137,7 +139,7 @@ class StoragePage(BasePage):
                     ),
                     style=ft.ButtonStyle(
                         shape=ft.RoundedRectangleBorder(radius=8),
-                        color=ft.colors.BLUE,
+                        color=ft.Colors.BLUE,
                     ),
                     on_click=lambda _: self.app.page.run_task(self.navigate_to_parent),
                 ),
@@ -192,7 +194,7 @@ class StoragePage(BasePage):
                         "📁 " + self._["folders"],
                         size=14,
                         weight=ft.FontWeight.BOLD,
-                        color=ft.colors.BLUE_700,
+                        color=ft.Colors.BLUE_700,
                     ),
                     margin=ft.margin.only(left=5, top=5, bottom=5),
                 )
@@ -207,7 +209,7 @@ class StoragePage(BasePage):
                         "🎬 " + self._["files"],
                         size=14,
                         weight=ft.FontWeight.BOLD,
-                        color=ft.colors.BLUE_700,
+                        color=ft.Colors.BLUE_700,
                     ),
                     margin=ft.margin.only(left=5, top=15, bottom=5),
                 )
@@ -219,7 +221,7 @@ class StoragePage(BasePage):
             content=ft.ElevatedButton(
                 content=ft.Row(
                     [
-                        ft.Icon(ft.icons.FOLDER, color=ft.colors.AMBER),
+                        ft.Icon(ft.icons.FOLDER, color=ft.Colors.AMBER),
                         ft.Text(
                             name,
                             size=14,
@@ -227,7 +229,7 @@ class StoragePage(BasePage):
                             max_lines=1,
                             expand=True,
                         ),
-                        ft.Icon(ft.icons.ARROW_FORWARD_IOS, size=14, color=ft.colors.GREY_600),
+                        ft.Icon(ft.icons.ARROW_FORWARD_IOS, size=14, color=ft.Colors.GREY_600),
                     ],
                     spacing=10,
                     alignment=ft.MainAxisAlignment.START,
@@ -252,7 +254,7 @@ class StoragePage(BasePage):
             content=ft.ElevatedButton(
                 content=ft.Row(
                     [
-                        ft.Icon(ft.icons.VIDEO_FILE, color=ft.colors.BLUE),
+                        ft.Icon(ft.icons.VIDEO_FILE, color=ft.Colors.BLUE),
                         ft.Text(
                             name,
                             size=14,
@@ -263,7 +265,7 @@ class StoragePage(BasePage):
                         ft.IconButton(
                             icon=ft.icons.PLAY_CIRCLE,
                             tooltip=self._["preview_video"],
-                            icon_color=ft.colors.BLUE,
+                            icon_color=ft.Colors.BLUE,
                             icon_size=20,
                             on_click=lambda e, path=full_path: self.app.page.run_task(self.preview_file, path),
                         ),
@@ -289,12 +291,12 @@ class StoragePage(BasePage):
                     [
                         ft.Row(
                             [
-                                ft.Icon(ft.icons.FOLDER_OPEN, size=40, color=ft.colors.AMBER),
+                                ft.Icon(ft.icons.FOLDER_OPEN, size=40, color=ft.Colors.AMBER),
                                 ft.Text(
                                     self._["empty_recording_folder"],
                                     size=16,
                                     weight=ft.FontWeight.BOLD,
-                                    color=ft.colors.GREY_700,
+                                    color=ft.Colors.GREY_700,
                                 ),
                             ],
                             alignment=ft.MainAxisAlignment.CENTER,
@@ -317,12 +319,12 @@ class StoragePage(BasePage):
                     [
                         ft.Row(
                             [
-                                ft.Icon(ft.icons.ERROR, size=40, color=ft.colors.RED),
+                                ft.Icon(ft.icons.ERROR, size=40, color=ft.Colors.RED),
                                 ft.Text(
                                     message,
                                     size=16,
                                     weight=ft.FontWeight.BOLD,
-                                    color=ft.colors.RED_700,
+                                    color=ft.Colors.RED_700,
                                 ),
                             ],
                             alignment=ft.MainAxisAlignment.CENTER,

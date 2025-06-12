@@ -1,6 +1,7 @@
 import asyncio
 import flet as ft
 from app.core.platform_handlers.platform_map import get_platform_display_name
+from app.models.recording_status_model import RecordingStatus
 
 
 class SearchDialog(ft.AlertDialog):
@@ -162,9 +163,15 @@ class SearchDialog(ft.AlertDialog):
         if recording.recording:
             status_text = self._["filter_recording"]
             status_color = ft.colors.GREEN
-        elif recording.is_live and recording.monitor_status:
+        elif recording.status_info == RecordingStatus.RECORDING_ERROR:
+            status_text = self._["filter_error"]
+            status_color = ft.colors.RED
+        elif recording.is_live and recording.monitor_status and not recording.recording:
             status_text = self._["filter_live_monitoring_not_recording"]
             status_color = ft.colors.CYAN
+        elif not recording.is_live and recording.monitor_status:
+            status_text = self._["filter_offline"]
+            status_color = ft.colors.AMBER
         elif not recording.monitor_status:
             status_text = self._["filter_stopped"]
             status_color = ft.colors.GREY
@@ -248,6 +255,8 @@ class SearchDialog(ft.AlertDialog):
         # 2. 切换到合适的状态筛选标签
         if recording.recording:
             await self.home_page.filter_recording_on_click(None)
+        elif recording.status_info == RecordingStatus.RECORDING_ERROR:
+            await self.home_page.filter_error_on_click(None)
         elif recording.is_live and recording.monitor_status and not recording.recording:
             await self.home_page.filter_live_monitoring_not_recording_on_click(None)
         elif not recording.is_live and recording.monitor_status:

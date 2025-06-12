@@ -2,6 +2,7 @@ import asyncio
 import os.path
 from datetime import datetime, timedelta
 from functools import partial
+import sys
 
 import flet as ft
 
@@ -131,7 +132,7 @@ class RecordingCardManager:
             tooltip=self._["recording_info"],
             on_click=partial(self.recording_info_button_on_click, recording=recording),
         )
-        speed_text_label = ft.Text(speed, size=12)
+        speed_text_label = ft.Text(f"{self._['speed']} {speed}", size=12)
 
         status_label = self.create_status_label(recording)
 
@@ -141,8 +142,31 @@ class RecordingCardManager:
             spacing=5,
             tight=True,
         )
-
-        card_container = ft.Container(
+        
+        # 获取平台logo路径
+        _, platform_key = get_platform_info(recording.url)
+        logo_path = self.app.platform_logo_cache.get_logo_path(recording.rec_id, platform_key)
+        
+        # 创建平台logo图片组件
+        platform_logo = ft.Image(
+            src=logo_path if logo_path else None,
+            width=50,
+            height=50,
+            fit=ft.ImageFit.CONTAIN,
+            border_radius=ft.border_radius.all(5),
+        )
+        
+        # 创建左侧logo容器
+        logo_container = ft.Container(
+            content=platform_logo,
+            width=60,
+            height=100,
+            alignment=ft.alignment.center,
+            padding=ft.padding.all(5),
+        )
+        
+        # 创建右侧内容容器
+        content_container = ft.Container(
             content=ft.Column(
                 [
                     title_row,
@@ -167,6 +191,19 @@ class RecordingCardManager:
                 spacing=3,
                 tight=True
             ),
+            expand=True,
+        )
+        
+        # 创建卡片内容行，包含左侧logo和右侧内容
+        card_content_row = ft.Row(
+            [logo_container, content_container],
+            alignment=ft.MainAxisAlignment.START,
+            vertical_alignment=ft.CrossAxisAlignment.START,
+            spacing=0,
+        )
+
+        card_container = ft.Container(
+            content=card_content_row,
             padding=8,
             on_click=partial(self.recording_card_on_click, recording=recording),
             bgcolor=self.get_card_background_color(recording),
@@ -190,6 +227,7 @@ class RecordingCardManager:
             "play_button": play_button,
             "preview_button": preview_button,
             "delete_button": delete_button,
+            "platform_logo": platform_logo,
         }
         
     def get_card_background_color(self, recording: Recording):
@@ -205,6 +243,9 @@ class RecordingCardManager:
             return ft.colors.GREEN
         elif recording.status_info == RecordingStatus.RECORDING_ERROR:
             return ft.colors.RED
+        elif recording.is_live and recording.monitor_status and not recording.recording:
+            # 为"直播中（未录制）"状态添加青色边框
+            return ft.colors.CYAN
         elif not recording.is_live and recording.monitor_status:
             return ft.colors.AMBER
         elif not recording.monitor_status:
@@ -275,7 +316,15 @@ class RecordingCardManager:
             new_status_label = self.create_status_label(recording)
             
             if recording_card["card"] and recording_card["card"].content and recording_card["card"].content.content:
-                title_row = recording_card["card"].content.content.controls[0]
+                # 获取卡片内容行（包含logo和内容的Row）
+                card_content_row = recording_card["card"].content.content
+                # 获取右侧内容区域（第二个控件）
+                content_container = card_content_row.controls[1]
+                # 获取内容区域的Column
+                content_column = content_container.content
+                # 获取标题行（Column的第一个控件）
+                title_row = content_column.controls[0]
+                
                 title_row.alignment = ft.MainAxisAlignment.START
                 title_row.spacing = 5
                 title_row.tight = True
@@ -288,6 +337,15 @@ class RecordingCardManager:
                         title_row_controls.pop(1)
                 elif new_status_label:
                     title_row_controls.append(new_status_label)
+                
+                # 更新平台logo
+                if recording_card.get("platform_logo"):
+                    # 获取平台信息
+                    _, platform_key = get_platform_info(recording.url)
+                    # 获取logo路径
+                    logo_path = self.app.platform_logo_cache.get_logo_path(recording.rec_id, platform_key)
+                    # 更新logo图片
+                    recording_card["platform_logo"].src = logo_path if logo_path else None
             
             recording_card["status_label"] = new_status_label
             
@@ -306,7 +364,7 @@ class RecordingCardManager:
                 recording_card["duration_label"].value = self.app.record_manager.get_duration(recording)
             
             if recording_card.get("speed_label"):
-                recording_card["speed_label"].value = recording.speed
+                recording_card["speed_label"].value = f"{self._['speed']} {recording.speed}"
             
             # 全面刷新所有按钮和文本的国际化内容
             if recording_card.get("record_button"):
@@ -344,7 +402,7 @@ class RecordingCardManager:
                 recording_card["card"].content.border = ft.border.all(2, self.get_card_border_color(recording))
                 recording_card["card"].update()
         except Exception as e:
-            print(f"Error updating card: {e}")
+            logger.error(f"Error updating card: {str(e)}", exc_info=True)
 
     async def update_monitor_state(self, recording: Recording):
         """Update the monitor button state based on the current monitoring status."""
@@ -492,16 +550,18 @@ class RecordingCardManager:
                                 telegram_enabled = user_config.get("telegram_enabled", False)
                                 email_enabled = user_config.get("email_enabled", False)
                                 serverchan_enabled = user_config.get("serverchan_enabled", False)
+                                windows_notify_enabled = user_config.get("windows_notify_enabled", False)
                                 
                                 any_channel_enabled = (
                                     bark_enabled or wechat_enabled or dingtalk_enabled or 
                                     ntfy_enabled or telegram_enabled or email_enabled or
-                                    serverchan_enabled
+                                    serverchan_enabled or windows_notify_enabled
                                 )
                                 
                                 logger.info(f"推送渠道状态: bark={bark_enabled}, wechat={wechat_enabled}, "
                                            f"dingtalk={dingtalk_enabled}, ntfy={ntfy_enabled}, "
-                                           f"telegram={telegram_enabled}, email={email_enabled}")
+                                           f"telegram={telegram_enabled}, email={email_enabled}, "
+                                           f"serverchan={serverchan_enabled}, windows={windows_notify_enabled}")
                                 
                                 # 检查是否已经发送过通知，避免重复发送
                                 if any_channel_enabled and not recording.notification_sent:
@@ -524,8 +584,17 @@ class RecordingCardManager:
                                     
                                     # 创建消息推送器并发送消息
                                     msg_manager = MessagePusher(self.app.settings)
-                                    # 直接在当前任务中执行推送，不使用run_task
-                                    self.app.page.run_task(msg_manager.push_messages, msg_title, push_content)
+                                    
+                                    # 优化: 只在Windows系统且启用Windows通知时才获取平台代码
+                                    if self.app.settings.user_config.get("windows_notify_enabled") and sys.platform == "win32":
+                                        # 获取平台代码用于显示对应图标
+                                        _, platform_code = get_platform_info(recording.url)
+                                        # 直接在当前任务中执行推送
+                                        self.app.page.run_task(msg_manager.push_messages, msg_title, push_content, platform_code)
+                                    else:
+                                        # 其他情况不传递平台代码
+                                        self.app.page.run_task(msg_manager.push_messages, msg_title, push_content)
+                                    
                                     logger.info("已创建消息推送任务")
                                     # 设置通知已发送标志
                                     recording.notification_sent = True
@@ -576,6 +645,9 @@ class RecordingCardManager:
                         need_switch_to_all = True
                         logger.info(f"删除后平台 {current_platform} 下没有剩余直播间，将切换到全部平台视图")
             
+            # 删除平台logo缓存
+            self.app.platform_logo_cache.remove_logo_cache(recording.rec_id)
+            
             # 执行删除操作
             await self.app.record_manager.delete_recording_cards([recording])
             
@@ -594,6 +666,9 @@ class RecordingCardManager:
         existing_ids = {rec.rec_id for rec in self.app.record_manager.recordings}
         remove_ids = {rec.rec_id for rec in recordings}
         keep_ids = existing_ids - remove_ids
+        
+        # 批量删除平台logo缓存
+        self.app.platform_logo_cache.remove_multiple_logo_cache(list(remove_ids))
 
         cards_to_remove = [
             card_data["card"]

@@ -29,10 +29,21 @@ StreamCap 是一个基于FFmpeg和StreamGet的多平台直播流录制客户端�
 - **多种输出格式**：支持 ts、flv、mkv、mov、mp4、mp3、m4a 等格式。
 - **自动转码**：录制完成后自动转码为 mp4 格式。
 - **消息推送**：支持直播状态推送，及时获取开播通知。
+- **Windows通知**：支持Windows系统原生通知，显示对应平台图标。
 
 ## 📸录制界面
 
-![StreamCap Interface](./assets/images/example01.png)
+![image](https://github.com/user-attachments/assets/615e9a69-e6db-4822-bfb5-99f675d1700c)
+
+## 📢Windows通知界面
+
+![image](https://github.com/user-attachments/assets/626df9bf-9edf-4fa2-8f25-55c28d776435)
+
+## 📢已全面支持当前所支持平台的logo
+![image](https://github.com/user-attachments/assets/9b0216c9-08ac-4aa3-88ce-d2da09938a9f)![image](https://github.com/user-attachments/assets/224ab75f-6860-4109-affc-06dca2efb9d7)
+![image](https://github.com/user-attachments/assets/136abc05-9d3c-4395-88c1-2277060179a7)
+
+
 
 ## 🛠️快速开始
 
@@ -50,20 +61,38 @@ StreamCap 是一个基于FFmpeg和StreamGet的多平台直播流录制客户端�
 1.**克隆项目代码**：
 
 ```bash
-git clone https://github.com/ihmily/StreamCap.git
+git clone https://github.com/Joftal/StreamCap.git
 cd StreamCap
 ```
 
 2.**安装依赖**：
 
+StreamCap 提供了针对不同平台的依赖文件：
+
+- Windows: `requirements-win.txt`
+- macOS: `requirements-mac.txt`
+- Linux: `requirements-linux.txt`
+
+您可以使用以下命令安装依赖：
+
 ```bash
-# 安装核心依赖
-pip install -i https://pypi.org/simple streamget 
+# 自动检测平台并安装相应依赖
+python install_deps.py
 
-# 桌面端
-pip install -r requirements.txt
+# Web环境依赖
+python install_deps.py --web
 
-# Web端
+# 或者手动指定平台
+# Windows
+pip install -r requirements-win.txt
+
+# macOS
+pip install -r requirements-mac.txt
+
+# Linux
+pip install -r requirements-linux.txt
+
+# Web环境
 pip install -r requirements-web.txt
 ```
 
@@ -305,3 +334,5 @@ StreamCap在Apache License 2.0下发布。有关详情，请参阅[LICENSE](./LI
 - [streamget](https://github.com/ihmily/streamget)
 
 如果您有任何问题或建议，请随时通过GitHub Issues与我们联系。
+
+

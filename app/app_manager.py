@@ -3,6 +3,7 @@ import time
 import asyncio
 import gc
 import psutil
+from datetime import datetime
 
 import flet as ft
 
@@ -23,15 +24,16 @@ from .ui.views.settings_view import SettingsPage
 from .ui.views.storage_view import StoragePage
 from .utils import utils
 from .utils.logger import logger
+from .models.platform_logo_cache import PlatformLogoCache
 
 # 定义内存清理阈值，当内存使用率超过这个值时执行更激进的清理
 MEMORY_CLEANUP_THRESHOLD = 75  # 百分比
 # 定义内存警告阈值，当内存使用率超过这个值时记录警告日志
 MEMORY_WARNING_THRESHOLD = 85  # 百分比
 # 定义轻量级清理间隔(秒)
-LIGHT_CLEANUP_INTERVAL = 180  # 3分钟
+LIGHT_CLEANUP_INTERVAL = 35 * 60  # 35分钟
 # 定义完整清理间隔(秒)
-FULL_CLEANUP_INTERVAL = 1800  # 30分钟
+FULL_CLEANUP_INTERVAL = 60 * 60  # 60分钟
 
 
 class App:
@@ -79,6 +81,10 @@ class App:
         )
         self.snack_bar = ShowSnackBar(self.page)
         self.subprocess_start_up_info = utils.get_startup_info()
+        
+        # 初始化平台logo缓存管理器
+        self.platform_logo_cache = PlatformLogoCache()
+        
         self.record_card_manager = RecordingCardManager(self)
         self.record_manager = RecordingManager(self)
         self.current_page = None
@@ -115,13 +121,42 @@ class App:
         self._loading_page = True
 
         try:
-            if isinstance(self.current_page, SettingsPage):
-                await self.current_page.is_changed()
+            # 记录从哪个页面切换
+            previous_page = self.current_page
+            
+            # 如果是从设置页面切换，检查是否有更改
+            if isinstance(previous_page, SettingsPage):
+                await previous_page.is_changed()
+            
+            # 根据录制直播间的数量动态调整延迟时间
+            # 基础延迟为0.1秒，每10个直播间增加0.05秒，最大不超过0.5秒
+            base_delay = 0.1
+            recordings_count = len(self.record_manager.recordings) if hasattr(self, 'record_manager') else 0
+            additional_delay = min(0.4, (recordings_count // 10) * 0.05)
+            total_delay = base_delay + additional_delay
+            
+            # 清除内容区域前先等待一段时间，确保所有UI更新完成
+            logger.debug(f"页面切换延迟: {total_delay:.2f}秒 (直播间数量: {recordings_count})")
+            await asyncio.sleep(total_delay)
             await self.clear_content_area()
+            
+            # 获取目标页面
             if page := self.pages.get(page_name):
+                # 检查设置是否有变更
                 await self.settings.is_changed()
+                
+                # 设置当前页面
                 self.current_page = page
+                
+                # 如果是切换到主页，确保内存状态良好
+                if isinstance(page, HomePage):
+                    # 执行一次轻量级清理，确保内存状态良好
+                    await self._perform_light_cleanup()
+                
+                # 加载新页面
                 await page.load()
+        except Exception as e:
+            logger.error(f"切换页面时出错: {e}")
         finally:
             self._loading_page = False
 
@@ -136,6 +171,11 @@ class App:
             return
             
         try:
+            # 保存平台logo缓存
+            if hasattr(self, 'platform_logo_cache'):
+                logger.info("保存平台logo缓存...")
+                self.platform_logo_cache.save_cache()
+                
             await self.process_manager.cleanup()
             # 执行更完整的清理
             await self._perform_full_cleanup()

@@ -34,6 +34,8 @@
     "ntfy_enabled": false,
     "telegram_enabled": false,
     "email_enabled": false,
+    "serverchan_enabled": false,
+    "windows_notify_enabled": false,
     "dingtalk_webhook_url": "",
     "dingtalk_at_objects": "",
     "dingtalk_at_all": false,
