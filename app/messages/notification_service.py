@@ -7,6 +7,7 @@ from email.mime.text import MIMEText
 from typing import Any, Optional
 import os
 import sys
+from pathlib import Path
 
 import httpx
 
@@ -30,6 +31,20 @@ class NotificationService:
         self.headers = {"Content-Type": "application/json"}
         # 初始化Windows通知相关变量
         self.win_notifier_available = WINDOWS_NOTIFY_AVAILABLE
+        # 获取应用程序基础路径
+        self.base_path = self._get_base_path()
+
+    def _get_base_path(self):
+        """获取应用程序基础路径，考虑打包和开发环境"""
+        if getattr(sys, 'frozen', False):
+            # 如果是打包后的可执行文件，使用可执行文件所在目录
+            base_path = os.path.dirname(sys.executable)
+            logger.info(f"通知服务运行在打包环境中，基础路径: {base_path}")
+        else:
+            # 开发环境，使用项目根目录
+            base_path = Path(__file__).parent.parent.parent
+            logger.info(f"通知服务运行在开发环境中，基础路径: {base_path}")
+        return base_path
 
     async def _async_post(self, url: str, json_data: dict[str, Any]) -> dict[str, Any]:
         try:
@@ -307,30 +322,41 @@ class NotificationService:
             if not icon_path:
                 # 首先尝试查找ico格式的默认图标
                 possible_icons = [
-                    os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "assets", "icons", "icoplatforms", "moren.ico"),
-                    os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "assets", "icon.ico"),
-                    os.path.join(os.getcwd(), "assets", "icon.ico"),
-                    os.path.join(os.getcwd(), "assets", "icons", "icoplatforms", "moren.ico")
+                    os.path.join(self.base_path, "assets", "icons", "icoplatforms", "moren.ico"),
+                    os.path.join(self.base_path, "assets", "icon.ico"),
                 ]
                 
                 for icon in possible_icons:
                     if os.path.exists(icon):
                         icon_path = icon
+                        logger.info(f"使用默认图标: {icon_path}")
                         break
             else:
                 # 验证指定的图标路径是否存在
                 if not os.path.exists(icon_path):
-                    icon_path = None
+                    # 尝试从路径中提取文件名
+                    try:
+                        file_name = os.path.basename(icon_path)
+                        new_icon_path = os.path.join(self.base_path, "assets", "icons", "icoplatforms", file_name)
+                        if os.path.exists(new_icon_path):
+                            icon_path = new_icon_path
+                            logger.info(f"已修复图标路径: {icon_path}")
+                        else:
+                            icon_path = None
+                    except:
+                        icon_path = None
+                    
                     # 如果指定的图标不存在，尝试使用默认图标
-                    possible_icons = [
-                        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "assets", "icons", "icoplatforms", "moren.ico"),
-                        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "assets", "icon.ico"),
-                        os.path.join(os.getcwd(), "assets", "icon.ico")
-                    ]
-                    for icon in possible_icons:
-                        if os.path.exists(icon):
-                            icon_path = icon
-                            break
+                    if not icon_path:
+                        possible_icons = [
+                            os.path.join(self.base_path, "assets", "icons", "icoplatforms", "moren.ico"),
+                            os.path.join(self.base_path, "assets", "icon.ico"),
+                        ]
+                        for icon in possible_icons:
+                            if os.path.exists(icon):
+                                icon_path = icon
+                                logger.info(f"使用默认图标: {icon_path}")
+                                break
             
             # 使用winotify库发送通知
             from winotify import Notification, audio

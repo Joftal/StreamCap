@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from pathlib import Path
 
 from ..utils.logger import logger
@@ -17,10 +18,10 @@ class PlatformLogoCache:
         :param cache_dir: 缓存目录，如果为None则使用默认缓存目录
         """
         # 获取项目根目录
-        base_path = Path(__file__).parent.parent.parent
+        self.base_path = self._get_base_path()
         
         # 默认缓存文件路径，改为保存在StreamCap\config目录下
-        self.cache_dir = cache_dir or os.path.join(base_path, "config")
+        self.cache_dir = cache_dir or os.path.join(self.base_path, "config")
         self.cache_file = os.path.join(self.cache_dir, "platform_logo_cache.json")
         self.cache_data = {}
         
@@ -29,6 +30,37 @@ class PlatformLogoCache:
         
         # 加载缓存
         self.load_cache()
+    
+    def _get_base_path(self):
+        """获取应用程序基础路径，考虑打包和开发环境"""
+        if getattr(sys, 'frozen', False):
+            # 如果是打包后的可执行文件，使用可执行文件所在目录
+            base_path = os.path.dirname(sys.executable)
+            logger.info(f"运行在打包环境中，基础路径: {base_path}")
+        else:
+            # 开发环境，使用项目根目录
+            base_path = Path(__file__).parent.parent.parent
+            logger.info(f"运行在开发环境中，基础路径: {base_path}")
+        return base_path
+    
+    def _convert_to_relative_path(self, absolute_path):
+        """将绝对路径转换为相对于基础路径的相对路径"""
+        if not absolute_path:
+            return None
+        
+        try:
+            # 尝试从绝对路径中提取文件名
+            file_name = os.path.basename(absolute_path)
+            # 查找该文件在assets/icons/platforms目录中
+            platform_logo_dir = os.path.join(self.base_path, "assets", "icons", "platforms")
+            relative_path = os.path.join(platform_logo_dir, file_name)
+            
+            if os.path.exists(relative_path):
+                return relative_path
+            else:
+                return None
+        except:
+            return None
     
     def load_cache(self):
         """加载缓存文件"""
@@ -39,8 +71,7 @@ class PlatformLogoCache:
                 
                 # 处理目录迁移情况：检查缓存中的路径是否存在，如果不存在则尝试修复
                 fixed_items = 0
-                base_path = Path(__file__).parent.parent.parent
-                platform_logo_dir = os.path.join(base_path, "assets", "icons", "platforms")
+                platform_logo_dir = os.path.join(self.base_path, "assets", "icons", "platforms")
                 
                 # 创建一个新的缓存字典，用于存储修复后的数据
                 fixed_cache = {}
@@ -48,7 +79,7 @@ class PlatformLogoCache:
                 for rec_id, logo_path in self.cache_data.items():
                     # 检查路径是否存在
                     if logo_path and os.path.exists(logo_path):
-                        # 路径存在，保持不变
+                        # 路径存在，但转换为相对于当前基础路径的路径
                         fixed_cache[rec_id] = logo_path
                     else:
                         # 路径不存在，尝试从路径中提取平台标识
@@ -188,8 +219,7 @@ class PlatformLogoCache:
         self.save_cache()
         logger.info("已清空平台logo缓存")
     
-    @staticmethod
-    def get_platform_logo_path(platform_key):
+    def get_platform_logo_path(self, platform_key):
         """
         根据平台key获取对应的logo图片路径
         
@@ -197,8 +227,7 @@ class PlatformLogoCache:
         :return: logo图片路径
         """
         # 获取项目根目录下的平台logo路径
-        base_path = Path(__file__).parent.parent.parent
-        platform_logo_dir = os.path.join(base_path, "assets", "icons", "platforms")
+        platform_logo_dir = os.path.join(self.base_path, "assets", "icons", "platforms")
         
         # 检查平台特定的logo是否存在
         platform_logo_path = os.path.join(platform_logo_dir, f"{platform_key}.png")

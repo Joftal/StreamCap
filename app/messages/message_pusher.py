@@ -3,6 +3,7 @@ import time
 from typing import Dict, List, Tuple
 import sys
 import os
+from pathlib import Path
 
 from ..utils.logger import logger
 from .notification_service import NotificationService
@@ -19,9 +20,28 @@ class MessagePusher:
     # 消息去重的时间窗口（秒）
     _deduplication_window: int = 30
 
-    def __init__(self, settings):
+    def __init__(self, settings=None):
+        """
+        初始化消息推送器
+        
+        :param settings: 设置对象
+        """
         self.settings = settings
         self.notifier = NotificationService()
+        # 获取应用程序基础路径
+        self.base_path = self._get_base_path()
+
+    def _get_base_path(self):
+        """获取应用程序基础路径，考虑打包和开发环境"""
+        if getattr(sys, 'frozen', False):
+            # 如果是打包后的可执行文件，使用可执行文件所在目录
+            base_path = os.path.dirname(sys.executable)
+            logger.info(f"消息推送服务运行在打包环境中，基础路径: {base_path}")
+        else:
+            # 开发环境，使用项目根目录
+            base_path = Path(__file__).parent.parent.parent
+            logger.info(f"消息推送服务运行在开发环境中，基础路径: {base_path}")
+        return base_path
 
     @classmethod
     def _get_message_hash(cls, title: str, content: str) -> str:
@@ -261,7 +281,7 @@ class MessagePusher:
                 if platform_code == "system":
                     # 系统类通知使用专门的系统图标
                     system_icon_path = os.path.join(
-                        os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                        self.base_path,
                         "assets", "icons", "icoplatforms", "system.ico"
                     )
                     
@@ -274,7 +294,7 @@ class MessagePusher:
                 else:
                     # 查找平台特定的.ico图标
                     ico_platform_path = os.path.join(
-                        os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                        self.base_path,
                         "assets", "icons", "icoplatforms", f"{platform_code}.ico"
                     )
                     
@@ -285,7 +305,7 @@ class MessagePusher:
             # 如果没有找到特定图标，使用默认图标
             if not icon_path:
                 default_icon_path = os.path.join(
-                    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                    self.base_path,
                     "assets", "icons", "icoplatforms", "moren.ico"
                 )
                 
