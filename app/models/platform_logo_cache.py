@@ -36,6 +36,61 @@ class PlatformLogoCache:
             if os.path.exists(self.cache_file):
                 with open(self.cache_file, 'r', encoding='utf-8') as f:
                     self.cache_data = json.load(f)
+                
+                # 处理目录迁移情况：检查缓存中的路径是否存在，如果不存在则尝试修复
+                fixed_items = 0
+                base_path = Path(__file__).parent.parent.parent
+                platform_logo_dir = os.path.join(base_path, "assets", "icons", "platforms")
+                
+                # 创建一个新的缓存字典，用于存储修复后的数据
+                fixed_cache = {}
+                
+                for rec_id, logo_path in self.cache_data.items():
+                    # 检查路径是否存在
+                    if logo_path and os.path.exists(logo_path):
+                        # 路径存在，保持不变
+                        fixed_cache[rec_id] = logo_path
+                    else:
+                        # 路径不存在，尝试从路径中提取平台标识
+                        platform_key = None
+                        try:
+                            # 尝试从路径中提取文件名
+                            file_name = os.path.basename(logo_path)
+                            # 移除扩展名
+                            platform_key = os.path.splitext(file_name)[0]
+                        except Exception:
+                            platform_key = None
+                        
+                        # 如果成功提取了平台标识，尝试在当前目录结构中找到对应的logo
+                        if platform_key:  
+                            new_path = os.path.join(platform_logo_dir, f"{platform_key}.png")
+                            if os.path.exists(new_path):
+                                fixed_cache[rec_id] = new_path
+                                fixed_items += 1
+                                logger.info(f"已修复平台logo路径: {platform_key} -> {new_path}")
+                            else:
+                                # 使用默认logo
+                                default_logo = os.path.join(platform_logo_dir, "moren.png")
+                                if os.path.exists(default_logo):
+                                    fixed_cache[rec_id] = default_logo
+                                    fixed_items += 1
+                                    logger.info(f"未找到平台 {platform_key} 的logo，已使用默认logo")
+                        else:
+                            # 无法识别平台，使用默认logo
+                            default_logo = os.path.join(platform_logo_dir, "moren.png")
+                            if os.path.exists(default_logo):
+                                fixed_cache[rec_id] = default_logo
+                                fixed_items += 1
+                                logger.info(f"无法识别平台logo路径，已使用默认logo")
+                
+                # 更新缓存数据
+                self.cache_data = fixed_cache
+                
+                # 如果有修复的项，立即保存缓存
+                if fixed_items > 0:
+                    logger.info(f"已修复 {fixed_items} 个无效的平台logo路径")
+                    self.save_cache()
+                
                 logger.info(f"已加载平台logo缓存，共{len(self.cache_data)}项")
             else:
                 logger.info("平台logo缓存文件不存在，将创建新缓存")
@@ -63,16 +118,28 @@ class PlatformLogoCache:
         """
         # 首先检查缓存中是否有该直播间的logo信息
         if rec_id in self.cache_data:
-            return self.cache_data[rec_id]
+            logo_path = self.cache_data[rec_id]
+            # 验证路径是否存在且不为None
+            if logo_path and os.path.exists(logo_path):
+                return logo_path
+            else:
+                # 路径不存在或为None，从缓存中移除
+                logger.warning(f"缓存的logo路径不存在或无效: {logo_path}，将重新获取")
+                self.remove_logo_cache(rec_id)
         
-        # 如果没有，则根据平台key获取默认logo路径
+        # 如果没有或路径无效，则根据平台key获取默认logo路径
         default_logo_path = self.get_platform_logo_path(platform_key)
         
-        # 将路径保存到缓存
-        self.cache_data[rec_id] = default_logo_path
-        self.save_cache()
-        
-        return default_logo_path
+        # 验证获取的路径是否有效
+        if default_logo_path:
+            # 将路径保存到缓存
+            self.cache_data[rec_id] = default_logo_path
+            self.save_cache()
+            return default_logo_path
+        else:
+            # 如果获取失败，不保存到缓存
+            logger.warning(f"无法为平台 {platform_key} 获取有效的logo路径")
+            return None
     
     def update_logo_path(self, rec_id, logo_path):
         """
@@ -81,8 +148,12 @@ class PlatformLogoCache:
         :param rec_id: 直播间ID
         :param logo_path: logo图片路径
         """
-        self.cache_data[rec_id] = logo_path
-        self.save_cache()
+        # 验证路径是否存在
+        if logo_path and os.path.exists(logo_path):
+            self.cache_data[rec_id] = logo_path
+            self.save_cache()
+        else:
+            logger.warning(f"尝试更新的logo路径不存在: {logo_path}")
     
     def remove_logo_cache(self, rec_id):
         """
