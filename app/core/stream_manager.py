@@ -7,6 +7,7 @@ import time
 import psutil
 from datetime import datetime
 from typing import Any
+import sys
 
 from ..messages.message_pusher import MessagePusher
 from ..models.recording_status_model import RecordingStatus
@@ -16,7 +17,7 @@ from ..utils import utils
 from ..utils.logger import logger
 from ..ui.views.home_view import HomePage
 from . import ffmpeg_builders, platform_handlers
-from .platform_handlers import StreamData
+from .platform_handlers import StreamData, get_platform_info
 
 
 class LiveStreamRecorder:
@@ -660,7 +661,16 @@ class LiveStreamRecorder:
                         # 使用队列方式处理消息推送
                         logger.info(f"关播推送：{self.recording.streamer_name}，将消息加入推送队列")
                         msg_manager = MessagePusher(self.settings)
-                        self.app.page.run_task(msg_manager.push_messages, msg_title, push_content)
+                        
+                        # 优化: 只在Windows系统且启用Windows通知时才获取平台代码
+                        if self.settings.user_config.get("windows_notify_enabled") and sys.platform == "win32":
+                            # 获取平台代码用于显示对应图标
+                            _, platform_code = get_platform_info(self.recording.url)
+                            self.app.page.run_task(msg_manager.push_messages, msg_title, push_content, platform_code)
+                        else:
+                            # 其他情况不传递平台代码
+                            self.app.page.run_task(msg_manager.push_messages, msg_title, push_content)
+                        
                         # 标记已发送关闭通知，避免重复发送
                         self.recording.end_notification_sent = True
                 try:

@@ -242,6 +242,8 @@
     "push_channels": "Push Channels",
     "dingtalk": "dingtalk",
     "wechat": "wechat",
+    "windows_notify": "Windows",
+    "windows_notify_enabled": "Windows System Notification",
     "select_and_enable_channels": "Select and enable the channels you want to use",
     "channel_configuration": "Channel Configuration",
     "configure_enabled_channels": "Configure your enabled notification channels",

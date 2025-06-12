@@ -2,6 +2,7 @@ import asyncio
 import os.path
 from datetime import datetime, timedelta
 from functools import partial
+import sys
 
 import flet as ft
 
@@ -549,16 +550,18 @@ class RecordingCardManager:
                                 telegram_enabled = user_config.get("telegram_enabled", False)
                                 email_enabled = user_config.get("email_enabled", False)
                                 serverchan_enabled = user_config.get("serverchan_enabled", False)
+                                windows_notify_enabled = user_config.get("windows_notify_enabled", False)
                                 
                                 any_channel_enabled = (
                                     bark_enabled or wechat_enabled or dingtalk_enabled or 
                                     ntfy_enabled or telegram_enabled or email_enabled or
-                                    serverchan_enabled
+                                    serverchan_enabled or windows_notify_enabled
                                 )
                                 
                                 logger.info(f"推送渠道状态: bark={bark_enabled}, wechat={wechat_enabled}, "
                                            f"dingtalk={dingtalk_enabled}, ntfy={ntfy_enabled}, "
-                                           f"telegram={telegram_enabled}, email={email_enabled}")
+                                           f"telegram={telegram_enabled}, email={email_enabled}, "
+                                           f"serverchan={serverchan_enabled}, windows={windows_notify_enabled}")
                                 
                                 # 检查是否已经发送过通知，避免重复发送
                                 if any_channel_enabled and not recording.notification_sent:
@@ -581,8 +584,17 @@ class RecordingCardManager:
                                     
                                     # 创建消息推送器并发送消息
                                     msg_manager = MessagePusher(self.app.settings)
-                                    # 直接在当前任务中执行推送，不使用run_task
-                                    self.app.page.run_task(msg_manager.push_messages, msg_title, push_content)
+                                    
+                                    # 优化: 只在Windows系统且启用Windows通知时才获取平台代码
+                                    if self.app.settings.user_config.get("windows_notify_enabled") and sys.platform == "win32":
+                                        # 获取平台代码用于显示对应图标
+                                        _, platform_code = get_platform_info(recording.url)
+                                        # 直接在当前任务中执行推送
+                                        self.app.page.run_task(msg_manager.push_messages, msg_title, push_content, platform_code)
+                                    else:
+                                        # 其他情况不传递平台代码
+                                        self.app.page.run_task(msg_manager.push_messages, msg_title, push_content)
+                                    
                                     logger.info("已创建消息推送任务")
                                     # 设置通知已发送标志
                                     recording.notification_sent = True

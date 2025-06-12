@@ -22,12 +22,13 @@ StreamCap is a multi-platform live stream recording client based on FFmpeg and S
 
 ## ✨Features
 
-- **Multi-Platform Support**: Compatible with Windows, macOS, and Web environments.
-- **Loop Monitoring**: Real-time monitoring of live stream status. Recording starts immediately when a stream goes live.
-- **Scheduled Tasks**: Checks live stream status within a set time range.
-- **Multiple Output Formats**: Supports ts, flv, mkv, mov, mp4, mp3, m4a, and other formats.
-- **Automatic Transcoding**: Automatically transcodes recorded files to mp4 format after recording.
-- **Message Push**: Supports live stream status push notifications to keep you informed of live status.
+- **Multi-platform Support**: Works on Windows/MacOS/Web.
+- **Continuous Monitoring**: Real-time monitoring of live stream status, auto-recording when live.
+- **Scheduled Tasks**: Check live room status based on set time ranges.
+- **Multiple Output Formats**: Supports ts, flv, mkv, mov, mp4, mp3, m4a, and more.
+- **Auto Transcoding**: Automatically convert recordings to mp4 format.
+- **Push Notifications**: Get notified when streams go live.
+- **Windows Notifications**: Support for native Windows notifications with platform icons.
 
 ## 📸Recording Interface
 

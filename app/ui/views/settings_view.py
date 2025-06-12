@@ -875,6 +875,10 @@ class SettingsPage(PageBase):
             self.create_channel_switch_container(
                 "Telegram", ft.Icons.SMS, "telegram_enabled"
             ),
+            # 添加Windows通知渠道开关
+            self.create_channel_switch_container(
+                self._["windows_notify"], ft.Icons.DESKTOP_WINDOWS, "windows_notify_enabled"
+            ),
         ]
         
         if self.app.page.web:
