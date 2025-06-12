@@ -306,3 +306,36 @@ StreamCap在Apache License 2.0下发布。有关详情，请参阅[LICENSE](./LI
 - [streamget](https://github.com/ihmily/streamget)
 
 如果您有任何问题或建议，请随时通过GitHub Issues与我们联系。
+
+## 安装
+
+### 依赖安装
+
+StreamCap 提供了针对不同平台的依赖文件：
+
+- Windows: `requirements-win.txt`
+- macOS: `requirements-mac.txt`
+- Linux: `requirements-linux.txt`
+
+您可以使用以下命令安装依赖：
+
+```bash
+# 自动检测平台并安装相应依赖
+python install_deps.py
+
+# Web环境依赖
+python install_deps.py --web
+
+# 或者手动指定平台
+# Windows
+pip install -r requirements-win.txt
+
+# macOS
+pip install -r requirements-mac.txt
+
+# Linux
+pip install -r requirements-linux.txt
+
+# Web环境
+pip install -r requirements-web.txt
+```

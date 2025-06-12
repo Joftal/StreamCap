@@ -304,3 +304,36 @@ Special thanks to the following open-source projects and technologies for their 
 - [streamget](https://github.com/ihmily/streamget)
 
 If you have any questions or suggestions, please feel free to contact us via GitHub Issues.
+
+## Installation
+
+### Dependencies
+
+StreamCap provides platform-specific dependency files:
+
+- Windows: `requirements-win.txt`
+- macOS: `requirements-mac.txt`
+- Linux: `requirements-linux.txt`
+
+You can install the dependencies using the following commands:
+
+```bash
+# Automatically detect platform and install appropriate dependencies
+python install_deps.py
+
+# Web environment dependencies
+python install_deps.py --web
+
+# Or manually specify the platform
+# Windows
+pip install -r requirements-win.txt
+
+# macOS
+pip install -r requirements-mac.txt
+
+# Linux
+pip install -r requirements-linux.txt
+
+# Web environment
+pip install -r requirements-web.txt
+```
