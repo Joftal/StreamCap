@@ -454,7 +454,15 @@
     "checking_update": "正在检查更新...",
     "update_check_failed": "检查更新失败",
     "no_update_available": "当前已是最新版本",
-    "unknown": "未知"
+    "unknown": "未知",
+    "downloading": "正在下载更新...",
+    "download_failed": "下载失败",
+    "ok": "确定",
+    "cancel": "取消",
+    "confirm_cancel": "确认取消",
+    "confirm_cancel_download": "确定要取消下载吗？已下载的内容将被删除。",
+    "yes": "是",
+    "no": "否"
   },
   "save_progress_overlay": {
     "force_close": "强制关闭",

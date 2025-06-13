@@ -450,7 +450,15 @@
     "checking_update": "Checking for updates...",
     "update_check_failed": "Update check failed",
     "no_update_available": "You are using the latest version",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "downloading": "Downloading update...",
+    "download_failed": "Download failed",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "confirm_cancel": "Confirm Cancel",
+    "confirm_cancel_download": "Are you sure you want to cancel the download? Downloaded content will be deleted.",
+    "yes": "Yes",
+    "no": "No"
   },
   "save_progress_overlay": {
     "force_close": "Force Close",

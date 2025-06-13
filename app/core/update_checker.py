@@ -2,6 +2,10 @@ import asyncio
 import json
 import os
 from typing import Any
+import platform
+import aiohttp
+import aiofiles
+from pathlib import Path
 
 import flet as ft
 import httpx
@@ -14,13 +18,17 @@ class UpdateChecker:
         self.app = app
         self.current_version = self._get_current_version()
         self.update_config = self._load_update_config()
+        self.download_cancelled = False
+        logger.info(f"UpdateChecker initialized with current version: {self.current_version}")
         
     def _get_current_version(self) -> str:
         try:
             config_path = os.path.join(self.app.run_path, "config", "version.json")
             with open(config_path, encoding="utf-8") as f:
                 version_data = json.load(f)
-                return version_data["version_updates"][0]["version"]
+                version = version_data["version_updates"][0]["version"]
+                logger.info(f"Current version loaded from config: {version}")
+                return version
         except Exception as e:
             logger.error(f"Failed to get current version: {e}")
             return "0.0.0"
@@ -98,16 +106,19 @@ class UpdateChecker:
         """Check for updates from GitHub"""
         try:
             timeout = httpx.Timeout(source["timeout"])
+            
             async with httpx.AsyncClient(timeout=timeout) as client:
-                response = await client.get(
-                    "https://api.github.com/repos/" + source['repo'] + "/releases/latest"
-                )
+                url = f"https://api.github.com/repos/{source['repo']}/releases/latest"
+                
+                response = await client.get(url)
 
                 if response.status_code == 200:
                     latest_release = response.json()
                     latest_version = latest_release["tag_name"].lstrip("v")
                     
-                    if self._compare_versions(latest_version, self.current_version) > 0:
+                    comparison_result = self._compare_versions(latest_version, self.current_version)
+                    
+                    if comparison_result > 0:
                         download_urls = {}
                         for asset in latest_release.get("assets", []):
                             name = asset["name"].lower()
@@ -127,9 +138,18 @@ class UpdateChecker:
                             "download_urls": download_urls,
                             "source": source["name"]
                         }
+                else:
+                    logger.error(f"GitHub API请求失败，状态码: {response.status_code}")
+                    return {"has_update": False, "error": f"GitHub API请求失败: {response.status_code}", "source": source["name"]}
                 return {"has_update": False, "source": source["name"]}
+        except httpx.ConnectTimeout:
+            logger.error("连接GitHub超时")
+            return {"has_update": False, "error": "连接GitHub超时", "source": source["name"]}
+        except httpx.RequestError as e:
+            logger.error(f"请求GitHub失败: {str(e)}")
+            return {"has_update": False, "error": f"请求GitHub失败: {str(e)}", "source": source["name"]}
         except Exception as e:
-            logger.error(f"Failed to check update from GitHub: {e}")
+            logger.error(f"检查GitHub更新时发生错误: {str(e)}")
             return {"has_update": False, "error": str(e), "source": source["name"]}
     
     async def _check_custom_update(self, source: dict[str, Any]) -> dict[str, Any]:
@@ -173,17 +193,28 @@ class UpdateChecker:
     @staticmethod
     def _compare_versions(version1: str, version2: str) -> int:
         """Compare version numbers, returns 1 if version1 > version2, 0 if equal, -1 if less"""
-        v1_parts = [int(x) for x in version1.split(".")]
-        v2_parts = [int(x) for x in version2.split(".")]
-        
-        for i in range(max(len(v1_parts), len(v2_parts))):
-            v1 = v1_parts[i] if i < len(v1_parts) else 0
-            v2 = v2_parts[i] if i < len(v2_parts) else 0
-            if v1 > v2:
-                return 1
-            elif v1 < v2:
-                return -1
-        return 0
+        try:
+            v1_parts = [int(x) for x in version1.split(".")]
+            v2_parts = [int(x) for x in version2.split(".")]
+            
+            max_parts = max(len(v1_parts), len(v2_parts))
+            v1_parts.extend([0] * (max_parts - len(v1_parts)))
+            v2_parts.extend([0] * (max_parts - len(v2_parts)))
+            
+            for i in range(max_parts):
+                v1 = v1_parts[i]
+                v2 = v2_parts[i]
+                if v1 > v2:
+                    return 1
+                elif v1 < v2:
+                    return -1
+            return 0
+        except ValueError as e:
+            logger.error(f"版本号格式错误: {str(e)}")
+            return 0
+        except Exception as e:
+            logger.error(f"比较版本时发生错误: {str(e)}")
+            return 0
     
     async def show_update_dialog(self, update_info: dict[str, Any]) -> None:
         _ = self.app.language_manager.language.get("update", {})
@@ -197,34 +228,153 @@ class UpdateChecker:
             ], spacing=10, width=400, height=300),
             actions=[
                 ft.TextButton(_["later"], on_click=lambda _: self.close_dialog()),
-                ft.TextButton(_["download"], on_click=lambda _: self.open_download_page(update_info))
+                ft.TextButton(_["download"], on_click=lambda e: self.app.page.loop.create_task(self.start_download(update_info)))
             ],
         )
 
         self.app.dialog_area.content = dialog
         self.app.dialog_area.content.open = True
         self.app.dialog_area.update()
-    
+
     def close_dialog(self) -> None:
         if self.app.dialog_area.content:
             self.app.dialog_area.content.open = False
             self.app.dialog_area.update()
 
+    async def start_download(self, update_info: dict[str, Any]) -> None:
+        """开始下载更新文件"""
+        # 重置下载状态
+        self.download_cancelled = False
+        
+        _ = self.app.language_manager.language.get("update", {})
+        
+        # 获取下载URL
+        download_urls = update_info.get("download_urls", {})
+        system = platform.system().lower()
+        download_url = None
+        
+        if download_urls:
+            if system == "windows" and "windows" in download_urls:
+                download_url = download_urls["windows"]
+            elif system == "darwin" and "macos" in download_urls:
+                download_url = download_urls["macos"]
+            elif system == "linux" and "linux" in download_urls:
+                download_url = download_urls["linux"]
+        
+        if not download_url:
+            # 如果没有找到对应的下载链接，使用网页下载
+            self.open_download_page(update_info)
+            return
+
+        # 创建下载进度对话框
+        self.progress_dialog = ft.AlertDialog(
+            title=ft.Text(_["downloading"]),
+            content=ft.Column([
+                ft.ProgressBar(width=400),
+                ft.Text("0%", key="download_progress_text"),
+            ], spacing=10),
+            actions=[
+                ft.TextButton(_["cancel"], on_click=lambda _: self.cancel_download())
+            ],
+        )
+
+        self.app.dialog_area.content = self.progress_dialog
+        self.app.dialog_area.content.open = True
+        self.app.dialog_area.update()
+
+        # 创建下载目录
+        download_dir = Path(self.app.run_path) / "downloads"
+        download_dir.mkdir(exist_ok=True)
+        
+        # 从URL中获取文件名
+        filename = download_url.split("/")[-1]
+        file_path = download_dir / filename
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(download_url) as response:
+                    if response.status != 200:
+                        raise Exception(f"Download failed with status {response.status}")
+                    
+                    total_size = int(response.headers.get('content-length', 0))
+                    downloaded_size = 0
+                    
+                    async with aiofiles.open(file_path, 'wb') as f:
+                        async for chunk in response.content.iter_chunked(8192):
+                            if self.download_cancelled:
+                                await f.close()
+                                if file_path.exists():
+                                    file_path.unlink()
+                                self.close_dialog()
+                                return
+                            
+                            await f.write(chunk)
+                            downloaded_size += len(chunk)
+                            
+                            # 更新进度
+                            progress = (downloaded_size / total_size) * 100
+                            self.progress_dialog.content.controls[0].value = progress / 100
+                            self.progress_dialog.content.controls[1].value = f"{progress:.1f}%"
+                            self.app.dialog_area.update()
+
+            # 下载完成
+            self.close_dialog()
+            # TODO: 这里可以添加安装更新的逻辑
+            
+        except Exception as e:
+            logger.error(f"Download failed: {e}")
+            if file_path.exists():
+                file_path.unlink()
+            self.close_dialog()
+            # 显示错误对话框
+            error_dialog = ft.AlertDialog(
+                title=ft.Text(_["download_failed"]),
+                content=ft.Text(str(e)),
+                actions=[
+                    ft.TextButton(_["ok"], on_click=lambda _: self.close_dialog())
+                ],
+            )
+            self.app.dialog_area.content = error_dialog
+            self.app.dialog_area.content.open = True
+            self.app.dialog_area.update()
+
+    def cancel_download(self) -> None:
+        """取消下载"""
+        _ = self.app.language_manager.language.get("update", {})
+        
+        # 保存当前下载进度对话框的状态
+        self.progress_dialog.open = False
+        
+        # 显示确认对话框
+        confirm_dialog = ft.AlertDialog(
+            title=ft.Text(_["confirm_cancel"]),
+            content=ft.Text(_["confirm_cancel_download"]),
+            actions=[
+                ft.TextButton(_["no"], on_click=lambda _: self.close_confirm_dialog()),
+                ft.TextButton(_["yes"], on_click=lambda _: self._confirm_cancel_download())
+            ],
+        )
+        
+        self.app.dialog_area.content = confirm_dialog
+        self.app.dialog_area.content.open = True
+        self.app.dialog_area.update()
+
+    def close_confirm_dialog(self) -> None:
+        """关闭确认对话框并恢复下载进度对话框"""
+        # 恢复下载进度对话框
+        self.app.dialog_area.content = self.progress_dialog
+        self.app.dialog_area.content.open = True
+        self.app.dialog_area.update()
+
+    def _confirm_cancel_download(self) -> None:
+        """确认取消下载"""
+        self.download_cancelled = True
+        self.close_dialog()  # 关闭所有对话框
+
     def open_download_page(self, update_info: dict[str, Any]) -> None:
-        import platform
+        """打开浏览器下载页面（用于Web端）"""
         import webbrowser
         
         url = update_info.get("download_url", "https://github.com/Joftal/StreamCap/releases/latest")
-        
-        download_urls = update_info.get("download_urls", {})
-        if download_urls:
-            system = platform.system().lower()
-            if system == "windows" and "windows" in download_urls:
-                url = download_urls["windows"]
-            elif system == "darwin" and "macos" in download_urls:
-                url = download_urls["macos"]
-            elif system == "linux" and "linux" in download_urls:
-                url = download_urls["linux"]
-        
         webbrowser.open(url)
         self.close_dialog()
