@@ -194,36 +194,7 @@ class AboutPage(PageBase):
                             offset=ft.Offset(0, 4),
                         ),
                     ),
-                    # Version update content card
-                    ft.Container(
-                        content=ft.Column(
-                            controls=[
-                                ft.Text(self._["update"], size=20, weight=ft.FontWeight.W_600, color=text_color),
-                                ft.ListView(
-                                    controls=[
-                                        ft.Text(update, size=16, text_align=ft.TextAlign.JUSTIFY, color=text_color_600)
-                                        for update in version_updates["updates"][language_code]
-                                    ],
-                                    spacing=10,
-                                    padding=0,
-                                    expand=True,
-                                ),
-                            ],
-                            spacing=15,
-                            expand=True,
-                        ),
-                        padding=20,
-                        margin=10,
-                        bgcolor=card_bg_color,
-                        border_radius=15,
-                        shadow=ft.BoxShadow(
-                            spread_radius=1,
-                            blur_radius=10,
-                            color=ft.Colors.BLACK26,
-                            offset=ft.Offset(0, 4),
-                        ),
-                    ),
-                    ft.Container(expand=True),
+                    ft.Container(expand=True)
                 ],
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,

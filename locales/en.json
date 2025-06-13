@@ -361,8 +361,7 @@
     "developer": "Maintainer",
     "author": "Author",
     "view_update": "View Updates",
-    "view_docs": "View Documentation",
-    "update": "Version Update"
+    "view_docs": "View Documentation"
   },
     "base": {
     "confirm": "Confirm",
@@ -450,7 +449,18 @@
     "checking_update": "Checking for updates...",
     "update_check_failed": "Update check failed",
     "no_update_available": "You are using the latest version",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "downloading": "Downloading update...",
+    "download_failed": "Download failed",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "confirm_cancel": "Confirm Cancel",
+    "confirm_cancel_download": "Are you sure you want to cancel the download? Downloaded content will be deleted.",
+    "yes": "Yes",
+    "no": "No",
+    "download_complete": "Download Complete",
+    "download_complete_message": "Update package has been downloaded. You can click 'Open Folder' to view the file.",
+    "open_folder": "Open Folder"
   },
   "save_progress_overlay": {
     "force_close": "Force Close",
