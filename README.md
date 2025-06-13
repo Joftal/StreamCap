@@ -49,7 +49,7 @@ StreamCap 是一个基于FFmpeg和StreamGet的多平台直播流录制客户端�
 
 ### 1.**运行预构建的程序**：
 
-访问 [StreamCap Releases](https://github.com/ihmily/StreamCap/releases/latest) 页面，根据自身系统下载对应的最新版本压缩包。
+访问 [StreamCap Releases](https://github.com/Joftal/StreamCap/releases/latest) 页面，根据自身系统下载对应的最新版本压缩包。
 
 - **Windows 用户**：下载 `StreamCap.zip` 文件，解压后运行 `StreamCap.exe`。
 - **macOS 用户**：下载 `StreamCap.dmg` 文件，按照提示完成安装，即可在启动台找到应用并运行。
