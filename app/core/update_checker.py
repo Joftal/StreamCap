@@ -270,11 +270,7 @@ class UpdateChecker:
                     level = len(line.split()[0])
                     text = line.lstrip('#').strip()
                     formatted_notes.append(ft.Text(text, size=20-level, weight=ft.FontWeight.BOLD))
-                elif line.startswith('- '):
-                    # 列表项
-                    text = line[2:].strip()
-                    formatted_notes.append(ft.Text(f"• {text}", size=14))
-                elif line.startswith('* '):
+                elif line.startswith('- ') or line.startswith('* '):
                     # 列表项
                     text = line[2:].strip()
                     formatted_notes.append(ft.Text(f"• {text}", size=14))
