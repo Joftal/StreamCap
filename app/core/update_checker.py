@@ -225,7 +225,10 @@ class UpdateChecker:
         """
         try:
             timeout = httpx.Timeout(source["timeout"])
-            async with httpx.AsyncClient(timeout=timeout) as client:
+            # 获取代理设置
+            proxy = self._get_proxy_settings()
+            
+            async with httpx.AsyncClient(timeout=timeout, proxy=proxy) as client:
                 response = await client.get(
                     source["url"],
                     params={"current_version": self.current_version}
