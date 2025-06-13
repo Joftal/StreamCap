@@ -27,6 +27,61 @@ if "%mode%"=="1" (
 
 echo.
 echo =====================================
+echo    Version Update
+echo =====================================
+echo Current version in config\version.json:
+
+REM 显示当前目录和文件信息
+echo Current directory: %CD%
+echo Checking version.json...
+if exist config\version.json (
+    echo File exists
+    type config\version.json
+) else (
+    echo File not found
+)
+
+REM 尝试读取版本号
+echo.
+echo Attempting to read version...
+python -c "import json, os; print('Python working directory:', os.getcwd()); print('Looking for file:', os.path.abspath('config/version.json')); f=open('config/version.json', 'r', encoding='utf-8'); data=json.load(f); print('Version:', data['version_updates'][0]['version']); f.close()" 2>nul
+if errorlevel 1 (
+    echo Failed to read version.json
+    echo Please check if the file exists and is valid
+    pause
+    exit /b 1
+)
+echo.
+echo Do you want to update the version?
+echo 1: Yes, update version
+echo 2: No, keep current version
+echo.
+
+:version_choice
+set /p update_version="Enter option (1/2): "
+if "%update_version%"=="1" goto update_version
+if "%update_version%"=="2" goto continue_build
+echo Invalid option, please try again
+goto version_choice
+
+:update_version
+echo.
+echo Enter new version (e.g., 1.0.2):
+set /p new_version="Version: "
+
+echo [Step 0] Updating version...
+python -c "import json, os; print('Python working directory:', os.getcwd()); print('Looking for file:', os.path.abspath('config/version.json')); f=open('config/version.json', 'r', encoding='utf-8'); data=json.load(f); data['version']='%new_version%'; data['version_updates'][0]['version']='%new_version%'; f=open('config/version.json', 'w', encoding='utf-8'); json.dump(data, f, indent=2, ensure_ascii=False); f.close()" 2>nul
+if errorlevel 1 (
+    echo Failed to update version.json
+    echo Please check if the file exists and is valid
+    pause
+    exit /b 1
+)
+echo Version updated to: %new_version%
+echo.
+
+:continue_build
+echo =====================================
 echo    Building StreamCap...
 echo    Mode: %mode_name%
 echo =====================================
@@ -41,6 +96,11 @@ if not exist assets\icon.ico (
 REM Install dependencies
 echo [Step 1] Installing dependencies...
 pip install -r requirements-win.txt
+if errorlevel 1 (
+    echo Failed to install dependencies
+    pause
+    exit /b 1
+)
 
 REM Clean previous build
 echo [Step 2] Cleaning build...
@@ -52,6 +112,11 @@ echo [Step 3] Building...
 echo - Using %mode_name%
 echo - Using custom icon
 pyinstaller "%spec_file%"
+if errorlevel 1 (
+    echo Failed to build application
+    pause
+    exit /b 1
+)
 
 REM Copy required folders
 echo [Step 4] Copying folders...
