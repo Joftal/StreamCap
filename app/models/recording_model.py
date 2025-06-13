@@ -6,19 +6,20 @@ from .audio_format_model import AudioFormat
 class Recording:
     def __init__(
         self,
-        rec_id,
-        url,
-        streamer_name,
-        record_format,
-        quality,
-        segment_record,
+        rec_id: str,
+        url: str,
+        streamer_name: str,
+        quality: str,
+        segment_record: bool,
+        monitor_status: bool,
         segment_time,
-        monitor_status,
         scheduled_recording,
         scheduled_start_time,
         monitor_hours,
         recording_dir,
         enabled_message_push,
+        media_type: str = "video",
+        record_format: str = None,
         record_mode="auto"
     ):
         """
@@ -27,11 +28,12 @@ class Recording:
         :param rec_id: Unique identifier for the recording task.
         :param url: URL address of the live stream.
         :param streamer_name: Name of the streamer.
-        :param record_format: Format of the recorded file, e.g., 'mp4', 'ts', 'mkv'.
         :param quality: Quality of the recorded video, e.g., 'OD', 'UHD', 'HD'.
         :param segment_record: Whether to enable segmented recording.
-        :param segment_time: Time interval (in seconds) for segmented recording if enabled.
         :param monitor_status: Monitoring status, whether the live room is being monitored.
+        :param media_type: Type of the recorded file, e.g., 'video', 'audio'.
+        :param record_format: Format of the recorded file, e.g., 'mp4', 'ts', 'mkv'.
+        :param segment_time: Time interval (in seconds) for segmented recording if enabled.
         :param scheduled_recording: Whether to enable scheduled recording.
         :param scheduled_start_time: Scheduled start time for recording (string format like '18:30:00').
         :param monitor_hours: Number of hours to monitor from the scheduled recording start time, e.g., 3.
@@ -42,12 +44,13 @@ class Recording:
 
         self.rec_id = rec_id
         self.url = url
+        self.streamer_name = streamer_name
         self.quality = quality
-        self.record_format = record_format
         self.monitor_status = monitor_status
         self.segment_record = segment_record
+        self._media_type = media_type
+        self._record_format = None  # 先初始化为None
         self.segment_time = segment_time
-        self.streamer_name = streamer_name
         self.scheduled_recording = scheduled_recording
         self.scheduled_start_time = scheduled_start_time
         self.monitor_hours = monitor_hours
@@ -75,11 +78,16 @@ class Recording:
         self.record_url = None
         # 用于跟踪是否已经发送过直播状态通知
         self.notification_sent = False
+        
+        # 设置媒体类型和录制格式
+        self.media_type = media_type
+        self.record_format = record_format
 
     def to_dict(self):
         """Convert the Recording instance to a dictionary for saving."""
         return {
             "rec_id": self.rec_id,
+            "media_type": self.media_type,
             "url": self.url,
             "streamer_name": self.streamer_name,
             "record_format": self.record_format,
@@ -102,16 +110,17 @@ class Recording:
             data.get("rec_id"),
             data.get("url"),
             data.get("streamer_name"),
-            data.get("record_format"),
             data.get("quality"),
             data.get("segment_record"),
-            data.get("segment_time"),
             data.get("monitor_status"),
+            data.get("segment_time"),
             data.get("scheduled_recording"),
             data.get("scheduled_start_time"),
             data.get("monitor_hours"),
             data.get("recording_dir"),
             data.get("enabled_message_push"),
+            data.get("media_type"),
+            data.get("record_format"),
             data.get("record_mode", "auto"),
         )
         recording.title = data.get("title", recording.title)
@@ -135,6 +144,32 @@ class Recording:
             self.record_mode = updated_info["record_mode"]
 
     @property
+    def media_type(self) -> str:
+        """获取媒体类型"""
+        return self._media_type
+
+    @media_type.setter
+    def media_type(self, value: str):
+        """设置媒体类型，并在切换时更新格式"""
+        if not value:
+            self._media_type = "video"  # 默认为视频类型
+        else:
+            # 转换为小写进行比较
+            value = value.lower()
+            if value not in ["video", "audio"]:
+                self._media_type = "video"
+            else:
+                self._media_type = value
+                
+        # 当媒体类型改变时，根据新的媒体类型设置默认格式
+        if self._media_type == "video":
+            if not self._record_format or self._record_format not in VideoFormat.get_formats():
+                self._record_format = VideoFormat.TS
+        else:  # audio
+            if not self._record_format or self._record_format not in AudioFormat.get_formats():
+                self._record_format = AudioFormat.MP3
+
+    @property
     def record_format(self) -> str:
         """获取录制格式"""
         return self._record_format
@@ -145,9 +180,15 @@ class Recording:
         if not value:
             self._record_format = VideoFormat.TS if self.media_type == "video" else AudioFormat.MP3
         else:
-            if self.media_type == "video" and value not in VideoFormat.get_formats():
-                self._record_format = VideoFormat.TS
-            elif self.media_type == "audio" and value not in AudioFormat.get_formats():
-                self._record_format = AudioFormat.MP3
-            else:
-                self._record_format = value
+            # 转换为大写进行比较
+            value = value.upper()
+            if self.media_type == "video":
+                if value not in VideoFormat.get_formats():
+                    self._record_format = VideoFormat.TS
+                else:
+                    self._record_format = value
+            else:  # audio
+                if value not in AudioFormat.get_formats():
+                    self._record_format = AudioFormat.MP3
+                else:
+                    self._record_format = value

@@ -61,7 +61,7 @@ class RecordingDialog:
             filled=False,
             value=initial_values.get("quality", user_config.get("record_quality", VideoQuality.OD)),
             width=500,
-            visible=False
+            visible=True
         )
         streamer_name_field = ft.TextField(
             label=self._["input_anchor_name"],
