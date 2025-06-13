@@ -156,7 +156,7 @@ class AboutPage(PageBase):
                                 ft.Text(self._["developer"], size=20, weight=ft.FontWeight.W_600, color=text_color),
                                 ft.ListTile(
                                     leading=ft.Icon(ft.Icons.PERSON, color=ft.Colors.GREY_800),
-                                    title=ft.Text("Hmily", size=18, weight=ft.FontWeight.W_500, color=text_color_700),
+                                    title=ft.Text("Joftal", size=18, weight=ft.FontWeight.W_500, color=text_color_700),
                                     subtitle=ft.Text(self._["author"], size=14, color=text_color_500),
                                 ),
                                 ft.Row(
@@ -238,7 +238,7 @@ class AboutPage(PageBase):
 
     @staticmethod
     async def open_update_page(_):
-        url = "https://github.com/ihmily/StreamCap/releases"
+        url = "https://github.com/Joftal/StreamCap/releases"
         webbrowser.open(url)
 
     @staticmethod
@@ -259,6 +259,13 @@ class AboutPage(PageBase):
         update_info = await self.app.update_checker.check_for_updates()
         
         if update_info.get("has_update", False):
+            # 更新版本信息到界面
+            version_updates = self._about_config["version_updates"][0]
+            version_updates["updates"][self.app.language_code].insert(0, f"最新版本 {update_info.get('version', '')} 更新内容：")
+            version_updates["updates"][self.app.language_code].extend(update_info.get("commits", []))
+            # 刷新界面
+            await self.load()
+            # 显示更新对话框
             await self.app.update_checker.show_update_dialog(update_info)
         else:
             if "error" in update_info:
