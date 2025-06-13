@@ -6,6 +6,7 @@ import platform
 import aiohttp
 import aiofiles
 from pathlib import Path
+import subprocess
 
 import flet as ft
 import httpx
@@ -104,53 +105,88 @@ class UpdateChecker:
     
     async def _check_github_update(self, source: dict[str, Any]) -> dict[str, Any]:
         """Check for updates from GitHub"""
-        try:
-            timeout = httpx.Timeout(source["timeout"])
-            
-            async with httpx.AsyncClient(timeout=timeout) as client:
-                url = f"https://api.github.com/repos/{source['repo']}/releases/latest"
+        max_retries = 3
+        retry_delay = 1  # 秒
+        
+        for attempt in range(max_retries):
+            try:
+                timeout = httpx.Timeout(source["timeout"])
                 
-                response = await client.get(url)
+                # 添加GitHub API认证头
+                headers = {
+                    "Accept": "application/vnd.github.v3+json",
+                    "User-Agent": "StreamCap-Update-Checker"
+                }
+                
+                async with httpx.AsyncClient(timeout=timeout) as client:
+                    url = f"https://api.github.com/repos/{source['repo']}/releases/latest"
+                    
+                    response = await client.get(url, headers=headers)
+                    logger.info(f"GitHub API响应状态码: {response.status_code}")
 
-                if response.status_code == 200:
-                    latest_release = response.json()
-                    latest_version = latest_release["tag_name"].lstrip("v")
-                    
-                    comparison_result = self._compare_versions(latest_version, self.current_version)
-                    
-                    if comparison_result > 0:
-                        download_urls = {}
-                        for asset in latest_release.get("assets", []):
-                            name = asset["name"].lower()
-                            if ("win" in name or "windows" in name) and "console" not in name:
-                                download_urls["windows"] = asset["browser_download_url"]
-                            elif "mac" in name or "macos" in name:
-                                download_urls["macos"] = asset["browser_download_url"]
-                            elif "linux" in name:
-                                download_urls["linux"] = asset["browser_download_url"]
+                    if response.status_code == 200:
+                        latest_release = response.json()
+                        latest_version = latest_release["tag_name"].lstrip("v")
                         
-                        return {
-                            "has_update": True,
-                            "latest_version": latest_version,
-                            "current_version": self.current_version,
-                            "release_notes": latest_release["body"],
-                            "download_url": latest_release["html_url"],
-                            "download_urls": download_urls,
-                            "source": source["name"]
-                        }
-                else:
-                    logger.error(f"GitHub API请求失败，状态码: {response.status_code}")
-                    return {"has_update": False, "error": f"GitHub API请求失败: {response.status_code}", "source": source["name"]}
-                return {"has_update": False, "source": source["name"]}
-        except httpx.ConnectTimeout:
-            logger.error("连接GitHub超时")
-            return {"has_update": False, "error": "连接GitHub超时", "source": source["name"]}
-        except httpx.RequestError as e:
-            logger.error(f"请求GitHub失败: {str(e)}")
-            return {"has_update": False, "error": f"请求GitHub失败: {str(e)}", "source": source["name"]}
-        except Exception as e:
-            logger.error(f"检查GitHub更新时发生错误: {str(e)}")
-            return {"has_update": False, "error": str(e), "source": source["name"]}
+                        comparison_result = self._compare_versions(latest_version, self.current_version)
+                        
+                        if comparison_result > 0:
+                            download_urls = {}
+                            for asset in latest_release.get("assets", []):
+                                name = asset["name"].lower()
+                                if ("win" in name or "windows" in name) and "console" not in name:
+                                    download_urls["windows"] = asset["browser_download_url"]
+                                elif "mac" in name or "macos" in name:
+                                    download_urls["macos"] = asset["browser_download_url"]
+                                elif "linux" in name:
+                                    download_urls["linux"] = asset["browser_download_url"]
+                            
+                            return {
+                                "has_update": True,
+                                "latest_version": latest_version,
+                                "current_version": self.current_version,
+                                "release_notes": latest_release["body"],
+                                "download_url": latest_release["html_url"],
+                                "download_urls": download_urls,
+                                "source": source["name"]
+                            }
+                    elif response.status_code == 403:
+                        logger.error("GitHub API访问受限，可能需要认证或已达到访问限制")
+                        return {"has_update": False, "error": "GitHub API访问受限，请稍后重试", "source": source["name"]}
+                    elif response.status_code == 404:
+                        logger.error(f"GitHub仓库未找到: {source['repo']}")
+                        return {"has_update": False, "error": "GitHub仓库未找到", "source": source["name"]}
+                    else:
+                        logger.error(f"GitHub API请求失败，状态码: {response.status_code}")
+                        if attempt < max_retries - 1:
+                            logger.info(f"将在{retry_delay}秒后重试...")
+                            await asyncio.sleep(retry_delay)
+                            continue
+                        return {"has_update": False, "error": f"GitHub API请求失败: {response.status_code}", "source": source["name"]}
+                    return {"has_update": False, "source": source["name"]}
+            except httpx.ConnectTimeout:
+                logger.error("连接GitHub超时")
+                if attempt < max_retries - 1:
+                    logger.info(f"将在{retry_delay}秒后重试...")
+                    await asyncio.sleep(retry_delay)
+                    continue
+                return {"has_update": False, "error": "连接GitHub超时", "source": source["name"]}
+            except httpx.RequestError as e:
+                logger.error(f"请求GitHub失败: {str(e)}")
+                if attempt < max_retries - 1:
+                    logger.info(f"将在{retry_delay}秒后重试...")
+                    await asyncio.sleep(retry_delay)
+                    continue
+                return {"has_update": False, "error": f"请求GitHub失败: {str(e)}", "source": source["name"]}
+            except Exception as e:
+                logger.error(f"检查GitHub更新时发生错误: {str(e)}")
+                if attempt < max_retries - 1:
+                    logger.info(f"将在{retry_delay}秒后重试...")
+                    await asyncio.sleep(retry_delay)
+                    continue
+                return {"has_update": False, "error": str(e), "source": source["name"]}
+        
+        return {"has_update": False, "error": "多次尝试后仍然失败", "source": source["name"]}
     
     async def _check_custom_update(self, source: dict[str, Any]) -> dict[str, Any]:
         """Check for updates from custom source
@@ -219,13 +255,56 @@ class UpdateChecker:
     async def show_update_dialog(self, update_info: dict[str, Any]) -> None:
         _ = self.app.language_manager.language.get("update", {})
 
+        # 处理更新内容
+        release_notes = update_info.get("release_notes", "")
+        if not release_notes:
+            release_notes = _["no_details"]
+        
+        # 格式化更新内容
+        formatted_notes = []
+        for line in release_notes.split('\n'):
+            if line.strip():
+                # 处理Markdown格式
+                if line.startswith('#'):
+                    # 标题
+                    level = len(line.split()[0])
+                    text = line.lstrip('#').strip()
+                    formatted_notes.append(ft.Text(text, size=20-level, weight=ft.FontWeight.BOLD))
+                elif line.startswith('- '):
+                    # 列表项
+                    text = line[2:].strip()
+                    formatted_notes.append(ft.Text(f"• {text}", size=14))
+                elif line.startswith('* '):
+                    # 列表项
+                    text = line[2:].strip()
+                    formatted_notes.append(ft.Text(f"• {text}", size=14))
+                elif line.startswith('```'):
+                    # 代码块开始或结束
+                    continue
+                elif line.startswith('    '):
+                    # 代码块内容
+                    text = line[4:].strip()
+                    formatted_notes.append(ft.Text(text, size=14, font_family="monospace"))
+                else:
+                    # 普通文本
+                    formatted_notes.append(ft.Text(line.strip(), size=14))
+
         dialog = ft.AlertDialog(
             title=ft.Text(_["new_version"].format(version=update_info.get("latest_version"))),
             content=ft.Column([
                 ft.Text(_["current_version"].format(version=update_info.get("current_version"))),
                 ft.Text(_["latest_version"].format(version=update_info.get("latest_version"))),
                 ft.Text(_["update_source"].format(source=update_info.get("source", _["unknown"]))),
-            ], spacing=10, width=400, height=300),
+                ft.Text(_["release_notes"], weight=ft.FontWeight.BOLD, size=16),
+                ft.Container(
+                    content=ft.Column(formatted_notes, spacing=5, scroll=ft.ScrollMode.AUTO),
+                    height=300,
+                    width=550,  # 设置内容区域宽度
+                    border=ft.border.all(1, ft.colors.OUTLINE),
+                    border_radius=5,
+                    padding=10,
+                ),
+            ], spacing=10, width=400, height=400),
             actions=[
                 ft.TextButton(_["later"], on_click=lambda _: self.close_dialog()),
                 ft.TextButton(_["download"], on_click=lambda e: self.app.page.loop.create_task(self.start_download(update_info)))
@@ -319,7 +398,23 @@ class UpdateChecker:
 
             # 下载完成
             self.close_dialog()
-            # TODO: 这里可以添加安装更新的逻辑
+            
+            # 显示下载完成提示
+            success_dialog = ft.AlertDialog(
+                title=ft.Text(_["download_complete"]),
+                content=ft.Column([
+                    ft.Text(_["download_complete_message"]),
+                    ft.Text(str(file_path)),
+                ], spacing=10),
+                actions=[
+                    ft.TextButton(_["open_folder"], on_click=lambda _: self.open_download_folder(download_dir)),
+                    ft.TextButton(_["ok"], on_click=lambda _: self.close_dialog())
+                ],
+            )
+            
+            self.app.dialog_area.content = success_dialog
+            self.app.dialog_area.content.open = True
+            self.app.dialog_area.update()
             
         except Exception as e:
             logger.error(f"Download failed: {e}")
@@ -378,3 +473,15 @@ class UpdateChecker:
         url = update_info.get("download_url", "https://github.com/Joftal/StreamCap/releases/latest")
         webbrowser.open(url)
         self.close_dialog()
+
+    def open_download_folder(self, folder_path: Path) -> None:
+        """打开下载文件夹"""
+        try:
+            if platform.system() == "Windows":
+                os.startfile(folder_path)
+            elif platform.system() == "Darwin":  # macOS
+                subprocess.run(["open", folder_path])
+            else:  # Linux
+                subprocess.run(["xdg-open", folder_path])
+        except Exception as e:
+            logger.error(f"打开文件夹失败: {e}")

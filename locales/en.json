@@ -458,7 +458,10 @@
     "confirm_cancel": "Confirm Cancel",
     "confirm_cancel_download": "Are you sure you want to cancel the download? Downloaded content will be deleted.",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "download_complete": "Download Complete",
+    "download_complete_message": "Update package has been downloaded. You can click 'Open Folder' to view the file.",
+    "open_folder": "Open Folder"
   },
   "save_progress_overlay": {
     "force_close": "Force Close",

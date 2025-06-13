@@ -462,7 +462,10 @@
     "confirm_cancel": "确认取消",
     "confirm_cancel_download": "确定要取消下载吗？已下载的内容将被删除。",
     "yes": "是",
-    "no": "否"
+    "no": "否",
+    "download_complete": "下载完成",
+    "download_complete_message": "更新包已下载完成，您可以点击\"打开文件夹\"查看文件。",
+    "open_folder": "打开文件夹"
   },
   "save_progress_overlay": {
     "force_close": "强制关闭",
