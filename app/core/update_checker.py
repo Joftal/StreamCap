@@ -34,6 +34,21 @@ class UpdateChecker:
             logger.error(f"Failed to get current version: {e}")
             return "0.0.0"
 
+    def _get_proxy_settings(self) -> dict:
+        """获取代理设置"""
+        user_config = self.app.settings.user_config
+        enable_proxy = user_config.get("enable_proxy", False)
+        proxy_address = user_config.get("proxy_address", "")
+        
+        if not enable_proxy or not proxy_address:
+            return None
+            
+        # 处理代理地址格式
+        if not proxy_address.startswith('http://'):
+            proxy_address = f"http://{proxy_address}"
+            
+        return proxy_address
+
     @staticmethod
     def _load_update_config() -> dict[str, Any]:
         auto_check = os.getenv("AUTO_CHECK_UPDATE", "false").lower() == "true"
@@ -118,7 +133,10 @@ class UpdateChecker:
                     "User-Agent": "StreamCap-Update-Checker"
                 }
                 
-                async with httpx.AsyncClient(timeout=timeout) as client:
+                # 获取代理设置
+                proxy = self._get_proxy_settings()
+                
+                async with httpx.AsyncClient(timeout=timeout, proxy=proxy) as client:
                     url = f"https://api.github.com/repos/{source['repo']}/releases/latest"
                     
                     response = await client.get(url, headers=headers)
@@ -177,7 +195,7 @@ class UpdateChecker:
                     logger.info(f"将在{retry_delay}秒后重试...")
                     await asyncio.sleep(retry_delay)
                     continue
-                return {"has_update": False, "error": f"请求GitHub失败: {str(e)}", "source": source["name"]}
+                return {"has_update": False, "error": f"请求GitHub失败，请检查网络代理: {str(e)}", "source": source["name"]}
             except Exception as e:
                 logger.error(f"检查GitHub更新时发生错误: {str(e)}")
                 if attempt < max_retries - 1:
@@ -368,8 +386,11 @@ class UpdateChecker:
         file_path = download_dir / filename
 
         try:
+            # 获取代理设置
+            proxy = self._get_proxy_settings()
+            
             async with aiohttp.ClientSession() as session:
-                async with session.get(download_url) as response:
+                async with session.get(download_url, proxy=proxy) as response:
                     if response.status != 200:
                         raise Exception(f"Download failed with status {response.status}")
                     
