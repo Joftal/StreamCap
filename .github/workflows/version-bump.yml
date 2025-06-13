@@ -43,6 +43,7 @@ jobs:
           import re
           import sys
           import os
+          import json
           
           # 读取当前版本
           with open('pyproject.toml', 'r', encoding='utf-8') as f:
@@ -74,6 +75,24 @@ jobs:
           with open('pyproject.toml', 'w', encoding='utf-8') as f:
               toml.dump(data, f)
           
+          # 更新 config/version.json
+          try:
+              with open('config/version.json', 'r', encoding='utf-8') as f:
+                  version_data = json.load(f)
+              
+              # 更新所有版本相关字段
+              version_data['version'] = new_version
+              version_data['version_updates'][0]['version'] = new_version
+              
+              # 保持 kernel_version 不变
+              print(f'保持 kernel_version 为: {version_data["kernel_version"]}')
+              
+              with open('config/version.json', 'w', encoding='utf-8') as f:
+                  json.dump(version_data, f, indent=2, ensure_ascii=False)
+              print(f'已更新 config/version.json 中的版本号为: {new_version}')
+          except Exception as e:
+              print(f'更新 config/version.json 时出错: {e}')
+          
           # 输出新版本号供后续步骤使用
           with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
               f.write(f'new_version={new_version}\\n')
@@ -83,7 +102,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add pyproject.toml
+          git add pyproject.toml config/version.json
           git commit -m "chore: 版本更新至 ${{ steps.bump_version.outputs.new_version }}"
           git push
 
