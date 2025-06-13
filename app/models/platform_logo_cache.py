@@ -66,7 +66,7 @@ class PlatformLogoCache:
         """加载缓存文件"""
         try:
             if os.path.exists(self.cache_file):
-                with open(self.cache_file, 'r', encoding='utf-8') as f:
+                with open(self.cache_file, encoding='utf-8') as f:
                     self.cache_data = json.load(f)
                 
                 # 处理目录迁移情况：检查缓存中的路径是否存在，如果不存在则尝试修复
@@ -112,7 +112,7 @@ class PlatformLogoCache:
                             if os.path.exists(default_logo):
                                 fixed_cache[rec_id] = default_logo
                                 fixed_items += 1
-                                logger.info(f"无法识别平台logo路径，已使用默认logo")
+                                logger.info("无法识别平台logo路径，已使用默认logo")
                 
                 # 更新缓存数据
                 self.cache_data = fixed_cache

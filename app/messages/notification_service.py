@@ -377,7 +377,7 @@ class NotificationService:
             # 短暂停顿，让系统有时间显示通知
             time.sleep(0.2)
             
-            results["success"].append(f"通知已发送")
+            results["success"].append("通知已发送")
             return results
         except Exception as e:
             results["error"].append(str(e))
