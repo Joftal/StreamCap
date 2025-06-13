@@ -23,8 +23,11 @@ from .platform_handlers import StreamData, get_platform_info
 class LiveStreamRecorder:
     DEFAULT_SEGMENT_TIME = "1800"  #默认分段时间
     DEFAULT_SAVE_FORMAT = "ts"  #默认保存格式
+    DEFAULT_AUDIO_FORMAT = "mp3"  #默认音频格式
     DEFAULT_QUALITY = VideoQuality.OD  #默认录制质量
-    VALID_SAVE_FORMATS = ["ts", "flv", "mkv", "mov", "mp4", "mp3", "m4a"]   #有效录制格式列表
+    VALID_VIDEO_FORMATS = ["ts", "flv", "mkv", "mov", "mp4"]   #有效视频格式列表
+    VALID_AUDIO_FORMATS = ["mp3", "m4a", "wav", "wma", "aac"]   #有效音频格式列表
+    VALID_SAVE_FORMATS = VALID_VIDEO_FORMATS + VALID_AUDIO_FORMATS   #所有有效格式列表
 
     def __init__(self, app, recording, recording_info):
         self.app = app
@@ -194,7 +197,7 @@ class LiveStreamRecorder:
         
     def validate_save_format(self, format_name: str | None) -> str:
         """
-        验证并返回有效的保存格式
+        验证并返回有效的保存格式，同时处理视频和音频格式
         """
         logger.info(f"格式验证 - 输入格式: {format_name}")
         
@@ -203,8 +206,10 @@ class LiveStreamRecorder:
             return self.DEFAULT_SAVE_FORMAT
             
         format_name = format_name.lower()
+        
+        # 检查是否是有效的格式
         if format_name not in self.VALID_SAVE_FORMATS:
-            logger.warning(f"格式验证 - 无效的保存格式: {format_name}，使用默认格式: {self.DEFAULT_SAVE_FORMAT}")
+            logger.warning(f"格式验证 - 无效的保存格式: {format_name}")
             
             # 如果是从录制信息中获取的格式无效，则更新录制信息
             if self.recording and hasattr(self.recording, "record_format"):
@@ -218,16 +223,31 @@ class LiveStreamRecorder:
                 logger.info(f"格式验证 - 更新录制信息中的保存格式为: {self.DEFAULT_SAVE_FORMAT}")
                 self.recording_info["save_format"] = self.DEFAULT_SAVE_FORMAT
             
-            # 检查是否是从用户配置文件中读取的无效格式
-            if self.user_config.get("video_format", "").lower() == format_name:
+            # 检查并更新用户配置文件中的视频和音频格式
+            user_video_format = self.user_config.get("video_format", "").lower()
+            user_audio_format = self.user_config.get("audio_format", "").lower()
+            
+            # 如果无效格式匹配视频格式配置，更新视频格式
+            if user_video_format == format_name:
                 logger.info(f"格式验证 - 更新用户配置中的视频格式为: {self.DEFAULT_SAVE_FORMAT.upper()}")
                 self.user_config["video_format"] = self.DEFAULT_SAVE_FORMAT.upper()
                 # 异步保存用户配置
                 self.app.page.run_task(self.app.config_manager.save_user_config, self.user_config)
-                
                 # 更新所有录制卡片的格式显示
                 self.app.page.run_task(self.update_all_recording_formats)
             
+            # 如果无效格式匹配音频格式配置，更新音频格式
+            if user_audio_format == format_name:
+                logger.info(f"格式验证 - 更新用户配置中的音频格式为: {self.DEFAULT_AUDIO_FORMAT.upper()}")
+                self.user_config["audio_format"] = self.DEFAULT_AUDIO_FORMAT.upper()
+                # 异步保存用户配置
+                self.app.page.run_task(self.app.config_manager.save_user_config, self.user_config)
+                # 更新所有录制卡片的格式显示
+                self.app.page.run_task(self.update_all_recording_formats)
+            
+            # 根据格式类型返回相应的默认值
+            if format_name in self.VALID_AUDIO_FORMATS or any(audio_format in format_name.lower() for audio_format in self.VALID_AUDIO_FORMATS):
+                return self.DEFAULT_AUDIO_FORMAT
             return self.DEFAULT_SAVE_FORMAT
             
         logger.info(f"格式验证 - 使用有效格式: {format_name}")

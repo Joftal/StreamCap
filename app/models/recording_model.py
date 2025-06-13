@@ -1,4 +1,6 @@
 from datetime import timedelta
+from .video_format_model import VideoFormat
+from .audio_format_model import AudioFormat
 
 
 class Recording:
@@ -131,3 +133,21 @@ class Recording:
                 setattr(self, attr, value)
         if "record_mode" in updated_info:
             self.record_mode = updated_info["record_mode"]
+
+    @property
+    def record_format(self) -> str:
+        """获取录制格式"""
+        return self._record_format
+
+    @record_format.setter
+    def record_format(self, value: str):
+        """设置录制格式"""
+        if not value:
+            self._record_format = VideoFormat.TS if self.media_type == "video" else AudioFormat.MP3
+        else:
+            if self.media_type == "video" and value not in VideoFormat.get_formats():
+                self._record_format = VideoFormat.TS
+            elif self.media_type == "audio" and value not in AudioFormat.get_formats():
+                self._record_format = AudioFormat.MP3
+            else:
+                self._record_format = value
