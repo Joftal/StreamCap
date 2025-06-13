@@ -46,6 +46,25 @@ jobs:
           prerelease: false
           body_path: CHANGELOG.md
       
+      # 更新版本号
+      - name: Update version.json
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "更新版本号..."
+          VERSION=${{ github.ref_name }}
+          VERSION=${VERSION#v}  # 移除 v 前缀
+          
+          # 读取当前的 version.json
+          cat config/version.json > version.json.tmp
+          
+          # 使用 jq 更新版本号
+          jq --arg version "$VERSION" '.version_updates[0].version = $version' version.json.tmp > config/version.json
+          
+          # 清理临时文件
+          rm version.json.tmp
+          
+          echo "版本号已更新为: $VERSION"
+      
       # 为dev分支创建一个模拟的upload_url输出，避免后续任务失败
       - name: Set mock upload URL for dev branch
         if: github.ref == 'refs/heads/dev'
@@ -69,6 +88,24 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-win.txt
           pip install pyinstaller
+
+      # 更新版本号（如果是标签构建）
+      - name: Update version.json for Windows build
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "更新 Windows 构建的版本号..."
+          $version = "${{ github.ref_name }}" -replace '^v', ''
+          
+          # 读取当前的 version.json
+          $versionJson = Get-Content -Raw -Path config/version.json | ConvertFrom-Json
+          
+          # 更新版本号
+          $versionJson.version_updates[0].version = $version
+          
+          # 保存更新后的文件
+          $versionJson | ConvertTo-Json -Depth 10 | Set-Content -Path config/version.json -Encoding UTF8
+          
+          echo "Windows 构建版本号已更新为: $version"
 
       - name: Create logger_fix.py for GUI mode
         run: |
@@ -285,6 +322,24 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
+      # 更新版本号（如果是标签构建）
+      - name: Update version.json for Windows Console build
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "更新 Windows Console 构建的版本号..."
+          $version = "${{ github.ref_name }}" -replace '^v', ''
+          
+          # 读取当前的 version.json
+          $versionJson = Get-Content -Raw -Path config/version.json | ConvertFrom-Json
+          
+          # 更新版本号
+          $versionJson.version_updates[0].version = $version
+          
+          # 保存更新后的文件
+          $versionJson | ConvertTo-Json -Depth 10 | Set-Content -Path config/version.json -Encoding UTF8
+          
+          echo "Windows Console 构建版本号已更新为: $version"
+
       - name: Build Windows Console executable
         run: |
           # 构建控制台版本
@@ -343,6 +398,25 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-mac.txt
           pip install pyinstaller
+
+      # 更新版本号（如果是标签构建）
+      - name: Update version.json for macOS build
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "更新 macOS 构建的版本号..."
+          VERSION=${{ github.ref_name }}
+          VERSION=${VERSION#v}  # 移除 v 前缀
+          
+          # 读取当前的 version.json
+          cat config/version.json > version.json.tmp
+          
+          # 使用 jq 更新版本号
+          jq --arg version "$VERSION" '.version_updates[0].version = $version' version.json.tmp > config/version.json
+          
+          # 清理临时文件
+          rm version.json.tmp
+          
+          echo "macOS 构建版本号已更新为: $VERSION"
 
       - name: Prepare icon file
         run: |
