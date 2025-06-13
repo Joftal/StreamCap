@@ -69,7 +69,9 @@ jobs:
       - name: Set mock upload URL for dev branch
         if: github.ref == 'refs/heads/dev'
         id: mock_upload_url
-        run: echo "upload_url=https://mock-url-for-dev-branch" >> $GITHUB_OUTPUT
+        run: |
+          echo "upload_url=https://mock-url-for-dev-branch" >> $GITHUB_OUTPUT
+          echo "is_tag=false" >> $GITHUB_OUTPUT
 
   build-windows-gui:
     needs: create_release
