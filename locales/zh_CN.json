@@ -365,8 +365,7 @@
     "developer": "维护者",
     "author": "作者",
     "view_update": "查看更新",
-    "view_docs": "查看文档",
-    "update": "版本更新"
+    "view_docs": "查看文档"
   },
   "base": {
     "confirm": "确认",

@@ -309,6 +309,7 @@ class UpdateChecker:
                 ft.TextButton(_["later"], on_click=lambda _: self.close_dialog()),
                 ft.TextButton(_["download"], on_click=lambda e: self.app.page.loop.create_task(self.start_download(update_info)))
             ],
+            modal=True,
         )
 
         self.app.dialog_area.content = dialog
@@ -355,6 +356,7 @@ class UpdateChecker:
             actions=[
                 ft.TextButton(_["cancel"], on_click=lambda _: self.cancel_download())
             ],
+            modal=True,
         )
 
         self.app.dialog_area.content = self.progress_dialog
@@ -410,6 +412,7 @@ class UpdateChecker:
                     ft.TextButton(_["open_folder"], on_click=lambda _: self.open_download_folder(download_dir)),
                     ft.TextButton(_["ok"], on_click=lambda _: self.close_dialog())
                 ],
+                modal=True,
             )
             
             self.app.dialog_area.content = success_dialog
@@ -428,6 +431,7 @@ class UpdateChecker:
                 actions=[
                     ft.TextButton(_["ok"], on_click=lambda _: self.close_dialog())
                 ],
+                modal=True,
             )
             self.app.dialog_area.content = error_dialog
             self.app.dialog_area.content.open = True
@@ -448,6 +452,7 @@ class UpdateChecker:
                 ft.TextButton(_["no"], on_click=lambda _: self.close_confirm_dialog()),
                 ft.TextButton(_["yes"], on_click=lambda _: self._confirm_cancel_download())
             ],
+            modal=True,
         )
         
         self.app.dialog_area.content = confirm_dialog

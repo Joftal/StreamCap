@@ -361,8 +361,7 @@
     "developer": "Maintainer",
     "author": "Author",
     "view_update": "View Updates",
-    "view_docs": "View Documentation",
-    "update": "Version Update"
+    "view_docs": "View Documentation"
   },
     "base": {
     "confirm": "Confirm",
