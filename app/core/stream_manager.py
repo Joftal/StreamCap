@@ -6,7 +6,7 @@ import subprocess
 import time
 import psutil
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 import sys
 
 from ..messages.message_pusher import MessagePusher
@@ -1081,3 +1081,132 @@ class LiveStreamRecorder:
             # 只记录调试级别日志，避免大量错误日志
             logger.debug(f"监测进程IO出错: {str(e)}")
             return speed
+
+    async def get_room_id_from_short_url(self, short_url: str) -> Optional[str]:
+        """
+        从短链接中获取真实房间ID
+        
+        Args:
+            short_url: 短链接URL
+            
+        Returns:
+            真实房间ID，如果解析失败则返回None
+        """
+        try:
+            import aiohttp
+            from urllib.parse import urlparse
+            
+            # 设置超时时间，避免长时间等待
+            timeout = aiohttp.ClientTimeout(total=10)
+            
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                # 设置请求头，模拟浏览器行为
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+                    'Accept-Encoding': 'gzip, deflate',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1',
+                }
+                
+                # 发送请求获取重定向后的URL
+                async with session.get(short_url, headers=headers, allow_redirects=True) as response:
+                    if response.status == 200:
+                        final_url = str(response.url)
+                        logger.info(f"短链接 {short_url} 解析为: {final_url}")
+                        
+                        # 根据平台解析房间ID
+                        if "v.douyin.com" in short_url:
+                            return self._extract_douyin_room_id_from_url(final_url)
+                        elif "v.kuaishou.com" in short_url:
+                            return self._extract_kuaishou_room_id_from_url(final_url)
+                        elif "xhslink.com" in short_url:
+                            return self._extract_xiaohongshu_room_id_from_url(final_url)
+                        elif "tb.cn" in short_url:
+                            return self._extract_taobao_room_id_from_url(final_url)
+                        elif "3.cn" in short_url:
+                            return self._extract_jd_room_id_from_url(final_url)
+                        else:
+                            logger.warning(f"未知的短链接平台: {short_url}")
+                            return None
+                    else:
+                        logger.warning(f"短链接解析失败，状态码: {response.status}")
+                        return None
+                        
+        except asyncio.TimeoutError:
+            logger.warning(f"短链接解析超时: {short_url}")
+            return None
+        except Exception as e:
+            logger.error(f"短链接解析出错: {short_url}, 错误: {e}")
+            return None
+    
+    def _extract_douyin_room_id_from_url(self, url: str) -> Optional[str]:
+        """从抖音URL中提取房间ID"""
+        try:
+            # 抖音直播URL格式: https://live.douyin.com/房间ID
+            if "live.douyin.com" in url:
+                parts = url.split("live.douyin.com/")
+                if len(parts) > 1:
+                    room_id = parts[1].split("?")[0].split("/")[0]
+                    return room_id if room_id else None
+            return None
+        except Exception as e:
+            logger.error(f"提取抖音房间ID失败: {url}, 错误: {e}")
+            return None
+    
+    def _extract_kuaishou_room_id_from_url(self, url: str) -> Optional[str]:
+        """从快手URL中提取房间ID"""
+        try:
+            # 快手直播URL格式: https://live.kuaishou.com/u/用户ID
+            if "live.kuaishou.com/u/" in url:
+                parts = url.split("live.kuaishou.com/u/")
+                if len(parts) > 1:
+                    user_id = parts[1].split("?")[0].split("/")[0]
+                    return user_id if user_id else None
+            return None
+        except Exception as e:
+            logger.error(f"提取快手房间ID失败: {url}, 错误: {e}")
+            return None
+    
+    def _extract_xiaohongshu_room_id_from_url(self, url: str) -> Optional[str]:
+        """从小红书URL中提取房间ID"""
+        try:
+            # 小红书用户URL格式: https://www.xiaohongshu.com/user/profile/用户ID
+            if "xiaohongshu.com/user/profile/" in url:
+                parts = url.split("xiaohongshu.com/user/profile/")
+                if len(parts) > 1:
+                    user_id = parts[1].split("?")[0].split("/")[0]
+                    return user_id if user_id else None
+            return None
+        except Exception as e:
+            logger.error(f"提取小红书房间ID失败: {url}, 错误: {e}")
+            return None
+    
+    def _extract_taobao_room_id_from_url(self, url: str) -> Optional[str]:
+        """从淘宝URL中提取房间ID"""
+        try:
+            # 淘宝商品URL格式: https://item.taobao.com/item.htm?id=商品ID
+            if "item.taobao.com/item.htm" in url and "id=" in url:
+                parts = url.split("id=")
+                if len(parts) > 1:
+                    item_id = parts[1].split("&")[0]
+                    return item_id if item_id else None
+            return None
+        except Exception as e:
+            logger.error(f"提取淘宝房间ID失败: {url}, 错误: {e}")
+            return None
+    
+    def _extract_jd_room_id_from_url(self, url: str) -> Optional[str]:
+        """从京东URL中提取房间ID"""
+        try:
+            # 京东商品URL格式: https://item.jd.com/商品ID.html
+            if "item.jd.com" in url:
+                parts = url.split("item.jd.com/")
+                if len(parts) > 1:
+                    item_id = parts[1].split(".")[0]
+                    return item_id if item_id else None
+            return None
+        except Exception as e:
+            logger.error(f"提取京东房间ID失败: {url}, 错误: {e}")
+            return None

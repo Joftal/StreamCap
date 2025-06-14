@@ -1,4 +1,5 @@
 import flet as ft
+import asyncio
 
 from ...core.platform_handlers import get_platform_info
 from ...models.audio_format_model import AudioFormat
@@ -6,6 +7,7 @@ from ...models.video_format_model import VideoFormat
 from ...models.video_quality_model import VideoQuality
 from ...utils import utils
 from ...utils.logger import logger
+from ...utils.room_checker import RoomChecker
 
 
 class RecordingDialog:
@@ -32,6 +34,15 @@ class RecordingDialog:
             is_active = utils.is_valid_url(url_field.value.strip()) or utils.contains_url(batch_input.value.strip())
             dialog.actions[1].disabled = not is_active
             self.page.update()
+
+        # 创建提示文本控件
+        alert_text = ft.Text(
+            "",
+            color=ft.colors.RED_400,
+            size=16,
+            weight=ft.FontWeight.BOLD,
+            visible=False
+        )
 
         async def update_format_options(e):
             if e.control.value == "video":
@@ -301,161 +312,276 @@ class RecordingDialog:
             await self.app.snack_bar.show_snack_bar(self._["platform_not_supported_tip"], duration=3000)
 
         async def on_confirm(e):
-            if tabs.selected_index == 0:
-                quality_info = self._[quality_dropdown.value]
+            # 禁用确认按钮并显示加载状态
+            confirm_button.disabled = True
+            confirm_button.text = self._["creating"]
+            self.page.update()
+            
+            try:
+                if tabs.selected_index == 0:
+                    quality_info = self._[quality_dropdown.value]
 
-                if not streamer_name_field.value:
-                    anchor_name = self._["live_room"]
-                    title = f"{anchor_name} - {quality_info}"
-                else:
-                    anchor_name = streamer_name_field.value.strip()
-                    title = f"{anchor_name} - {quality_info}"
+                    if not streamer_name_field.value:
+                        anchor_name = self._["live_room"]
+                        title = f"{anchor_name} - {quality_info}"
+                    else:
+                        anchor_name = streamer_name_field.value.strip()
+                        title = f"{anchor_name} - {quality_info}"
 
-                display_title = title
-                rec_id = self.recording.rec_id if self.recording else None
-                live_url = url_field.value.strip()
-                platform, platform_key = get_platform_info(live_url)
-                if not platform:
-                    await not_supported(url_field.value)
-                    await close_dialog(e)
-                    return
+                    display_title = title
+                    rec_id = self.recording.rec_id if self.recording else None
+                    live_url = url_field.value.strip()
+                    platform, platform_key = get_platform_info(live_url)
+                    if not platform:
+                        await not_supported(url_field.value)
+                        await close_dialog(e)
+                        return
 
-                # 新增：直接获取直播间信息
-                real_anchor_name = anchor_name
-                real_title = title
-                try:
-                    from ...core.stream_manager import LiveStreamRecorder
-                    recording_info_dict = {
-                        "platform": platform,
-                        "platform_key": platform_key,
-                        "live_url": live_url,
-                        "output_dir": self.app.record_manager.settings.get_video_save_path(),
-                        "segment_record": segment_input.visible,
-                        "segment_time": segment_input.value,
-                        "save_format": record_format_field.value,
-                        "quality": quality_dropdown.value,
-                    }
-                    # 创建一个临时Recording对象传递给LiveStreamRecorder，避免使用None
-                    from ...models.recording_model import Recording
-                    temp_recording = Recording(
-                        rec_id=None,
-                        url=live_url,
-                        streamer_name=anchor_name,
-                        record_format=record_format_field.value,
-                        quality=quality_dropdown.value,
-                        segment_record=segment_input.visible,
-                        segment_time=segment_input.value,
-                        monitor_status=False,
-                        scheduled_recording=False,
-                        scheduled_start_time=None,
-                        monitor_hours=None,
-                        recording_dir=None,
-                        enabled_message_push=False
+                    # 检查直播间是否已存在
+                    is_duplicate, reason = await RoomChecker.check_duplicate_room(
+                        self.app,
+                        live_url,
+                        streamer_name_field.value.strip() if streamer_name_field.value else None
                     )
                     
-                    # 在编辑对话框中获取直播间信息时，不使用代理，避免可能的JSON解析错误
-                    # 强制设置proxy为None，避免使用系统代理
-                    user_config = self.app.settings.user_config
-                    original_proxy_setting = user_config.get("enable_proxy", False)
-                    original_proxy_platforms = user_config.get("default_platform_with_proxy", "")
-                    
-                    # 临时禁用代理
+                    if is_duplicate:
+                        alert_text.value = f"{self._['live_room_already_exists']} ({reason})"
+                        alert_text.visible = True
+                        self.page.update()
+                        await asyncio.sleep(3)
+                        alert_text.visible = False
+                        self.page.update()
+                        return
+
+                    # 新增：直接获取直播间信息
+                    real_anchor_name = anchor_name
+                    real_title = title
                     try:
-                        # 创建不使用代理的LiveStreamRecorder实例
-                        recorder = LiveStreamRecorder(self.app, temp_recording, recording_info_dict)
-                        # 强制设置proxy为None
-                        recorder.proxy = None
-                        stream_info = await recorder.fetch_stream()
-                        if stream_info:
-                            real_anchor_name = getattr(stream_info, "anchor_name", anchor_name)
-                            real_title = getattr(stream_info, "title", title)
-                    except Exception as ex:
-                        logger.error(f"[Dialog] 不使用代理获取直播间信息失败: {ex}")
-                        # 如果不使用代理失败，尝试使用代理
-                        logger.info("[Dialog] 尝试使用代理获取直播间信息")
+                        from ...core.stream_manager import LiveStreamRecorder
+                        recording_info_dict = {
+                            "platform": platform,
+                            "platform_key": platform_key,
+                            "live_url": live_url,
+                            "output_dir": self.app.record_manager.settings.get_video_save_path(),
+                            "segment_record": segment_input.visible,
+                            "segment_time": segment_input.value,
+                            "save_format": record_format_field.value,
+                            "quality": quality_dropdown.value,
+                        }
+                        # 创建一个临时Recording对象传递给LiveStreamRecorder，避免使用None
+                        from ...models.recording_model import Recording
+                        temp_recording = Recording(
+                            rec_id=None,
+                            url=live_url,
+                            streamer_name=anchor_name,
+                            record_format=record_format_field.value,
+                            quality=quality_dropdown.value,
+                            segment_record=segment_input.visible,
+                            segment_time=segment_input.value,
+                            monitor_status=False,
+                            scheduled_recording=False,
+                            scheduled_start_time=None,
+                            monitor_hours=None,
+                            recording_dir=None,
+                            enabled_message_push=False
+                        )
+                        
+                        # 在编辑对话框中获取直播间信息时，不使用代理，避免可能的JSON解析错误
+                        # 强制设置proxy为None，避免使用系统代理
+                        user_config = self.app.settings.user_config
+                        original_proxy_setting = user_config.get("enable_proxy", False)
+                        original_proxy_platforms = user_config.get("default_platform_with_proxy", "")
+                        
+                        # 临时禁用代理
                         try:
+                            # 创建不使用代理的LiveStreamRecorder实例
                             recorder = LiveStreamRecorder(self.app, temp_recording, recording_info_dict)
+                            # 强制设置proxy为None
+                            recorder.proxy = None
                             stream_info = await recorder.fetch_stream()
                             if stream_info:
                                 real_anchor_name = getattr(stream_info, "anchor_name", anchor_name)
                                 real_title = getattr(stream_info, "title", title)
-                        except Exception as ex2:
-                            logger.error(f"[Dialog] 使用代理获取直播间信息也失败: {ex2}")
-                            # 继续使用默认值
-                except Exception as ex:
-                    logger.error(f"[Dialog] 获取直播间信息失败: {ex}")
-                    # 继续使用默认值
+                        except Exception as ex:
+                            logger.error(f"[Dialog] 不使用代理获取直播间信息失败: {ex}")
+                            # 如果不使用代理失败，尝试使用代理
+                            logger.info("[Dialog] 尝试使用代理获取直播间信息")
+                            try:
+                                recorder = LiveStreamRecorder(self.app, temp_recording, recording_info_dict)
+                                stream_info = await recorder.fetch_stream()
+                                if stream_info:
+                                    real_anchor_name = getattr(stream_info, "anchor_name", anchor_name)
+                                    real_title = getattr(stream_info, "title", title)
+                            except Exception as ex2:
+                                logger.error(f"[Dialog] 使用代理获取直播间信息也失败: {ex2}")
+                                # 继续使用默认值
+                    except Exception as ex:
+                        logger.error(f"[Dialog] 获取直播间信息失败: {ex}")
+                        # 继续使用默认值
 
-                recordings_info = [
-                    {
-                        "rec_id": rec_id,
-                        "url": live_url,
-                        "streamer_name": real_anchor_name,
-                        "record_format": record_format_field.value,
-                        "quality": quality_dropdown.value,
-                        "quality_info": quality_info,
-                        "title": f"{real_anchor_name} - {quality_info}",
-                        "speed": "0 KB/s",
-                        "segment_record": segment_input.visible,
-                        "segment_time": segment_input.value,
-                        "monitor_status": initial_values.get("monitor_status", True),
-                        "display_title": f"{real_anchor_name} - {quality_info}",
-                        "scheduled_recording": schedule_and_monitor_row.visible,
-                        "scheduled_start_time": str(scheduled_start_time_input.value),
-                        "monitor_hours": monitor_hours_input.value,
-                        "recording_dir": recording_dir_field.value,
-                        "enabled_message_push": message_push_dropdown.value == "true",
-                        "record_mode": record_mode_dropdown.value,
-                        "live_title": real_title,
-                    }
-                ]
-                await self.on_confirm_callback(recordings_info)
+                    recordings_info = [
+                        {
+                            "rec_id": rec_id,
+                            "url": live_url,
+                            "streamer_name": real_anchor_name,
+                            "record_format": record_format_field.value,
+                            "quality": quality_dropdown.value,
+                            "quality_info": quality_info,
+                            "title": f"{real_anchor_name} - {quality_info}",
+                            "speed": "0 KB/s",
+                            "segment_record": segment_input.visible,
+                            "segment_time": segment_input.value,
+                            "monitor_status": initial_values.get("monitor_status", True),
+                            "display_title": f"{real_anchor_name} - {quality_info}",
+                            "scheduled_recording": schedule_and_monitor_row.visible,
+                            "scheduled_start_time": str(scheduled_start_time_input.value),
+                            "monitor_hours": monitor_hours_input.value,
+                            "recording_dir": recording_dir_field.value,
+                            "enabled_message_push": message_push_dropdown.value == "true",
+                            "record_mode": record_mode_dropdown.value,
+                            "live_title": real_title,
+                        }
+                    ]
+                    await self.on_confirm_callback(recordings_info)
 
-            elif tabs.selected_index == 1:  # Batch entry
-                lines = batch_input.value.splitlines()
-                recordings_info = []
-                streamer_name = ""
-                quality = "OD"
-                quality_dict = {"0": "OD", "1": "UHD", "2": "HD", "3": "SD", "4": "LD"}
-                for line in lines:
-                    if "http" not in line:
-                        continue
-                    res = [i for i in line.strip().replace("，", ",").split(",") if i]
-                    if len(res) == 3:
-                        quality, url, streamer_name = res
-                    elif len(res) == 2:
-                        if res[1].startswith("http"):
-                            quality, url = res
+                elif tabs.selected_index == 1:  # Batch entry
+                    lines = batch_input.value.splitlines()
+                    recordings_info = []
+                    filtered_urls = []
+                    streamer_name = ""
+                    quality = "OD"
+                    quality_dict = {"0": "OD", "1": "UHD", "2": "HD", "3": "SD", "4": "LD"}
+                    
+                    # 收集所有URL和主播名称
+                    urls = []
+                    streamer_names = []
+                    for line in lines:
+                        if "http" not in line:
+                            continue
+                        res = [i for i in line.strip().replace("，", ",").split(",") if i]
+                        if len(res) == 3:
+                            quality, url, streamer_name = res
+                        elif len(res) == 2:
+                            if res[1].startswith("http"):
+                                quality, url = res
+                            else:
+                                url, streamer_name = res
                         else:
-                            url, streamer_name = res
+                            url = res[0]
+                        
+                        urls.append(url.strip())
+                        streamer_names.append(streamer_name.strip() if streamer_name else "")
+                    
+                    # 内部去重
+                    unique_urls = []
+                    unique_streamer_names = []
+                    seen_urls = set()
+                    
+                    for i, url in enumerate(urls):
+                        if url not in seen_urls:
+                            seen_urls.add(url)
+                            unique_urls.append(url)
+                            unique_streamer_names.append(streamer_names[i])
+                    
+                    # 使用去重后的URL进行批量检查
+                    valid_urls, filtered_urls = await RoomChecker.batch_check_duplicate_rooms(
+                        self.app,
+                        unique_urls,
+                        unique_streamer_names
+                    )
+                    
+                    # 处理有效的URL
+                    for i, url in enumerate(unique_urls):
+                        if url in valid_urls:
+                            streamer_name = unique_streamer_names[i]
+                            quality = "OD"  # 默认质量
+                            
+                            # 从原始输入中获取质量设置
+                            for line in lines:
+                                if url in line:
+                                    res = [i for i in line.strip().replace("，", ",").split(",") if i]
+                                    if len(res) >= 2 and res[0] in quality_dict:
+                                        quality = quality_dict[res[0]]
+                                    break
+                            
+                            platform, platform_key = get_platform_info(url)
+                            if not platform:
+                                await not_supported(url)
+                                continue
+
+                            title = f"{streamer_name} - {self._[quality]}"
+                            display_title = title
+                            if not streamer_name:
+                                streamer_name = self._["live_room"]
+                                display_title = streamer_name + url.split("?")[0] + "... - " + self._[quality]
+
+                            recording_info = {
+                                "url": url,
+                                "streamer_name": streamer_name,
+                                "quality": quality,
+                                "quality_info": self._[VideoQuality.OD],
+                                "title": title,
+                                "display_title": display_title,
+                            }
+                            recordings_info.append(recording_info)
+
+                    # 显示过滤统计信息
+                    if filtered_urls:
+                        filtered_count = len(filtered_urls)
+                        total_count = len(urls)
+                        success_count = len(valid_urls)
+                        
+                        # 显示过滤统计信息
+                        alert_text.value = f"{self._['live_room_already_exists']} ({filtered_count}/{total_count})"
+                        alert_text.visible = True
+                        self.page.update()
+                        await asyncio.sleep(3)
+                        alert_text.visible = False
+                        self.page.update()
+                        
+                        # 只有当有成功添加的直播间时才显示成功提示
+                        if success_count > 0:
+                            await self.on_confirm_callback(recordings_info)
+                            await close_dialog(e)
+                            # 显示成功提示
+                            await self.app.snack_bar.show_snack_bar(
+                                self._["success_add_rooms"].format(count=success_count),
+                                duration=3000
+                            )
+                            # 显示差异文件路径提示
+                            diff_file_path = await RoomChecker.get_diff_file_path()
+                            if diff_file_path:
+                                await asyncio.sleep(3)  # 等待上一个提示消失
+                                await self.app.snack_bar.show_snack_bar(
+                                    f"差异文件已保存至: {diff_file_path}",
+                                    duration=5000
+                                )
+                        else:
+                            # 如果所有直播间都被过滤掉了，显示提示并关闭对话框
+                            await close_dialog(e)
+                            await self.app.snack_bar.show_snack_bar(
+                                self._["all_rooms_exist"],
+                                duration=3000
+                            )
+                            # 显示差异文件路径提示
+                            diff_file_path = await RoomChecker.get_diff_file_path()
+                            if diff_file_path:
+                                await asyncio.sleep(3)  # 等待上一个提示消失
+                                await self.app.snack_bar.show_snack_bar(
+                                    f"差异文件已保存至: {diff_file_path}",
+                                    duration=5000
+                                )
                     else:
-                        url = res[0]
+                        # 如果没有重复的直播间，直接添加
+                        await self.on_confirm_callback(recordings_info)
+                        await close_dialog(e)
 
-                    platform, platform_key = get_platform_info(url)
-                    if not platform:
-                        await not_supported(url)
-                        continue
-
-                    quality = quality_dict.get(quality, "OD")
-                    title = f"{streamer_name} - {self._[quality]}"
-                    display_title = title
-                    if not streamer_name:
-                        streamer_name = self._["live_room"]
-                        display_title = streamer_name + url.split("?")[0] + "... - " + self._[quality]
-
-                    recording_info = {
-                        "url": url.strip(),
-                        "streamer_name": streamer_name,
-                        "quality": quality,
-                        "quality_info": self._[VideoQuality.OD],
-                        "title": title,
-                        "display_title": display_title,
-                    }
-                    recordings_info.append(recording_info)
-
-                await self.on_confirm_callback(recordings_info)
-
-            await close_dialog(e)
+                await close_dialog(e)
+            finally:
+                # 恢复确认按钮状态
+                confirm_button.disabled = False
+                confirm_button.text = self._["sure"]
+                self.page.update()
 
         async def close_dialog(_):
             dialog.open = False
@@ -469,9 +595,20 @@ class RecordingDialog:
             modal=True,
             title=ft.Row(
                 [
-                    ft.Text(title_text, size=16, theme_style=ft.TextThemeStyle.TITLE_LARGE),
-                    ft.Container(width=10),
-                    close_button,
+                    ft.Container(
+                        content=ft.Text(title_text, size=16, theme_style=ft.TextThemeStyle.TITLE_LARGE),
+                        width=120
+                    ),
+                    ft.Container(
+                        content=alert_text,
+                        expand=True,
+                        alignment=ft.alignment.center,
+                        margin=ft.margin.only(left=-60)  # 向左偏移以补偿左侧标题文本的宽度
+                    ),
+                    ft.Container(
+                        content=close_button,
+                        width=40
+                    ),
                 ],
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                 width=500
@@ -484,6 +621,9 @@ class RecordingDialog:
             actions_alignment=ft.MainAxisAlignment.END,
             shape=ft.RoundedRectangleBorder(radius=10)
         )
+
+        # 保存确认按钮的引用
+        confirm_button = dialog.actions[1]
 
         self.page.overlay.append(dialog)
         self.page.update()

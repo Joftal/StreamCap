@@ -61,6 +61,33 @@ class PlatformHandler(abc.ABC):
         """
         pass
 
+    def _create_offline_stream_data(self, live_url: str) -> StreamData:
+        """
+        创建表示未开播状态的StreamData对象
+        """
+        return StreamData(
+            platform=self.platform,
+            anchor_name="直播间",
+            is_live=False,
+            title="直播已结束",
+            quality=None,
+            m3u8_url=None,
+            flv_url=None,
+            record_url=None,
+            new_cookies=None,
+            new_token=None,
+            extra=None
+        )
+
+    def _handle_json_data_none(self, json_data: Any, live_url: str) -> StreamData:
+        """
+        处理json_data为None的情况
+        """
+        if json_data is None:
+            logger.warning(f"获取直播信息失败，可能是直播已结束: {live_url}")
+            return self._create_offline_stream_data(live_url)
+        return None  # 表示需要继续处理
+
     @classmethod
     def register(cls: type[T], *patterns: str) -> type[T]:
         """
