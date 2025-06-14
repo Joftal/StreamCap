@@ -1,6 +1,7 @@
 import streamget
 
 from ...utils.utils import trace_error_decorator
+from ...utils.logger import logger
 from .base import PlatformHandler, StreamData
 
 
@@ -29,6 +30,12 @@ class DouyinHandler(PlatformHandler):
             json_data = await self.live_stream.fetch_app_stream_data(url=live_url)
         else:
             json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -50,6 +57,12 @@ class TikTokHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.TikTokLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -71,6 +84,12 @@ class KuaishouHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.KwaiLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -92,6 +111,12 @@ class HuyaHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.HuyaLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_app_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -113,6 +138,12 @@ class DouyuHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.DouyuLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -134,6 +165,12 @@ class YYHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.YYLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -155,6 +192,12 @@ class BilibiliHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.BilibiliLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -176,6 +219,12 @@ class RedNoteHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.RedNoteLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_app_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -197,6 +246,12 @@ class BigoHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.BigoLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -218,6 +273,12 @@ class BluedHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.BluedLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -243,6 +304,12 @@ class SoopHandler(PlatformHandler):
                 proxy_addr=self.proxy, cookies=self.cookies, username=self.username, password=self.password
             )
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -264,6 +331,12 @@ class NeteaseHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.NeteaseLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -285,6 +358,12 @@ class QiandureboHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.QiandureboLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -306,6 +385,12 @@ class PamdaTVHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.PandaLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -327,6 +412,12 @@ class MaoerFMHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.MaoerLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -348,6 +439,12 @@ class LookHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.LookLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -369,6 +466,12 @@ class WinkTVHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.WinkTVLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -394,6 +497,12 @@ class FlexTVHandler(PlatformHandler):
                 proxy_addr=self.proxy, cookies=self.cookies, username=self.username, password=self.password
             )
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -419,6 +528,12 @@ class PopkonTVHandler(PlatformHandler):
                 proxy_addr=self.proxy, cookies=self.cookies, username=self.username, password=self.password
             )
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -444,6 +559,12 @@ class TwitcastingHandler(PlatformHandler):
                 proxy_addr=self.proxy, cookies=self.cookies, username=self.username, password=self.password
             )
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -465,6 +586,12 @@ class BaiduHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.BaiduLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -486,6 +613,12 @@ class WeiboHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.WeiboLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -507,6 +640,12 @@ class KugouHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.KugouLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -528,6 +667,12 @@ class TwitchHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.TwitchLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -549,6 +694,12 @@ class LivemeHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.LiveMeLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -570,6 +721,12 @@ class HuajiaoHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.HuajiaoLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -591,6 +748,12 @@ class ShowRoomHandlerHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.ShowRoomLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -612,6 +775,12 @@ class AcfunHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.AcfunLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -633,6 +802,12 @@ class InkeHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.InkeLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -654,6 +829,12 @@ class YinboHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.YinboLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -675,6 +856,12 @@ class ZhihuHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.ZhihuLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -696,6 +883,12 @@ class ChzzkHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.ChzzkLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -717,6 +910,12 @@ class HaixiuHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.HaixiuLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -738,6 +937,12 @@ class VVXQHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.VVXQLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -759,6 +964,12 @@ class YiqiLiveHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.YiqiLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -780,6 +991,12 @@ class LangLiveHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.LangLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -801,6 +1018,12 @@ class PiaopiaoHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.PiaopaioLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -822,6 +1045,12 @@ class SixRoomHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.SixRoomLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -843,6 +1072,12 @@ class LehaiHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.LehaiLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -864,6 +1099,12 @@ class HuamaoHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.HuamaoLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -885,6 +1126,12 @@ class ShopeeHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.ShopeeLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -906,6 +1153,12 @@ class YoutubeHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.YoutubeLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -927,6 +1180,12 @@ class TaobaoHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.TaobaoLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -948,6 +1207,12 @@ class JDHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.JDLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
@@ -969,6 +1234,12 @@ class FaceitHandler(PlatformHandler):
         if not self.live_stream:
             self.live_stream = streamget.FaceitLiveStream(proxy_addr=self.proxy, cookies=self.cookies)
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
+        
+        # 使用基类的统一方法处理json_data为None的情况
+        offline_result = self._handle_json_data_none(json_data, live_url)
+        if offline_result is not None:
+            return offline_result
+        
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
