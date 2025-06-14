@@ -61,6 +61,7 @@
     "batch_input": "批量录入",
     "live_room": "直播间",
     "platform_not_supported_tip": "⚠️ 暂不支持该平台录制",
+    "live_room_already_exists": "⚠️ 该直播间已存在",
     "pick_time": "选择时间",
     "pick_time_tip": "配置定时时间",
     "time_out_of_range": "选择时间超出范围",

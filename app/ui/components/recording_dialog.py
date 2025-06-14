@@ -1,4 +1,5 @@
 import flet as ft
+import asyncio
 
 from ...core.platform_handlers import get_platform_info
 from ...models.audio_format_model import AudioFormat
@@ -6,6 +7,7 @@ from ...models.video_format_model import VideoFormat
 from ...models.video_quality_model import VideoQuality
 from ...utils import utils
 from ...utils.logger import logger
+from ...utils.room_checker import RoomChecker
 
 
 class RecordingDialog:
@@ -32,6 +34,15 @@ class RecordingDialog:
             is_active = utils.is_valid_url(url_field.value.strip()) or utils.contains_url(batch_input.value.strip())
             dialog.actions[1].disabled = not is_active
             self.page.update()
+
+        # 创建提示文本控件
+        alert_text = ft.Text(
+            "",
+            color=ft.colors.RED_400,
+            size=16,
+            weight=ft.FontWeight.BOLD,
+            visible=False
+        )
 
         async def update_format_options(e):
             if e.control.value == "video":
@@ -320,6 +331,22 @@ class RecordingDialog:
                     await close_dialog(e)
                     return
 
+                # 检查直播间是否已存在
+                is_duplicate, reason = await RoomChecker.check_duplicate_room(
+                    self.app,
+                    live_url,
+                    streamer_name_field.value.strip() if streamer_name_field.value else None
+                )
+                
+                if is_duplicate:
+                    alert_text.value = f"{self._['live_room_already_exists']} ({reason})"
+                    alert_text.visible = True
+                    self.page.update()
+                    await asyncio.sleep(3)
+                    alert_text.visible = False
+                    self.page.update()
+                    return
+
                 # 新增：直接获取直播间信息
                 real_anchor_name = anchor_name
                 real_title = title
@@ -469,9 +496,20 @@ class RecordingDialog:
             modal=True,
             title=ft.Row(
                 [
-                    ft.Text(title_text, size=16, theme_style=ft.TextThemeStyle.TITLE_LARGE),
-                    ft.Container(width=10),
-                    close_button,
+                    ft.Container(
+                        content=ft.Text(title_text, size=16, theme_style=ft.TextThemeStyle.TITLE_LARGE),
+                        width=120
+                    ),
+                    ft.Container(
+                        content=alert_text,
+                        expand=True,
+                        alignment=ft.alignment.center,
+                        margin=ft.margin.only(left=-60)  # 向左偏移以补偿左侧标题文本的宽度
+                    ),
+                    ft.Container(
+                        content=close_button,
+                        width=40
+                    ),
                 ],
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                 width=500
