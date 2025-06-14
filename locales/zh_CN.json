@@ -61,7 +61,7 @@
     "batch_input": "批量录入",
     "live_room": "直播间",
     "platform_not_supported_tip": "⚠️ 暂不支持该平台录制",
-    "live_room_already_exists": "⚠️ 该直播间已存在",
+    "live_room_already_exists": "⚠️ 直播间已存在",
     "pick_time": "选择时间",
     "pick_time_tip": "配置定时时间",
     "time_out_of_range": "选择时间超出范围",
@@ -73,7 +73,9 @@
     "audio": "音频",
     "record_mode": "录制模式",
     "auto_record": "自动录制",
-    "manual_record": "手动录制"
+    "manual_record": "手动录制",
+    "success_add_rooms": "成功添加 {count} 个直播间",
+    "all_rooms_exist": "所有直播间都已存在，无需添加"
   },
   "search_dialog": {
     "search_keyword": "输入搜索关键词",
@@ -378,8 +380,9 @@
     "no": "否",
     "open": "打开",
     "close": "关闭",
-    "enabled": "已开启",
-    "disabled": "未开启"
+    "enabled": "启用",
+    "disabled": "禁用",
+    "creating": "创建中..."
   },
   "video_quality": {
     "OD": "原画",

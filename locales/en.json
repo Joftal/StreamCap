@@ -61,7 +61,7 @@
     "batch_input": "Batch input",
     "live_room": "Live room",
     "platform_not_supported_tip": "⚠️ This platform does not support recording",
-    "live_room_already_exists": "⚠️ This live room already exists",
+    "live_room_already_exists": "⚠️ Live room already exists",
     "pick_time": "Pick time",
     "pick_time_tip": "Configure scheduled time",
     "time_out_of_range": "Time out of range",
@@ -73,7 +73,9 @@
     "audio": "Audio",
     "record_mode": "Record Mode",
     "auto_record": "Auto Record",
-    "manual_record": "Manual Record"
+    "manual_record": "Manual Record",
+    "success_add_rooms": "Successfully added {count} live rooms",
+    "all_rooms_exist": "All live rooms already exist, no need to add"
   },
   "search_dialog": {
     "search_keyword": "Enter search keywords",
@@ -375,7 +377,8 @@
     "open": "Open",
     "close": "Close",
     "enabled": "Enabled",
-    "disabled": "Disabled"
+    "disabled": "Disabled",
+    "creating": "Creating..."
   },
   "video_quality": {
     "OD": "Original",

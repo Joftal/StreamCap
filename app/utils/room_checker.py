@@ -1,6 +1,8 @@
 import re
 import threading
 import time
+import os
+from datetime import datetime
 from typing import Optional, Tuple, Dict, List, Any
 from app.core.platform_handlers import get_platform_info
 from app.models.recording_model import Recording
@@ -876,4 +878,97 @@ class RoomChecker:
             "segment_time": "1800",
             "save_format": "ts",
             "quality": "OD",
-        } 
+        }
+
+    @staticmethod
+    async def batch_check_duplicate_rooms(
+        app,
+        live_urls: List[str],
+        streamer_names: Optional[List[str]] = None,
+        existing_recordings: list[Recording] = None
+    ) -> Tuple[List[str], List[Tuple[str, str]]]:
+        """
+        批量检查直播间是否重复
+        
+        Args:
+            app: 应用实例
+            live_urls: 直播间URL列表
+            streamer_names: 主播名称列表（可选）
+            existing_recordings: 现有的录制列表（可选）
+            
+        Returns:
+            Tuple[List[str], List[Tuple[str, str]]]: (有效的URL列表, 被过滤的URL列表及其原因)
+        """
+        valid_urls = []
+        filtered_urls = []
+        
+        # 确保streamer_names长度与live_urls一致
+        if streamer_names is None:
+            streamer_names = [None] * len(live_urls)
+        elif len(streamer_names) != len(live_urls):
+            logger.warning("主播名称列表长度与URL列表不一致，将使用None填充")
+            streamer_names = streamer_names + [None] * (len(live_urls) - len(streamer_names))
+        
+        # 批量检查
+        for url, streamer_name in zip(live_urls, streamer_names):
+            is_duplicate, reason = await RoomChecker.check_duplicate_room(
+                app, url, streamer_name, existing_recordings
+            )
+            
+            if is_duplicate:
+                filtered_urls.append((url, reason))
+            else:
+                valid_urls.append(url)
+        
+        # 记录过滤信息
+        if filtered_urls:
+            RoomChecker._log_filtered_urls(filtered_urls)
+        
+        return valid_urls, filtered_urls
+
+    @staticmethod
+    def _log_filtered_urls(filtered_urls: List[Tuple[str, str]]):
+        """记录被过滤的URL信息"""
+        try:
+            # 创建logs目录（如果不存在）
+            logs_dir = os.path.join(os.getcwd(), "logs")
+            os.makedirs(logs_dir, exist_ok=True)
+            
+            # 生成文件名（使用当前时间）
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            diff_file = os.path.join(logs_dir, f"filtered_urls_{timestamp}.txt")
+            
+            # 写入文件
+            with open(diff_file, "w", encoding="utf-8") as f:
+                f.write("被过滤的直播间URL列表：\n")
+                f.write("=" * 50 + "\n")
+                for url, reason in filtered_urls:
+                    f.write(f"URL: {url}\n")
+                    f.write(f"原因: {reason}\n")
+                    f.write("-" * 50 + "\n")
+            
+            logger.info(f"差异文件已保存至: {diff_file}")
+            return diff_file
+        except Exception as e:
+            logger.error(f"保存差异文件失败: {e}")
+            return None
+
+    @staticmethod
+    async def get_diff_file_path() -> Optional[str]:
+        """获取最新的差异文件路径"""
+        try:
+            logs_dir = os.path.join(os.getcwd(), "logs")
+            if not os.path.exists(logs_dir):
+                return None
+            
+            # 获取所有差异文件
+            diff_files = [f for f in os.listdir(logs_dir) if f.startswith("filtered_urls_")]
+            if not diff_files:
+                return None
+            
+            # 按时间戳排序，获取最新的文件
+            latest_file = sorted(diff_files)[-1]
+            return os.path.join(logs_dir, latest_file)
+        except Exception as e:
+            logger.error(f"获取差异文件路径失败: {e}")
+            return None 
