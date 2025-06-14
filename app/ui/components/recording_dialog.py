@@ -36,10 +36,14 @@ class RecordingDialog:
         async def update_format_options(e):
             if e.control.value == "video":
                 record_format_field.options = [ft.dropdown.Option(i) for i in VideoFormat.get_formats()]
+                record_format_field.value = self.app.settings.user_config.get("video_format", VideoFormat.TS)
+                quality_dropdown.visible = True
             else:
                 record_format_field.options = [ft.dropdown.Option(i) for i in AudioFormat.get_formats()]
-            record_format_field.value = record_format_field.options[0].key
+                record_format_field.value = self.app.settings.user_config.get("audio_format", AudioFormat.MP3)
+                quality_dropdown.visible = False
             record_format_field.update()
+            quality_dropdown.update()
 
         url_field = ft.TextField(
             label=self._["input_live_link"],
@@ -57,6 +61,7 @@ class RecordingDialog:
             filled=False,
             value=initial_values.get("quality", user_config.get("record_quality", VideoQuality.OD)),
             width=500,
+            visible=True
         )
         streamer_name_field = ft.TextField(
             label=self._["input_anchor_name"],

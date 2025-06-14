@@ -6,6 +6,7 @@ import flet as ft
 
 from ...models.video_format_model import VideoFormat
 from ...models.video_quality_model import VideoQuality
+from ...models.audio_format_model import AudioFormat
 from ...utils.delay import DelayedTaskExecutor
 from ...utils.logger import logger
 from ..base_page import PageBase
@@ -441,6 +442,17 @@ class SettingsPage(PageBase):
                                 data="video_format",
                                 on_change=self.on_change,
                                 tooltip=self._["switch_video_format"],
+                            ),
+                        ),
+                        self.create_setting_row(
+                            self._["audio_record_format"],
+                            ft.Dropdown(
+                                options=[ft.dropdown.Option(i) for i in AudioFormat.get_formats()],
+                                value=self.get_config_value("audio_format", AudioFormat.MP3),
+                                width=200,
+                                data="audio_format",
+                                on_change=self.on_change,
+                                tooltip=self._["switch_audio_format"],
                             ),
                         ),
                         self.create_setting_row(
