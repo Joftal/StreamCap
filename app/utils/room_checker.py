@@ -53,7 +53,7 @@ class RoomChecker:
         "kuaishou": {
             "patterns": [
                 {"url": "live.kuaishou.com/u/", "extract": "split", "split_by": "/u/", "exclude": []},
-                {"url": "live.kuaishou.com", "extract": "path_last", "exclude": []},
+                {"url": "live.kuaishou.com", "extract": "custom", "custom_func": "extract_kuaishou_room_id"},
                 {"url": "v.kuaishou.com", "extract": "short_url"}
             ]
         },
@@ -76,14 +76,14 @@ class RoomChecker:
         "bilibili": {
             "patterns": [
                 {"url": "bilibili.com/h5/", "extract": "split", "split_by": "/h5/", "exclude": ["live.bilibili.com"]},
-                {"url": "bilibili.com", "extract": "path_last", "exclude": ["live.bilibili.com"]}
+                {"url": "bilibili.com", "extract": "custom", "custom_func": "extract_bilibili_room_id"}
             ]
         },
         "xiaohongshu": {
             "patterns": [
                 {"url": "xiaohongshu.com/user/profile/", "extract": "split", "split_by": "/user/profile/", "exclude": []},
                 {"url": "xiaohongshu.com/explore/", "extract": "custom", "custom_func": "extract_xiaohongshu_explore_room_id"},
-                {"url": "xiaohongshu.com", "extract": "path_last", "exclude": []},
+                {"url": "xiaohongshu.com", "extract": "custom", "custom_func": "extract_xiaohongshu_room_id"},
                 {"url": "xhslink.com", "extract": "short_url"}
             ]
         },
@@ -289,7 +289,7 @@ class RoomChecker:
         "faceit": {
             "patterns": [
                 {"url": "faceit.com/players/", "extract": "custom", "custom_func": "extract_faceit_room_id"},
-                {"url": "faceit.com", "extract": "path_last", "exclude": ["stream", "profile", "stats", "players"]}
+                {"url": "faceit.com", "extract": "custom", "custom_func": "extract_faceit_room_id"}
             ]
         }
     }
@@ -434,8 +434,10 @@ class RoomChecker:
     def _extract_tiktok_room_id(url: str) -> Optional[str]:
         """提取TikTok房间ID"""
         try:
-            if "/@" in url and "/live" in url:
-                return url.split("/@")[1].split("/live")[0]
+            if "/@" in url:
+                # 提取@后面的用户名部分
+                username = url.split("/@")[1].split("/")[0]
+                return username if username else None
             return None
         except (IndexError, AttributeError):
             return None
@@ -500,7 +502,7 @@ class RoomChecker:
         """提取Faceit房间ID"""
         try:
             if "/players/" in url:
-                # 提取玩家名，去掉可能的后续路径
+                # 提取玩家名，去掉可能的后续路径（包括/stream）
                 player_part = url.split("/players/")[1].split("?")[0]
                 player_name = player_part.split("/")[0]
                 # 确保不是路径名且不为空
@@ -545,6 +547,58 @@ class RoomChecker:
                 room_id = parts.split("/")[0]
                 return room_id if room_id else None
             return None
+        except (IndexError, AttributeError):
+            return None
+    
+    @staticmethod
+    def _extract_xiaohongshu_room_id(url: str) -> Optional[str]:
+        """提取小红书房间ID"""
+        try:
+            # 处理@用户名格式
+            if "/@" in url:
+                username = url.split("/@")[1].split("/")[0]
+                return username if username else None
+            
+            # 处理普通URL格式
+            parts = url.split("xiaohongshu.com/")[1].split("?")[0]
+            # 排除一些特殊路径
+            if parts in ["explore", "user", "profile", "live"]:
+                return None
+            return parts.split("/")[0] if parts else None
+        except (IndexError, AttributeError):
+            return None
+    
+    @staticmethod
+    def _extract_kuaishou_room_id(url: str) -> Optional[str]:
+        """提取快手房间ID"""
+        try:
+            # 处理/u/格式
+            if "/u/" in url:
+                return url.split("/u/")[1].split("/")[0]
+            
+            # 处理普通URL格式
+            parts = url.split("live.kuaishou.com/")[1].split("?")[0]
+            # 排除一些特殊路径
+            if parts in ["u", "live", "profile"]:
+                return None
+            return parts.split("/")[0] if parts else None
+        except (IndexError, AttributeError):
+            return None
+    
+    @staticmethod
+    def _extract_bilibili_room_id(url: str) -> Optional[str]:
+        """提取B站房间ID"""
+        try:
+            # 处理h5格式
+            if "/h5/" in url:
+                return url.split("/h5/")[1].split("/")[0]
+            
+            # 处理普通URL格式
+            parts = url.split("bilibili.com/")[1].split("?")[0]
+            # 排除一些特殊路径
+            if parts in ["h5", "live", "space", "video"]:
+                return None
+            return parts.split("/")[0] if parts else None
         except (IndexError, AttributeError):
             return None
     
