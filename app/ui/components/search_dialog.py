@@ -38,7 +38,7 @@ class SearchDialog(ft.AlertDialog):
             border_radius=5,
             padding=10,
             margin=ft.margin.only(top=5, bottom=10),
-            width=450,
+            width=500,
             alignment=ft.alignment.center,
         )
         
