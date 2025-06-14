@@ -99,6 +99,7 @@ class RoomChecker:
         },
         "sooplive": {
             "patterns": [
+                {"url": "sooplive.co.kr/", "extract": "custom", "custom_func": "extract_sooplive_room_id"},
                 {"url": "sooplive.co.kr", "extract": "path_last", "exclude": []}
             ]
         },
@@ -533,6 +534,21 @@ class RoomChecker:
             return None
     
     @staticmethod
+    def _extract_sooplive_room_id(url: str) -> Optional[str]:
+        """提取SOOP直播间房间ID（主播用户名）"""
+        try:
+            # SOOP URL格式: https://play.sooplive.co.kr/主播用户名/直播间ID
+            # 或者: https://play.sooplive.co.kr/主播用户名
+            if "sooplive.co.kr/" in url:
+                parts = url.split("sooplive.co.kr/")[1].split("?")[0]
+                # 取第一个路径段作为主播用户名（房间ID）
+                room_id = parts.split("/")[0]
+                return room_id if room_id else None
+            return None
+        except (IndexError, AttributeError):
+            return None
+    
+    @staticmethod
     def _extract_by_platform_rules(url: str, rules: Dict[str, Any]) -> Optional[str]:
         """根据平台规则提取房间ID"""
         try:
@@ -602,7 +618,12 @@ class RoomChecker:
         existing_recordings: list[Recording] = None
     ) -> Tuple[bool, Optional[str]]:
         """
-        检查直播间是否已存在（优化版本）
+        检查直播间是否已存在（按优先级顺序检查）
+        
+        去重检查优先级顺序：
+        1. 最高优先级：URL完全相同
+        2. 次优先级：同平台主播名称相同（主播ID）
+        3. 最低优先级：同平台房间ID相同
         
         Args:
             app: 应用实例
@@ -641,29 +662,14 @@ class RoomChecker:
 
             logger.info(f"识别到平台: {platform} ({platform_key})")
 
-            # 2. 优化检查现有录制
-            # 2.1 首先检查URL是否完全相同（最高优先级，可以早期退出）
+            # 2. 按优先级顺序检查重复
+            # 2.1 最高优先级：检查URL是否完全相同（可以早期退出）
             for recording in existing_recordings:
                 if recording.url == live_url:
                     logger.info("发现重复: URL完全相同")
                     return True, "URL完全相同"
             
-            # 2.2 尝试提取房间ID
-            room_id = RoomChecker.extract_room_id(live_url)
-            
-            # 2.3 如果是短链接且没有提取到房间ID，尝试从缓存或网络获取
-            if not room_id and any(short_url in live_url for short_url in RoomChecker.SHORT_URL_PLATFORMS.keys()):
-                room_id = await RoomChecker._resolve_short_url_room_id(app, live_url, platform, platform_key)
-            
-            # 2.4 检查房间ID（次优先级，仅限同平台）
-            if room_id:
-                duplicate_found = RoomChecker._check_room_id_duplicate(
-                    room_id, platform_key, existing_recordings
-                )
-                if duplicate_found:
-                    return True, "同平台房间ID相同"
-            
-            # 2.5 最后检查主播名称和平台（最低优先级）
+            # 2.2 次优先级：检查主播ID（主播名称）
             real_anchor_name = await RoomChecker._get_real_anchor_name(
                 app, live_url, platform, platform_key, streamer_name
             )
@@ -675,6 +681,21 @@ class RoomChecker:
                 )
                 if duplicate_found:
                     return True, "同平台同名主播"
+            
+            # 2.3 最低优先级：检查房间号
+            room_id = RoomChecker.extract_room_id(live_url)
+            
+            # 如果是短链接且没有提取到房间ID，尝试从缓存或网络获取
+            if not room_id and any(short_url in live_url for short_url in RoomChecker.SHORT_URL_PLATFORMS.keys()):
+                room_id = await RoomChecker._resolve_short_url_room_id(app, live_url, platform, platform_key)
+            
+            # 检查房间ID（最低优先级，仅限同平台）
+            if room_id:
+                duplicate_found = RoomChecker._check_room_id_duplicate(
+                    room_id, platform_key, existing_recordings
+                )
+                if duplicate_found:
+                    return True, "同平台房间ID相同"
 
             logger.info("未发现重复直播间")
             return False, None
@@ -750,7 +771,7 @@ class RoomChecker:
     def _check_room_id_duplicate(
         room_id: str, platform_key: str, existing_recordings: list[Recording]
     ) -> bool:
-        """检查房间ID是否重复"""
+        """检查房间ID是否重复（最低优先级检查）"""
         for recording in existing_recordings:
             # 获取现有录制项的平台信息
             existing_platform, existing_platform_key = RoomChecker._get_cached_platform_info(recording.url)
@@ -772,7 +793,7 @@ class RoomChecker:
     def _check_streamer_name_duplicate(
         real_anchor_name: str, platform_key: str, existing_recordings: list[Recording]
     ) -> bool:
-        """检查主播名称是否重复"""
+        """检查主播名称是否重复（次优先级检查）"""
         for recording in existing_recordings:
             # 获取现有录制项的平台信息
             existing_platform, existing_platform_key = RoomChecker._get_cached_platform_info(recording.url)
