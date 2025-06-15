@@ -38,7 +38,6 @@ class UIDemoApp:
             "offline": "未开播",
             "no_monitor": "未监控",
             "live_monitoring_not_recording": "直播中(未录制)",
-            "monitor_stopped": "停止监控中",
             "edit_record_config": "编辑录制配置",
             "preview_video": "预览视频",
             "delete_monitor": "删除监控",
@@ -59,7 +58,7 @@ class UIDemoApp:
             "filter_live_monitoring_not_recording": "直播中(未录制)",
             "filter_offline": "未开播",
             "filter_error": "录制错误",
-            "filter_stopped": "停止监控中",
+            "filter_stopped": "未监控",
             "platform_filter": "平台筛选",
             "filter_all_platforms": "全部平台",
             # 画质翻译
@@ -484,16 +483,6 @@ class UIDemoApp:
                 height=26,
                 alignment=ft.alignment.center,
             )
-        elif not recording.monitor_status:
-            return ft.Container(
-                content=ft.Text(self._["monitor_stopped"], color=ft.Colors.WHITE, size=12, weight=ft.FontWeight.BOLD),
-                bgcolor=ft.Colors.GREY,
-                border_radius=5,
-                padding=5,
-                width=80,
-                height=26,
-                alignment=ft.alignment.center,
-            )
         elif recording.is_live and recording.monitor_status and not recording.recording:
             # 显示"直播中（未录制）"状态标签
             return ft.Container(
@@ -502,6 +491,17 @@ class UIDemoApp:
                 border_radius=5,
                 padding=5,
                 width=160,
+                height=26,
+                alignment=ft.alignment.center,
+            )
+        elif not recording.monitor_status:
+            # 显示"未监控"状态标签
+            return ft.Container(
+                content=ft.Text(self._["no_monitor"], color=ft.Colors.WHITE, size=12, weight=ft.FontWeight.BOLD),
+                bgcolor=ft.Colors.GREY,
+                border_radius=5,
+                padding=5,
+                width=60,
                 height=26,
                 alignment=ft.alignment.center,
             )
@@ -538,13 +538,8 @@ class UIDemoApp:
         # 状态标签
         status_label = self.create_status_label(recording)
         
-        # 状态前缀
-        status_prefix = ""
-        if not recording.monitor_status:
-            status_prefix = f"[{self._['monitor_stopped']}] "
-        
         # 标题
-        display_title = f"{status_prefix}{recording.title}"
+        display_title = recording.title
         display_title_label = ft.Text(
             display_title, 
             size=14, 

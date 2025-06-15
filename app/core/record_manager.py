@@ -133,7 +133,7 @@ class RecordingManager:
             await self._update_recording(
                 recording=recording,
                 monitor_status=False,
-                display_title=f"[{self._['monitor_stopped']}] {recording.title}",
+                display_title=f"{recording.title}",
                 status_info=RecordingStatus.STOPPED_MONITORING,
                 selected=False,
             )
@@ -237,7 +237,7 @@ class RecordingManager:
             return
 
         if not recording.monitor_status:
-            recording.display_title = f"[{self._['monitor_stopped']}] {recording.title}"
+            recording.display_title = f"{recording.title}"
             recording.status_info = RecordingStatus.STOPPED_MONITORING
 
         elif not recording.is_checking:

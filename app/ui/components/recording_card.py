@@ -106,11 +106,7 @@ class RecordingCardManager:
             disabled=not (recording.monitor_status and (recording.is_live or recording.recording)),
         )
 
-        status_prefix = ""
-        if not recording.monitor_status:
-            status_prefix = f"[{self._['monitor_stopped']}] "
-        
-        display_title = f"{status_prefix}{recording.title}"
+        display_title = recording.title
         display_title_label = ft.Text(
             display_title, 
             size=14, 
@@ -349,13 +345,8 @@ class RecordingCardManager:
             
             recording_card["status_label"] = new_status_label
             
-            # 还原显示标题前缀的逻辑
             if recording_card.get("display_title_label"):
-                status_prefix = ""
-                if not recording.monitor_status:
-                    status_prefix = f"[{self._['monitor_stopped']}] "
-                
-                display_title = f"{status_prefix}{recording.title}"
+                display_title = recording.title
                 recording_card["display_title_label"].value = display_title
                 title_label_weight = ft.FontWeight.BOLD if recording.recording or recording.is_live else None
                 recording_card["display_title_label"].weight = title_label_weight
@@ -412,7 +403,7 @@ class RecordingCardManager:
                     "recording": False,
                     "monitor_status": not recording.monitor_status,
                     "status_info": RecordingStatus.STOPPED_MONITORING,
-                    "display_title": f"[{self._['monitor_stopped']}] {recording.title}",
+                    "display_title": f"{recording.title}",
                 }
             )
             self.app.record_manager.stop_recording(recording, manually_stopped=True)
@@ -475,7 +466,7 @@ class RecordingCardManager:
 
         await self.app.record_manager.update_recording_card(recording, updated_info=recording_dict)
         if not recording_dict["monitor_status"]:
-            recording.display_title = f"[{self._['monitor_stopped']}] " + recording.title
+            recording.display_title = recording.title
 
         recording.scheduled_time_range = await self.app.record_manager.get_scheduled_time_range(
             recording.scheduled_start_time, recording.monitor_hours)
