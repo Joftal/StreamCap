@@ -548,12 +548,12 @@ class RecordingDialog:
                                 self._["success_add_rooms"].format(count=success_count),
                                 duration=3000
                             )
-                            # 显示差异文件路径提示
+                            # 显示过滤文件路径提示
                             diff_file_path = await RoomChecker.get_diff_file_path()
                             if diff_file_path:
                                 await asyncio.sleep(3)  # 等待上一个提示消失
                                 await self.app.snack_bar.show_snack_bar(
-                                    f"差异文件已保存至: {diff_file_path}",
+                                    f"过滤文件已保存至: {diff_file_path}",
                                     duration=5000
                                 )
                         else:
@@ -563,12 +563,12 @@ class RecordingDialog:
                                 self._["all_rooms_exist"],
                                 duration=3000
                             )
-                            # 显示差异文件路径提示
+                            # 显示过滤文件路径提示
                             diff_file_path = await RoomChecker.get_diff_file_path()
                             if diff_file_path:
                                 await asyncio.sleep(3)  # 等待上一个提示消失
                                 await self.app.snack_bar.show_snack_bar(
-                                    f"差异文件已保存至: {diff_file_path}",
+                                    f"过滤文件已保存至: {diff_file_path}",
                                     duration=5000
                                 )
                     else:
