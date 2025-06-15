@@ -32,6 +32,9 @@ jobs:
           else
             git log --pretty=format:"* %s" $PREV_TAG..HEAD > CHANGELOG.md
           fi
+          
+          # 添加分隔线和固定内容
+          echo -e "\n\n---\n\n**下载指南**：\nStreamCap-Windows-Console.zip是带控制台版本的执行文件，一般用户可直接下载StreamCap-Windows-GUI.zip。" >> CHANGELOG.md
 
       - name: Create Release (only for tags)
         id: create_release
