@@ -90,7 +90,6 @@
     "search": "搜索"
   },
   "recording_manager": {
-    "monitor_stopped": "停止监控中",
     "is_live": "直播中",
     "live_room": "直播间",
     "recorded": "已录制",

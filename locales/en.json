@@ -90,7 +90,6 @@
     "search": "Search"
   },
   "recording_manager": {
-    "monitor_stopped": "Stopped monitoring",
     "is_live": "Live streaming in progress",
     "live_room": "Live Room",
     "recorded": "Recorded",
