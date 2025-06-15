@@ -266,6 +266,16 @@ class RecordingDialog:
             hint_text=hint_text_dict.get(self.app.language_code, hint_text_dict["zh_CN"]),
         )
 
+        # 备注输入框
+        remark_field = ft.TextField(
+            label=self._["remark"],
+            hint_text=self._["remark_hint"],
+            border_radius=5,
+            filled=False,
+            value=initial_values.get("remark", ""),
+            max_length=20,
+        )
+
         tabs = ft.Tabs(
             selected_index=0,
             animation_duration=300,
@@ -288,7 +298,8 @@ class RecordingDialog:
                                 scheduled_setting_dropdown,
                                 schedule_and_monitor_row,
                                 monitor_hours_input,
-                                message_push_dropdown
+                                message_push_dropdown,
+                                remark_field  # 新增备注输入框
                             ],
                             tight=True,
                             spacing=10,
@@ -441,6 +452,7 @@ class RecordingDialog:
                             "enabled_message_push": message_push_dropdown.value == "true",
                             "record_mode": record_mode_dropdown.value,
                             "live_title": real_title,
+                            "remark": remark_field.value.strip() if remark_field.value and remark_field.value.strip() else None  # 修改备注处理逻辑
                         }
                     ]
                     await self.on_confirm_callback(recordings_info)

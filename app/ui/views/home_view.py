@@ -554,7 +554,8 @@ class HomePage(PageBase):
                     monitor_hours=recording_info["monitor_hours"],
                     recording_dir=recording_info["recording_dir"],
                     enabled_message_push=recording_info["enabled_message_push"],
-                    record_mode=recording_info.get("record_mode", "auto")
+                    record_mode=recording_info.get("record_mode", "auto"),
+                    remark=recording_info.get("remark")
                 )
             else:
                 recording = Recording(
@@ -571,7 +572,8 @@ class HomePage(PageBase):
                     monitor_hours=user_config.get("monitor_hours"),
                     recording_dir=None,
                     enabled_message_push=True,
-                    record_mode=recording_info.get("record_mode", user_config.get("record_mode", "auto"))
+                    record_mode=recording_info.get("record_mode", user_config.get("record_mode", "auto")),
+                    remark=recording_info.get("remark")
                 )
             recording.live_title = live_title
             if title:

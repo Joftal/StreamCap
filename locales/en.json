@@ -75,7 +75,9 @@
     "auto_record": "Auto Record",
     "manual_record": "Manual Record",
     "success_add_rooms": "Successfully added {count} live rooms",
-    "all_rooms_exist": "All live rooms already exist, no need to add"
+    "all_rooms_exist": "All live rooms already exist, no need to add",
+    "remark": "Remark",
+    "remark_hint": "Enter remark (max 20 Chinese characters)"
   },
   "search_dialog": {
     "search_keyword": "Enter search keywords",

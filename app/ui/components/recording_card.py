@@ -117,7 +117,25 @@ class RecordingCardManager:
             expand=True,
             weight=ft.FontWeight.BOLD if recording.recording or recording.is_live else None,
         )
-        
+
+        # 新增：备注显示（无备注时隐藏）
+        remark_label = None
+        if recording.remark:
+            remark_label = ft.Container(
+                content=ft.Text(
+                    f"备注：{recording.remark}",
+                    size=12,
+                    color=ft.colors.WHITE,
+                    max_lines=1,
+                    no_wrap=True,
+                    overflow=ft.TextOverflow.ELLIPSIS,
+                ),
+                bgcolor=ft.colors.BLUE_700,
+                border_radius=5,
+                padding=ft.padding.only(left=8, right=8, top=2, bottom=2),
+                visible=True,
+            )
+
         open_folder_button = ft.IconButton(
             icon=ft.Icons.FOLDER,
             tooltip=self._["open_folder"],
@@ -156,34 +174,38 @@ class RecordingCardManager:
         logo_container = ft.Container(
             content=platform_logo,
             width=60,
-            height=100,
             alignment=ft.alignment.center,
             padding=ft.padding.all(5),
         )
         
         # 创建右侧内容容器
+        content_column_children = [
+            title_row,
+            duration_text_label,
+            speed_text_label,
+        ]
+        if remark_label:
+            content_column_children.append(remark_label)
+        content_column_children.append(
+            ft.Row(
+                [
+                    record_button,
+                    open_folder_button,
+                    recording_info_button,
+                    preview_button,
+                    get_stream_button,
+                    play_button,
+                    edit_button,
+                    delete_button,
+                    monitor_button
+                ],
+                spacing=3,
+                alignment=ft.MainAxisAlignment.START
+            )
+        )
         content_container = ft.Container(
             content=ft.Column(
-                [
-                    title_row,
-                    duration_text_label,
-                    speed_text_label,
-                    ft.Row(
-                        [
-                            record_button,
-                            open_folder_button,
-                            recording_info_button,
-                            preview_button,
-                            get_stream_button,
-                            play_button,
-                            edit_button,
-                            delete_button,
-                            monitor_button
-                        ],
-                        spacing=3,
-                        alignment=ft.MainAxisAlignment.START
-                    ),
-                ],
+                content_column_children,
                 spacing=3,
                 tight=True
             ),
@@ -194,7 +216,7 @@ class RecordingCardManager:
         card_content_row = ft.Row(
             [logo_container, content_container],
             alignment=ft.MainAxisAlignment.START,
-            vertical_alignment=ft.CrossAxisAlignment.START,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
             spacing=0,
         )
 
@@ -318,6 +340,33 @@ class RecordingCardManager:
                 content_container = card_content_row.controls[1]
                 # 获取内容区域的Column
                 content_column = content_container.content
+                
+                # 更新备注显示
+                if recording.remark:
+                    remark_container = ft.Container(
+                        content=ft.Text(
+                            f"备注：{recording.remark}",
+                            size=12,
+                            color=ft.colors.WHITE,
+                            max_lines=1,
+                            no_wrap=True,
+                            overflow=ft.TextOverflow.ELLIPSIS,
+                        ),
+                        bgcolor=ft.colors.BLUE_700,
+                        border_radius=5,
+                        padding=ft.padding.only(left=8, right=8, top=2, bottom=2),
+                        visible=True,
+                    )
+                    # 如果已经有备注控件，更新它；否则添加新的备注控件
+                    if len(content_column.controls) > 3 and isinstance(content_column.controls[3], ft.Container):
+                        content_column.controls[3] = remark_container
+                    else:
+                        content_column.controls.insert(3, remark_container)
+                else:
+                    # 如果没有备注，移除备注控件（如果存在）
+                    if len(content_column.controls) > 3 and isinstance(content_column.controls[3], ft.Container):
+                        content_column.controls.pop(3)
+                
                 # 获取标题行（Column的第一个控件）
                 title_row = content_column.controls[0]
                 

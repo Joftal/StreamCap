@@ -20,7 +20,8 @@ class Recording:
         enabled_message_push,
         media_type: str = "video",
         record_format: str = None,
-        record_mode="auto"
+        record_mode="auto",
+        remark: str = None  # 新增备注参数
     ):
         """
         Initialize a recording object.
@@ -40,6 +41,7 @@ class Recording:
         :param recording_dir: Directory path where the recorded files will be saved.
         :param enabled_message_push: Whether to enable message push.
         :param record_mode: Recording mode, either 'auto' or 'manual'.
+        :param remark: Remark for the recording task, limited to 20 Chinese characters.
         """
 
         self.rec_id = rec_id
@@ -82,6 +84,7 @@ class Recording:
         # 设置媒体类型和录制格式
         self.media_type = media_type
         self.record_format = record_format
+        self.remark = remark if remark and len(remark) <= 20 else None
 
     def to_dict(self):
         """Convert the Recording instance to a dictionary for saving."""
@@ -101,6 +104,7 @@ class Recording:
             "recording_dir": self.recording_dir,
             "enabled_message_push": self.enabled_message_push,
             "record_mode": self.record_mode,
+            "remark": self.remark,  # 添加备注到保存数据中
         }
 
     @classmethod
@@ -122,6 +126,7 @@ class Recording:
             data.get("media_type"),
             data.get("record_format"),
             data.get("record_mode", "auto"),
+            data.get("remark"),  # 从数据中读取备注
         )
         recording.title = data.get("title", recording.title)
         recording.display_title = data.get("display_title", recording.title)
