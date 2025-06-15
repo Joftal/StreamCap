@@ -1,6 +1,8 @@
+import asyncio
 import flet as ft
 
 from ..themes import PopupColorItem, ThemeManager
+from ...utils.logger import logger
 
 
 class ControlGroup:
@@ -67,6 +69,8 @@ class LeftNavigationMenu(ft.Column):
         self.rail = None
         self.dark_light_text = None
         self.dark_light_icon = None
+        self.speed_display_text = None
+        self.speed_display_icon = None
         self.bottom_controls = None
         self.first_run = True
         self.theme_manager = ThemeManager(self.app)
@@ -91,6 +95,23 @@ class LeftNavigationMenu(ft.Column):
                 icon=ft.Icons.BRIGHTNESS_2_OUTLINED,
                 tooltip=self._["toggle_night_theme"],
                 on_click=self.theme_changed,
+            )
+            
+        # 添加速度显示控制按钮
+        show_recording_speed = self.app.settings.user_config.get("show_recording_speed", True)
+        if show_recording_speed:
+            self.speed_display_text = ft.Text(self._["show_speed"])
+            self.speed_display_icon = ft.IconButton(
+                icon=ft.Icons.SPEED,
+                tooltip=self._["toggle_hide_speed"],
+                on_click=self.speed_display_changed,
+            )
+        else:
+            self.speed_display_text = ft.Text(self._["hide_speed"])
+            self.speed_display_icon = ft.IconButton(
+                icon=ft.Icons.VISIBILITY_OFF,
+                tooltip=self._["toggle_show_speed"],
+                on_click=self.speed_display_changed,
             )
 
         color_names = {
@@ -118,6 +139,15 @@ class LeftNavigationMenu(ft.Column):
 
         self.bottom_controls = ft.Column(
             controls=[
+                # 添加速度显示控制行
+                ft.Row(
+                    controls=[
+                        self.speed_display_icon,
+                        self.speed_display_text,
+                    ],
+                    alignment=ft.MainAxisAlignment.START,
+                ),
+                # 原有的深色/浅色主题切换行
                 ft.Row(
                     controls=[
                         self.dark_light_icon,
@@ -167,6 +197,65 @@ class LeftNavigationMenu(ft.Column):
             self.app.settings.user_config["theme_mode"] = "light"
         self.page.run_task(self.app.config_manager.save_user_config, self.app.settings.user_config)
         await self.on_theme_change()
+        page.update()
+
+    async def speed_display_changed(self, _):
+        page = self.app.page
+        self._ = self.app.language_manager.language.get("sidebar")
+        # 获取当前设置状态并切换
+        show_recording_speed = not self.app.settings.user_config.get("show_recording_speed", True)
+        self.app.settings.user_config["show_recording_speed"] = show_recording_speed
+        
+        # 更新UI元素
+        if show_recording_speed:
+            self.speed_display_text.value = self._["show_speed"]
+            self.speed_display_icon.icon = ft.Icons.SPEED
+            self.speed_display_icon.tooltip = self._["toggle_hide_speed"]
+            # 添加开启速度监控的提示，使用国际化文本
+            self.app.page.run_task(self.app.snack_bar.show_snack_bar, self._["speed_monitor_enabled"], ft.Colors.GREEN)
+        else:
+            self.speed_display_text.value = self._["hide_speed"]
+            self.speed_display_icon.icon = ft.Icons.VISIBILITY_OFF
+            self.speed_display_icon.tooltip = self._["toggle_show_speed"]
+            # 添加关闭速度监控的提示，使用国际化文本
+            self.app.page.run_task(self.app.snack_bar.show_snack_bar, self._["speed_monitor_disabled"], ft.Colors.BLUE)
+            
+        # 保存配置并更新UI
+        self.page.run_task(self.app.config_manager.save_user_config, self.app.settings.user_config)
+        
+        # 确保所有现有卡片都立即更新以反映速度监控状态的变化
+        if hasattr(self.app, 'record_card_manager') and hasattr(self.app, 'record_manager'):
+            # 使用分批更新卡片的方式，避免UI卡顿
+            recordings = self.app.record_manager.recordings
+            if recordings:
+                # 批量更新卡片，每批最多更新15个
+                batch_size = 15
+                total_recordings = len(recordings)
+                total_batches = (total_recordings + batch_size - 1) // batch_size
+                
+                logger.info(f"开始批量更新录制卡片速度显示状态，共 {total_recordings} 个，分 {total_batches} 批处理")
+                
+                for batch_index in range(total_batches):
+                    start_idx = batch_index * batch_size
+                    end_idx = min(start_idx + batch_size, total_recordings)
+                    batch_recordings = recordings[start_idx:end_idx]
+                    
+                    logger.debug(f"更新第 {batch_index+1}/{total_batches} 批卡片，{len(batch_recordings)} 个")
+                    
+                    # 并行更新当前批次的卡片
+                    update_tasks = []
+                    for recording in batch_recordings:
+                        if recording.rec_id in self.app.record_card_manager.cards_obj:
+                            update_tasks.append(self.app.record_card_manager.update_card(recording))
+                    
+                    if update_tasks:
+                        await asyncio.gather(*update_tasks)
+                        
+                        # 如果不是最后一批，添加短暂延迟让UI有时间响应
+                        if batch_index < total_batches - 1:
+                            await asyncio.sleep(0.05)
+        
+        # 更新导航栏
         page.update()
 
     async def on_theme_change(self):

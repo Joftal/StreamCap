@@ -54,8 +54,10 @@ class RecordingCardManager:
 
     def _create_card_components(self, recording: Recording):
         """create card components."""
-        speed = recording.speed
         duration_text_label = ft.Text(self.app.record_manager.get_duration(recording), size=12)
+
+        # 获取速度监控设置
+        show_recording_speed = self.app.settings.user_config.get("show_recording_speed", True)
 
         # 修改：判断是否禁用录制按钮的条件，包括手动模式和自动模式
         is_record_button_disabled = not recording.monitor_status or (recording.monitor_status and not recording.is_live)
@@ -106,11 +108,7 @@ class RecordingCardManager:
             disabled=not (recording.monitor_status and (recording.is_live or recording.recording)),
         )
 
-        status_prefix = ""
-        if not recording.monitor_status:
-            status_prefix = f"[{self._['monitor_stopped']}] "
-        
-        display_title = f"{status_prefix}{recording.title}"
+        display_title = recording.title
         display_title_label = ft.Text(
             display_title, 
             size=14, 
@@ -121,7 +119,25 @@ class RecordingCardManager:
             expand=True,
             weight=ft.FontWeight.BOLD if recording.recording or recording.is_live else None,
         )
-        
+
+        # 新增：备注显示（无备注时隐藏）
+        remark_label = None
+        if recording.remark:
+            remark_label = ft.Container(
+                content=ft.Text(
+                    f"备注：{recording.remark}",
+                    size=12,
+                    color=ft.colors.WHITE,
+                    max_lines=1,
+                    no_wrap=True,
+                    overflow=ft.TextOverflow.ELLIPSIS,
+                ),
+                bgcolor=ft.colors.BLUE_700,
+                border_radius=5,
+                padding=ft.padding.only(left=8, right=8, top=2, bottom=2),
+                visible=True,
+            )
+
         open_folder_button = ft.IconButton(
             icon=ft.Icons.FOLDER,
             tooltip=self._["open_folder"],
@@ -132,7 +148,14 @@ class RecordingCardManager:
             tooltip=self._["recording_info"],
             on_click=partial(self.recording_info_button_on_click, recording=recording),
         )
-        speed_text_label = ft.Text(f"{self._['speed']} {speed}", size=12)
+        
+        # 创建速度文本标签，始终可见，但内容根据监控设置变化
+        speed_text = f"{self._['speed']} {recording.speed}" if show_recording_speed else f"{self._['speed']} {self._['speed_disabled']}"
+        speed_text_label = ft.Text(
+            speed_text, 
+            size=12,
+            color=ft.colors.GREY if not show_recording_speed else None  # 禁用时显示灰色
+        )
 
         status_label = self.create_status_label(recording)
 
@@ -160,34 +183,38 @@ class RecordingCardManager:
         logo_container = ft.Container(
             content=platform_logo,
             width=60,
-            height=100,
             alignment=ft.alignment.center,
             padding=ft.padding.all(5),
         )
         
         # 创建右侧内容容器
+        content_column_children = [
+            title_row,
+            duration_text_label,
+            speed_text_label,
+        ]
+        if remark_label:
+            content_column_children.append(remark_label)
+        content_column_children.append(
+            ft.Row(
+                [
+                    record_button,
+                    open_folder_button,
+                    recording_info_button,
+                    preview_button,
+                    get_stream_button,
+                    play_button,
+                    edit_button,
+                    delete_button,
+                    monitor_button
+                ],
+                spacing=3,
+                alignment=ft.MainAxisAlignment.START
+            )
+        )
         content_container = ft.Container(
             content=ft.Column(
-                [
-                    title_row,
-                    duration_text_label,
-                    speed_text_label,
-                    ft.Row(
-                        [
-                            record_button,
-                            open_folder_button,
-                            recording_info_button,
-                            preview_button,
-                            get_stream_button,
-                            play_button,
-                            edit_button,
-                            delete_button,
-                            monitor_button
-                        ],
-                        spacing=3,
-                        alignment=ft.MainAxisAlignment.START
-                    ),
-                ],
+                content_column_children,
                 spacing=3,
                 tight=True
             ),
@@ -198,7 +225,7 @@ class RecordingCardManager:
         card_content_row = ft.Row(
             [logo_container, content_container],
             alignment=ft.MainAxisAlignment.START,
-            vertical_alignment=ft.CrossAxisAlignment.START,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
             spacing=0,
         )
 
@@ -313,6 +340,9 @@ class RecordingCardManager:
             if not recording_card:
                 return
 
+            # 获取速度监控设置
+            show_recording_speed = self.app.settings.user_config.get("show_recording_speed", True)
+
             new_status_label = self.create_status_label(recording)
             
             if recording_card["card"] and recording_card["card"].content and recording_card["card"].content.content:
@@ -322,6 +352,33 @@ class RecordingCardManager:
                 content_container = card_content_row.controls[1]
                 # 获取内容区域的Column
                 content_column = content_container.content
+                
+                # 更新备注显示
+                if recording.remark:
+                    remark_container = ft.Container(
+                        content=ft.Text(
+                            f"备注：{recording.remark}",
+                            size=12,
+                            color=ft.colors.WHITE,
+                            max_lines=1,
+                            no_wrap=True,
+                            overflow=ft.TextOverflow.ELLIPSIS,
+                        ),
+                        bgcolor=ft.colors.BLUE_700,
+                        border_radius=5,
+                        padding=ft.padding.only(left=8, right=8, top=2, bottom=2),
+                        visible=True,
+                    )
+                    # 如果已经有备注控件，更新它；否则添加新的备注控件
+                    if len(content_column.controls) > 3 and isinstance(content_column.controls[3], ft.Container):
+                        content_column.controls[3] = remark_container
+                    else:
+                        content_column.controls.insert(3, remark_container)
+                else:
+                    # 如果没有备注，移除备注控件（如果存在）
+                    if len(content_column.controls) > 3 and isinstance(content_column.controls[3], ft.Container):
+                        content_column.controls.pop(3)
+                
                 # 获取标题行（Column的第一个控件）
                 title_row = content_column.controls[0]
                 
@@ -349,13 +406,8 @@ class RecordingCardManager:
             
             recording_card["status_label"] = new_status_label
             
-            # 还原显示标题前缀的逻辑
             if recording_card.get("display_title_label"):
-                status_prefix = ""
-                if not recording.monitor_status:
-                    status_prefix = f"[{self._['monitor_stopped']}] "
-                
-                display_title = f"{status_prefix}{recording.title}"
+                display_title = recording.title
                 recording_card["display_title_label"].value = display_title
                 title_label_weight = ft.FontWeight.BOLD if recording.recording or recording.is_live else None
                 recording_card["display_title_label"].weight = title_label_weight
@@ -364,7 +416,10 @@ class RecordingCardManager:
                 recording_card["duration_label"].value = self.app.record_manager.get_duration(recording)
             
             if recording_card.get("speed_label"):
-                recording_card["speed_label"].value = f"{self._['speed']} {recording.speed}"
+                # 更新速度文本，始终可见但根据监控设置显示不同内容
+                speed_text = f"{self._['speed']} {recording.speed}" if show_recording_speed else f"{self._['speed']} {self._['speed_disabled']}"
+                recording_card["speed_label"].value = speed_text
+                recording_card["speed_label"].color = ft.colors.GREY if not show_recording_speed else None
             
             # 全面刷新所有按钮和文本的国际化内容
             if recording_card.get("record_button"):
@@ -412,7 +467,7 @@ class RecordingCardManager:
                     "recording": False,
                     "monitor_status": not recording.monitor_status,
                     "status_info": RecordingStatus.STOPPED_MONITORING,
-                    "display_title": f"[{self._['monitor_stopped']}] {recording.title}",
+                    "display_title": f"{recording.title}",
                 }
             )
             self.app.record_manager.stop_recording(recording, manually_stopped=True)
@@ -475,7 +530,7 @@ class RecordingCardManager:
 
         await self.app.record_manager.update_recording_card(recording, updated_info=recording_dict)
         if not recording_dict["monitor_status"]:
-            recording.display_title = f"[{self._['monitor_stopped']}] " + recording.title
+            recording.display_title = recording.title
 
         recording.scheduled_time_range = await self.app.record_manager.get_scheduled_time_range(
             recording.scheduled_start_time, recording.monitor_hours)

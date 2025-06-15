@@ -9,7 +9,13 @@
     "theme_color": "主题颜色",
     "toggle_day_theme": "切换为白天模式",
     "toggle_night_theme": "切换为黑夜模式",
-    "colors": "颜色列表"
+    "colors": "颜色列表",
+    "show_speed": "速度检测",
+    "hide_speed": "速度检测",
+    "toggle_show_speed": "开启录制速度检测",
+    "toggle_hide_speed": "关闭录制速度检测",
+    "speed_monitor_enabled": "速度监控已开启，每3秒更新一次速度",
+    "speed_monitor_disabled": "速度监控已关闭"
   },
   "home_page": {
     "recording_list": "录制列表",
@@ -42,32 +48,32 @@
     "recording_cannot_delete_tip": "正在录制中，无法删除直播间"
   },
   "recording_dialog": {
-    "input_live_link": "输入直播间地址",
-    "example": "例如",
+    "input_live_link": "输入直播间链接",
+    "example": "示例",
     "select_resolution": "选择录制清晰度",
     "input_anchor_name": "输入主播名称",
-    "default_input": "可默认不填",
-    "select_record_format": "选择录制格式-默认TS",
+    "default_input": "选填",
+    "select_record_format": "选择录制格式 - 默认TS",
     "input_save_path": "输入录制保存路径",
-    "is_segment_enabled": "分段录制是否开启",
+    "is_segment_enabled": "是否开启分段录制",
     "segment_record_time": "录制分段时间",
-    "input_segment_time": "请输入分段时间（单位秒)",
-    "scheduled_recording": "每日定时监听是否开启",
-    "scheduled_start_time": "每日监听开始时间",
-    "monitor_hours": "每日监听小时数",
+    "input_segment_time": "请输入分段时间（秒）",
+    "scheduled_recording": "是否开启每日定时监控",
+    "scheduled_start_time": "每日监控开始时间",
+    "monitor_hours": "每日监控时长",
     "enable_message_push": "是否开启消息推送",
-    "batch_input_tip": "批量录入（每行一条记录）",
-    "single_input": "单个录入",
-    "batch_input": "批量录入",
+    "batch_input_tip": "批量输入（每行一个）",
+    "single_input": "单个输入",
+    "batch_input": "批量输入",
     "live_room": "直播间",
     "platform_not_supported_tip": "⚠️ 暂不支持该平台录制",
     "live_room_already_exists": "⚠️ 直播间已存在",
     "pick_time": "选择时间",
     "pick_time_tip": "配置定时时间",
-    "time_out_of_range": "选择时间超出范围",
-    "pick_time_slot": "选择您的时间段",
-    "hour_label_text": "时",
-    "minute_label_text": "分",
+    "time_out_of_range": "时间超出范围",
+    "pick_time_slot": "选择时间段",
+    "hour_label_text": "小时",
+    "minute_label_text": "分钟",
     "select_media_type": "选择媒体类型",
     "video": "视频",
     "audio": "音频",
@@ -75,7 +81,9 @@
     "auto_record": "自动录制",
     "manual_record": "手动录制",
     "success_add_rooms": "成功添加 {count} 个直播间",
-    "all_rooms_exist": "所有直播间都已存在，无需添加"
+    "all_rooms_exist": "所有直播间已存在，无需添加",
+    "remark": "备注",
+    "remark_hint": "请输入备注信息（最多20个中文字符）"
   },
   "search_dialog": {
     "search_keyword": "输入搜索关键词",
@@ -90,7 +98,6 @@
     "search": "搜索"
   },
   "recording_manager": {
-    "monitor_stopped": "停止监控中",
     "is_live": "直播中",
     "live_room": "直播间",
     "recorded": "已录制",
@@ -176,7 +183,8 @@
     "tip_not_live": "未开播，无法录制",
     "tip_stop_recording": "停止录制",
     "tip_start_recording": "开始录制",
-    "no_stream_source": "未获取到直播源，不可使用"
+    "no_stream_source": "未获取到直播源，不可使用",
+    "speed_disabled": "已关闭"
   },
   "settings_page": {
     "recording_settings": "录制设置",

@@ -237,7 +237,7 @@ class RecordingDialog:
                 ft.dropdown.Option("auto", self._["auto_record"]),
                 ft.dropdown.Option("manual", self._["manual_record"])
             ],
-            value=initial_values.get("record_mode", "auto"),
+            value=initial_values.get("record_mode", self.app.settings.user_config.get("record_mode", "auto")),
             width=500,
         )
 
@@ -266,6 +266,16 @@ class RecordingDialog:
             hint_text=hint_text_dict.get(self.app.language_code, hint_text_dict["zh_CN"]),
         )
 
+        # 备注输入框
+        remark_field = ft.TextField(
+            label=self._["remark"],
+            hint_text=self._["remark_hint"],
+            border_radius=5,
+            filled=False,
+            value=initial_values.get("remark", ""),
+            max_length=20,
+        )
+
         tabs = ft.Tabs(
             selected_index=0,
             animation_duration=300,
@@ -288,7 +298,8 @@ class RecordingDialog:
                                 scheduled_setting_dropdown,
                                 schedule_and_monitor_row,
                                 monitor_hours_input,
-                                message_push_dropdown
+                                message_push_dropdown,
+                                remark_field  # 新增备注输入框
                             ],
                             tight=True,
                             spacing=10,
@@ -337,21 +348,22 @@ class RecordingDialog:
                         await close_dialog(e)
                         return
 
-                    # 检查直播间是否已存在
-                    is_duplicate, reason = await RoomChecker.check_duplicate_room(
-                        self.app,
-                        live_url,
-                        streamer_name_field.value.strip() if streamer_name_field.value else None
-                    )
-                    
-                    if is_duplicate:
-                        alert_text.value = f"{self._['live_room_already_exists']} ({reason})"
-                        alert_text.visible = True
-                        self.page.update()
-                        await asyncio.sleep(3)
-                        alert_text.visible = False
-                        self.page.update()
-                        return
+                    # 检查直播间是否已存在，但只在添加新房间时检查，编辑已有房间时跳过
+                    if not self.recording:  # 只在添加新房间时检查
+                        is_duplicate, reason = await RoomChecker.check_duplicate_room(
+                            self.app,
+                            live_url,
+                            streamer_name_field.value.strip() if streamer_name_field.value else None
+                        )
+                        
+                        if is_duplicate:
+                            alert_text.value = f"{self._['live_room_already_exists']} ({reason})"
+                            alert_text.visible = True
+                            self.page.update()
+                            await asyncio.sleep(3)
+                            alert_text.visible = False
+                            self.page.update()
+                            return
 
                     # 新增：直接获取直播间信息
                     real_anchor_name = anchor_name
@@ -440,6 +452,7 @@ class RecordingDialog:
                             "enabled_message_push": message_push_dropdown.value == "true",
                             "record_mode": record_mode_dropdown.value,
                             "live_title": real_title,
+                            "remark": remark_field.value.strip() if remark_field.value and remark_field.value.strip() else None  # 修改备注处理逻辑
                         }
                     ]
                     await self.on_confirm_callback(recordings_info)
@@ -522,6 +535,7 @@ class RecordingDialog:
                                 "quality_info": self._[VideoQuality.OD],
                                 "title": title,
                                 "display_title": display_title,
+                                "record_mode": self.app.settings.user_config.get("record_mode", "auto")
                             }
                             recordings_info.append(recording_info)
 
@@ -548,12 +562,12 @@ class RecordingDialog:
                                 self._["success_add_rooms"].format(count=success_count),
                                 duration=3000
                             )
-                            # 显示差异文件路径提示
+                            # 显示过滤文件路径提示
                             diff_file_path = await RoomChecker.get_diff_file_path()
                             if diff_file_path:
                                 await asyncio.sleep(3)  # 等待上一个提示消失
                                 await self.app.snack_bar.show_snack_bar(
-                                    f"差异文件已保存至: {diff_file_path}",
+                                    f"过滤文件已保存至: {diff_file_path}",
                                     duration=5000
                                 )
                         else:
@@ -563,12 +577,12 @@ class RecordingDialog:
                                 self._["all_rooms_exist"],
                                 duration=3000
                             )
-                            # 显示差异文件路径提示
+                            # 显示过滤文件路径提示
                             diff_file_path = await RoomChecker.get_diff_file_path()
                             if diff_file_path:
                                 await asyncio.sleep(3)  # 等待上一个提示消失
                                 await self.app.snack_bar.show_snack_bar(
-                                    f"差异文件已保存至: {diff_file_path}",
+                                    f"过滤文件已保存至: {diff_file_path}",
                                     duration=5000
                                 )
                     else:

@@ -6,17 +6,17 @@
   <a href="https://github.com/ihmily/StreamCap">
       <img alt="Supported Platforms" src="https://img.shields.io/badge/Platforms-Win%20%7C%20Mac%20%7C%20Linux-6B5BFF.svg"></a>
     <a href="https://hub.docker.com/r/ihmily/streamcap/tags">
-      <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/ihmily/streamcap?label=Docker%20Pulls&color=2496ED&logo=docker"></a>
+      <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/joftal/streamcap?label=Docker%20Pulls&color=2496ED&logo=docker"></a>
   <a href="https://github.com/ihmily/StreamCap/releases/latest">
-      <img alt="Latest Release" src="https://img.shields.io/github/v/release/ihmily/StreamCap"></a>
+      <img alt="Latest Release" src="https://img.shields.io/github/v/release/joftal/StreamCap"></a>
   <a href="https://github.com/ihmily/StreamCap/releases/latest">
-      <img alt="Downloads" src="https://img.shields.io/github/downloads/ihmily/StreamCap/total"></a>
+      <img alt="Downloads" src="https://img.shields.io/github/downloads/joftal/StreamCap/total"></a>
 </p>
 <div align="center">
   English / <a href="./README.md">Chinese</a>
 </div><br>
 
-
+This project is a fork of https://github.com/ihmily/StreamCap with some functional differences. We will continue to sync with upstream features. Special thanks to ihmily for the original open-source project.
 
 StreamCap is a multi-platform live stream recording client based on FFmpeg and StreamGet. It covers over 40 mainstream live streaming platforms both domestically and internationally, and supports features such as batch recording, loop monitoring, timed monitoring, and automatic transcoding.
 
@@ -29,10 +29,21 @@ StreamCap is a multi-platform live stream recording client based on FFmpeg and S
 - **Auto Transcoding**: Automatically convert recordings to mp4 format.
 - **Push Notifications**: Get notified when streams go live.
 - **Windows Notifications**: Support for native Windows notifications with platform icons.
+- **Auto Deduplication**: Automatically prevents duplicate monitoring of the same live room.
+- **Global Search**: One-click search to find target monitoring live rooms.
 
-## 📸Recording Interface
+## 📸Main Interface
 
-![StreamCap Interface](./assets/images/example02.jpg)
+![image](https://github.com/user-attachments/assets/349bdeb4-e65e-409e-86e4-4625e7f36e6f)
+
+## 📢Windows Notification Interface
+
+![image](https://github.com/user-attachments/assets/626df9bf-9edf-4fa2-8f25-55c28d776435)
+
+## 📢Platform Logos Support
+
+![image](https://github.com/user-attachments/assets/9b0216c9-08ac-4aa3-88ce-d2da09938a9f)![image](https://github.com/user-attachments/assets/224ab75f-6860-4109-affc-06dca2efb9d7)
+![image](https://github.com/user-attachments/assets/136abc05-9d3c-4395-88c1-2277060179a7)
 
 ## 🛠️Quick Start
 
@@ -56,14 +67,32 @@ cd StreamCap
 
 2.**Install Dependencies**:
 
+StreamCap provides platform-specific dependency files:
+
+- Windows: `requirements-win.txt`
+- macOS: `requirements-mac.txt`
+- Linux: `requirements-linux.txt`
+
+You can install the dependencies using the following commands:
+
 ```bash
-# Install core dependencies
-pip install -i https://pypi.org/simple streamget 
+# Automatically detect platform and install appropriate dependencies
+python install_deps.py
 
-# For desktop
-pip install -r requirements.txt
+# Web environment dependencies
+python install_deps.py --web
 
-# For web
+# Or manually specify the platform
+# Windows
+pip install -r requirements-win.txt
+
+# macOS
+pip install -r requirements-mac.txt
+
+# Linux
+pip install -r requirements-linux.txt
+
+# Web environment
 pip install -r requirements-web.txt
 ```
 
@@ -91,7 +120,7 @@ Alternatively, you can start it without modifying the configuration file by usin
 python main.py --web
 ```
 
-After successful startup, access it via `http://127.0.0.1:6006`.For more configuration details, refer to the [Web Operation Guide](https://github.com/ihmily/StreamCap/wiki/Installation-Guide#web-operation)
+After successful startup, access it via `http://127.0.0.1:6006`. For more configuration details, refer to the [Web Operation Guide](https://github.com/ihmily/StreamCap/wiki/Installation-Guide#web-operation)
 
 If the program prompts that FFmpeg is missing, please visit the FFmpeg official download page [Download FFmpeg](https://ffmpeg.org/download.html) to download the precompiled FFmpeg executable files and configure the environment variables.
 
@@ -119,7 +148,7 @@ docker compose stop
 
 The code version in the Docker image repository may not always be the latest. If you need to run the latest code from the main branch of this repository, you can build it locally as a custom image.
 
-```
+```bash
 docker build -t streamcap .
 ```
 

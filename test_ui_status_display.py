@@ -38,7 +38,6 @@ class UIDemoApp:
             "offline": "未开播",
             "no_monitor": "未监控",
             "live_monitoring_not_recording": "直播中(未录制)",
-            "monitor_stopped": "停止监控中",
             "edit_record_config": "编辑录制配置",
             "preview_video": "预览视频",
             "delete_monitor": "删除监控",
@@ -59,7 +58,7 @@ class UIDemoApp:
             "filter_live_monitoring_not_recording": "直播中(未录制)",
             "filter_offline": "未开播",
             "filter_error": "录制错误",
-            "filter_stopped": "停止监控中",
+            "filter_stopped": "未监控",
             "platform_filter": "平台筛选",
             "filter_all_platforms": "全部平台",
             # 画质翻译
@@ -484,16 +483,6 @@ class UIDemoApp:
                 height=26,
                 alignment=ft.alignment.center,
             )
-        elif not recording.monitor_status:
-            return ft.Container(
-                content=ft.Text(self._["monitor_stopped"], color=ft.Colors.WHITE, size=12, weight=ft.FontWeight.BOLD),
-                bgcolor=ft.Colors.GREY,
-                border_radius=5,
-                padding=5,
-                width=80,
-                height=26,
-                alignment=ft.alignment.center,
-            )
         elif recording.is_live and recording.monitor_status and not recording.recording:
             # 显示"直播中（未录制）"状态标签
             return ft.Container(
@@ -502,6 +491,17 @@ class UIDemoApp:
                 border_radius=5,
                 padding=5,
                 width=160,
+                height=26,
+                alignment=ft.alignment.center,
+            )
+        elif not recording.monitor_status:
+            # 显示"未监控"状态标签
+            return ft.Container(
+                content=ft.Text(self._["no_monitor"], color=ft.Colors.WHITE, size=12, weight=ft.FontWeight.BOLD),
+                bgcolor=ft.Colors.GREY,
+                border_radius=5,
+                padding=5,
+                width=60,
                 height=26,
                 alignment=ft.alignment.center,
             )
@@ -538,13 +538,8 @@ class UIDemoApp:
         # 状态标签
         status_label = self.create_status_label(recording)
         
-        # 状态前缀
-        status_prefix = ""
-        if not recording.monitor_status:
-            status_prefix = f"[{self._['monitor_stopped']}] "
-        
         # 标题
-        display_title = f"{status_prefix}{recording.title}"
+        display_title = recording.title
         display_title_label = ft.Text(
             display_title, 
             size=14, 
@@ -568,6 +563,22 @@ class UIDemoApp:
         duration_text_label = ft.Text("时长: 01:23:45", size=12, weight=ft.FontWeight.BOLD)
         speed_text_label = ft.Text(f"速度: {recording.speed}", size=12, weight=ft.FontWeight.BOLD)
         
+        # 备注信息
+        note_text_label = ft.Container(
+            content=ft.Text(
+                "备注：这是一个测试备注，用于展示备注功能",
+                size=12,
+                color=ft.colors.WHITE,
+                max_lines=1,
+                no_wrap=True,
+                overflow=ft.TextOverflow.ELLIPSIS,
+            ),
+            bgcolor=ft.colors.BLUE_700,
+            border_radius=5,
+            padding=ft.padding.only(left=8, right=8, top=2, bottom=2),
+            visible=True,
+        )
+        
         # 获取平台类型
         platform_type = self.get_platform_type(recording.url)
         
@@ -584,6 +595,14 @@ class UIDemoApp:
             height=50,
             fit=ft.ImageFit.CONTAIN,
             border_radius=ft.border_radius.all(5),
+        )
+        
+        # 创建左侧logo容器
+        logo_container = ft.Container(
+            content=platform_logo,
+            width=60,
+            alignment=ft.alignment.center,
+            padding=ft.padding.all(5),
         )
         
         # 按钮状态设置
@@ -643,15 +662,6 @@ class UIDemoApp:
             alignment=ft.MainAxisAlignment.START
         )
         
-        # 左侧logo容器
-        logo_container = ft.Container(
-            content=platform_logo,
-            width=60,
-            height=100,
-            alignment=ft.alignment.center,
-            padding=ft.padding.all(5),
-        )
-        
         # 右侧内容容器
         content_container = ft.Container(
             content=ft.Column(
@@ -659,6 +669,7 @@ class UIDemoApp:
                     title_row,
                     duration_text_label,
                     speed_text_label,
+                    note_text_label,
                     button_row
                 ],
                 spacing=3,
@@ -671,7 +682,7 @@ class UIDemoApp:
         card_content_row = ft.Row(
             [logo_container, content_container],
             alignment=ft.MainAxisAlignment.START,
-            vertical_alignment=ft.CrossAxisAlignment.START,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
             spacing=0,
         )
         

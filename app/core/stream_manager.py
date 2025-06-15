@@ -1007,13 +1007,25 @@ class LiveStreamRecorder:
             # 添加一个标志位，用于快速响应取消请求
             self.recording._speed_monitor_active = True
             
+            # 为避免循环导入，使用延迟导入方式获取HomePage类
+            from ..ui.views.home_view import HomePage
+            
             while process.returncode is None and self.recording.recording and getattr(self.recording, '_speed_monitor_active', True):
-                current_time = time.time()
+                # 检查用户是否启用了录制速度监控
+                show_recording_speed = self.app.settings.user_config.get("show_recording_speed", True)
+                
+                # 如果禁用了速度监控，则降低监控频率，每5秒检查一次配置变化
+                if not show_recording_speed:
+                    await asyncio.sleep(5)
+                    continue
+                
+                # 启用速度监控时，计算速度
                 speed = await self._get_current_speed(process, interval)
                 
                 if speed:
                     self.recording.speed = speed
                     # 每3秒更新一次UI，减少UI更新频率
+                    current_time = time.time()
                     if current_time - last_update_time >= 3:
                         if hasattr(self.app, 'record_card_manager'):
                             # 检查当前页面是否为主页面，只有在主页面时才更新UI
@@ -1024,7 +1036,7 @@ class LiveStreamRecorder:
                                 except Exception as e:
                                     logger.debug(f"更新录制卡片速度时出错: {str(e)}")
             
-            await asyncio.sleep(interval)
+                await asyncio.sleep(interval)
         except asyncio.CancelledError:
             logger.debug(f"录制速度监测任务被取消，进程ID: {pid}")
         except Exception as e:

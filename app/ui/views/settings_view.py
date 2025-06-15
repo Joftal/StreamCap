@@ -44,7 +44,7 @@ class SettingsPage(PageBase):
     async def load(self):
         self.content_area.clean()
         language = self.app.language_manager.language
-        self._ = language["settings_page"] | language["video_quality"] | language["base"]
+        self._ = language["settings_page"] | language["video_quality"] | language["base"] | language["recording_dialog"]
         self.tab_recording = self.create_recording_settings_tab()
         self.tab_push = self.create_push_settings_tab()
         self.tab_cookies = self.create_cookies_settings_tab()
@@ -121,12 +121,15 @@ class SettingsPage(PageBase):
         async def confirm_dlg(_):
             ui_language = self.user_config["language"]
             vlc_path = self.user_config.get("vlc_path", "")
+            record_mode = self.user_config.get("record_mode", "auto")
             self.user_config = self.default_config.copy()
             self.user_config["language"] = ui_language
             self.user_config["enable_proxy"] = False
             # 保留VLC路径设置
             if vlc_path:
                 self.user_config["vlc_path"] = vlc_path
+            # 保留录制模式设置
+            self.user_config["record_mode"] = record_mode
             # 恢复默认平台筛选风格为平铺
             self.user_config["platform_filter_style"] = "tile"
             self.app.language_manager.notify_observers()
@@ -464,6 +467,20 @@ class SettingsPage(PageBase):
                                 data="record_quality",
                                 on_change=self.on_change,
                                 tooltip=self._["switch_recording_quality"],
+                            ),
+                        ),
+                        self.create_setting_row(
+                            self._["record_mode"],
+                            ft.Dropdown(
+                                options=[
+                                    ft.dropdown.Option("auto", text=self._["auto_record"]),
+                                    ft.dropdown.Option("manual", text=self._["manual_record"])
+                                ],
+                                value=self.get_config_value("record_mode", "auto"),
+                                width=200,
+                                data="record_mode",
+                                on_change=self.on_change,
+                                tooltip=self._["record_mode"],
                             ),
                         ),
                         self.create_setting_row(

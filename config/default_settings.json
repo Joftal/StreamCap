@@ -11,6 +11,7 @@
     "proxy_address": "",
     "video_format": "TS",
     "audio_format": "MP3",
+    "record_mode": "auto",
     "record_quality": "OD",
     "loop_time_seconds": "180",
     "segmented_recording_enabled": true,
@@ -63,5 +64,6 @@
     "window_width": null,
     "window_height": null,
     "log_retention_days": 7,
-    "auto_clean_logs": false
+    "auto_clean_logs": false,
+    "show_recording_speed": false
 }
