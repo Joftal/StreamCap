@@ -34,9 +34,9 @@ StreamCap 是一个基于FFmpeg和StreamGet的多平台直播流录制客户端�
 - **自动去重**：添加直播间时自动去重，避免重复添加
 - **全局搜索**：一键搜索直达目标监控直播间
 
-## 📸录制界面
+## 📸主界面
 
-![image](https://github.com/user-attachments/assets/615e9a69-e6db-4822-bfb5-99f675d1700c)
+![image](https://github.com/user-attachments/assets/349bdeb4-e65e-409e-86e4-4625e7f36e6f)
 
 ## 📢Windows通知界面
 
