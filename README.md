@@ -6,11 +6,11 @@
   <a href="https://github.com/ihmily/StreamCap">
       <img alt="Supported Platforms" src="https://img.shields.io/badge/Platforms-Win%20%7C%20Mac%20%7C%20Linux-6B5BFF.svg"></a>
     <a href="https://hub.docker.com/r/ihmily/streamcap/tags">
-      <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/ihmily/streamcap?label=Docker%20Pulls&color=2496ED&logo=docker"></a>
+      <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/joftal/streamcap?label=Docker%20Pulls&color=2496ED&logo=docker"></a>
   <a href="https://github.com/ihmily/StreamCap/releases/latest">
-      <img alt="Latest Release" src="https://img.shields.io/github/v/release/ihmily/StreamCap"></a>
+      <img alt="Latest Release" src="https://img.shields.io/github/v/release/joftal/StreamCap"></a>
   <a href="https://github.com/ihmily/StreamCap/releases/latest">
-      <img alt="Downloads" src="https://img.shields.io/github/downloads/ihmily/StreamCap/total"></a>
+      <img alt="Downloads" src="https://img.shields.io/github/downloads/joftal/StreamCap/total"></a>
 </p>
 <div align="center">
   简体中文 / <a href="./README_EN.md">English</a>
@@ -18,6 +18,7 @@
 
 
 
+本项目由于和原作者有部分功能想法不需要PR，所以另开分支，项目是基于 https://github.com/ihmily/StreamCap 的基础上进行开发，会同步上游部分功能。在此，再次感谢ihmily的开源项目。
 
 StreamCap 是一个基于FFmpeg和StreamGet的多平台直播流录制客户端，覆盖 40+ 国内外主流直播平台，支持批量录制、循环监控、定时监控和自动转码等功能。
 
@@ -30,6 +31,8 @@ StreamCap 是一个基于FFmpeg和StreamGet的多平台直播流录制客户端�
 - **自动转码**：录制完成后自动转码为 mp4 格式。
 - **消息推送**：支持直播状态推送，及时获取开播通知。
 - **Windows通知**：支持Windows系统原生通知，显示对应平台图标。
+- **自动去重**：添加直播间时自动去重，避免重复添加
+- **全局搜索**：一键搜索直达目标监控直播间
 
 ## 📸录制界面
 
