@@ -563,6 +563,22 @@ class UIDemoApp:
         duration_text_label = ft.Text("时长: 01:23:45", size=12, weight=ft.FontWeight.BOLD)
         speed_text_label = ft.Text(f"速度: {recording.speed}", size=12, weight=ft.FontWeight.BOLD)
         
+        # 备注信息
+        note_text_label = ft.Container(
+            content=ft.Text(
+                "备注：这是一个测试备注，用于展示备注功能",
+                size=12,
+                color=ft.colors.WHITE,
+                max_lines=1,
+                no_wrap=True,
+                overflow=ft.TextOverflow.ELLIPSIS,
+            ),
+            bgcolor=ft.colors.BLUE_700,
+            border_radius=5,
+            padding=ft.padding.only(left=8, right=8, top=2, bottom=2),
+            visible=True,
+        )
+        
         # 获取平台类型
         platform_type = self.get_platform_type(recording.url)
         
@@ -579,6 +595,14 @@ class UIDemoApp:
             height=50,
             fit=ft.ImageFit.CONTAIN,
             border_radius=ft.border_radius.all(5),
+        )
+        
+        # 创建左侧logo容器
+        logo_container = ft.Container(
+            content=platform_logo,
+            width=60,
+            alignment=ft.alignment.center,
+            padding=ft.padding.all(5),
         )
         
         # 按钮状态设置
@@ -638,15 +662,6 @@ class UIDemoApp:
             alignment=ft.MainAxisAlignment.START
         )
         
-        # 左侧logo容器
-        logo_container = ft.Container(
-            content=platform_logo,
-            width=60,
-            height=100,
-            alignment=ft.alignment.center,
-            padding=ft.padding.all(5),
-        )
-        
         # 右侧内容容器
         content_container = ft.Container(
             content=ft.Column(
@@ -654,6 +669,7 @@ class UIDemoApp:
                     title_row,
                     duration_text_label,
                     speed_text_label,
+                    note_text_label,
                     button_row
                 ],
                 spacing=3,
@@ -666,7 +682,7 @@ class UIDemoApp:
         card_content_row = ft.Row(
             [logo_container, content_container],
             alignment=ft.MainAxisAlignment.START,
-            vertical_alignment=ft.CrossAxisAlignment.START,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
             spacing=0,
         )
         
