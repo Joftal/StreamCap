@@ -64,5 +64,6 @@
     "window_width": null,
     "window_height": null,
     "log_retention_days": 7,
-    "auto_clean_logs": false
+    "auto_clean_logs": false,
+    "show_recording_speed": false
 }

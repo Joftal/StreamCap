@@ -9,7 +9,13 @@
     "theme_color": "Theme Color",
     "toggle_day_theme": "Toggle Day Theme",
     "toggle_night_theme": "Toggle Night Theme",
-    "colors": "Color List"
+    "colors": "Color List",
+    "show_speed": "Speed Detection",
+    "hide_speed": "Speed Detection",
+    "toggle_show_speed": "Enable Recording Speed Detection",
+    "toggle_hide_speed": "Disable Recording Speed Detection",
+    "speed_monitor_enabled": "Speed monitoring enabled, updating every 3 seconds",
+    "speed_monitor_disabled": "Speed monitoring disabled"
   },
   "home_page": {
     "recording_list": "Recording List",
@@ -176,7 +182,8 @@
     "tip_not_live": "Stream is offline, cannot record",
     "tip_stop_recording": "Stop Recording",
     "tip_start_recording": "Start Recording",
-    "no_stream_source": "No stream source available, cannot use"
+    "no_stream_source": "No stream source available, cannot use",
+    "speed_disabled": "Disabled"
   },
   "settings_page": {
     "recording_settings": "Recording Settings",

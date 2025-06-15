@@ -9,7 +9,13 @@
     "theme_color": "主题颜色",
     "toggle_day_theme": "切换为白天模式",
     "toggle_night_theme": "切换为黑夜模式",
-    "colors": "颜色列表"
+    "colors": "颜色列表",
+    "show_speed": "速度检测",
+    "hide_speed": "速度检测",
+    "toggle_show_speed": "开启录制速度检测",
+    "toggle_hide_speed": "关闭录制速度检测",
+    "speed_monitor_enabled": "速度监控已开启，每3秒更新一次速度",
+    "speed_monitor_disabled": "速度监控已关闭"
   },
   "home_page": {
     "recording_list": "录制列表",
@@ -177,7 +183,8 @@
     "tip_not_live": "未开播，无法录制",
     "tip_stop_recording": "停止录制",
     "tip_start_recording": "开始录制",
-    "no_stream_source": "未获取到直播源，不可使用"
+    "no_stream_source": "未获取到直播源，不可使用",
+    "speed_disabled": "已关闭"
   },
   "settings_page": {
     "recording_settings": "录制设置",

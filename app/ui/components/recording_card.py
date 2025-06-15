@@ -54,8 +54,10 @@ class RecordingCardManager:
 
     def _create_card_components(self, recording: Recording):
         """create card components."""
-        speed = recording.speed
         duration_text_label = ft.Text(self.app.record_manager.get_duration(recording), size=12)
+
+        # 获取速度监控设置
+        show_recording_speed = self.app.settings.user_config.get("show_recording_speed", True)
 
         # 修改：判断是否禁用录制按钮的条件，包括手动模式和自动模式
         is_record_button_disabled = not recording.monitor_status or (recording.monitor_status and not recording.is_live)
@@ -146,7 +148,14 @@ class RecordingCardManager:
             tooltip=self._["recording_info"],
             on_click=partial(self.recording_info_button_on_click, recording=recording),
         )
-        speed_text_label = ft.Text(f"{self._['speed']} {speed}", size=12)
+        
+        # 创建速度文本标签，始终可见，但内容根据监控设置变化
+        speed_text = f"{self._['speed']} {recording.speed}" if show_recording_speed else f"{self._['speed']} {self._['speed_disabled']}"
+        speed_text_label = ft.Text(
+            speed_text, 
+            size=12,
+            color=ft.colors.GREY if not show_recording_speed else None  # 禁用时显示灰色
+        )
 
         status_label = self.create_status_label(recording)
 
@@ -331,6 +340,9 @@ class RecordingCardManager:
             if not recording_card:
                 return
 
+            # 获取速度监控设置
+            show_recording_speed = self.app.settings.user_config.get("show_recording_speed", True)
+
             new_status_label = self.create_status_label(recording)
             
             if recording_card["card"] and recording_card["card"].content and recording_card["card"].content.content:
@@ -404,7 +416,10 @@ class RecordingCardManager:
                 recording_card["duration_label"].value = self.app.record_manager.get_duration(recording)
             
             if recording_card.get("speed_label"):
-                recording_card["speed_label"].value = f"{self._['speed']} {recording.speed}"
+                # 更新速度文本，始终可见但根据监控设置显示不同内容
+                speed_text = f"{self._['speed']} {recording.speed}" if show_recording_speed else f"{self._['speed']} {self._['speed_disabled']}"
+                recording_card["speed_label"].value = speed_text
+                recording_card["speed_label"].color = ft.colors.GREY if not show_recording_speed else None
             
             # 全面刷新所有按钮和文本的国际化内容
             if recording_card.get("record_button"):
