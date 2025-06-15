@@ -237,7 +237,7 @@ class RecordingDialog:
                 ft.dropdown.Option("auto", self._["auto_record"]),
                 ft.dropdown.Option("manual", self._["manual_record"])
             ],
-            value=initial_values.get("record_mode", "auto"),
+            value=initial_values.get("record_mode", self.app.settings.user_config.get("record_mode", "auto")),
             width=500,
         )
 
@@ -337,21 +337,22 @@ class RecordingDialog:
                         await close_dialog(e)
                         return
 
-                    # 检查直播间是否已存在
-                    is_duplicate, reason = await RoomChecker.check_duplicate_room(
-                        self.app,
-                        live_url,
-                        streamer_name_field.value.strip() if streamer_name_field.value else None
-                    )
-                    
-                    if is_duplicate:
-                        alert_text.value = f"{self._['live_room_already_exists']} ({reason})"
-                        alert_text.visible = True
-                        self.page.update()
-                        await asyncio.sleep(3)
-                        alert_text.visible = False
-                        self.page.update()
-                        return
+                    # 检查直播间是否已存在，但只在添加新房间时检查，编辑已有房间时跳过
+                    if not self.recording:  # 只在添加新房间时检查
+                        is_duplicate, reason = await RoomChecker.check_duplicate_room(
+                            self.app,
+                            live_url,
+                            streamer_name_field.value.strip() if streamer_name_field.value else None
+                        )
+                        
+                        if is_duplicate:
+                            alert_text.value = f"{self._['live_room_already_exists']} ({reason})"
+                            alert_text.visible = True
+                            self.page.update()
+                            await asyncio.sleep(3)
+                            alert_text.visible = False
+                            self.page.update()
+                            return
 
                     # 新增：直接获取直播间信息
                     real_anchor_name = anchor_name
@@ -522,6 +523,7 @@ class RecordingDialog:
                                 "quality_info": self._[VideoQuality.OD],
                                 "title": title,
                                 "display_title": display_title,
+                                "record_mode": self.app.settings.user_config.get("record_mode", "auto")
                             }
                             recordings_info.append(recording_info)
 

@@ -11,6 +11,7 @@
     "proxy_address": "",
     "video_format": "TS",
     "audio_format": "MP3",
+    "record_mode": "auto",
     "record_quality": "OD",
     "loop_time_seconds": "180",
     "segmented_recording_enabled": true,

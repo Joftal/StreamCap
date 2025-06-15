@@ -571,7 +571,7 @@ class HomePage(PageBase):
                     monitor_hours=user_config.get("monitor_hours"),
                     recording_dir=None,
                     enabled_message_push=True,
-                    record_mode=recording_info.get("record_mode", "auto")
+                    record_mode=recording_info.get("record_mode", user_config.get("record_mode", "auto"))
                 )
             recording.live_title = live_title
             if title:
