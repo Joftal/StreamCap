@@ -909,16 +909,68 @@ class RoomChecker:
             logger.warning("主播名称列表长度与URL列表不一致，将使用None填充")
             streamer_names = streamer_names + [None] * (len(live_urls) - len(streamer_names))
         
-        # 批量检查
-        for url, streamer_name in zip(live_urls, streamer_names):
-            is_duplicate, reason = await RoomChecker.check_duplicate_room(
-                app, url, streamer_name, existing_recordings
-            )
+        # 处理录制列表参数
+        if existing_recordings is None:
+            existing_recordings = app.record_manager.recordings
+        
+        # 如果现有录制列表为空，需要对输入的直播间列表内部进行去重检查
+        if not existing_recordings:
+            logger.info("现有录制列表为空，将对输入的直播间列表内部进行去重检查")
+            # 创建一个临时的去重检查机制
+            processed_urls = set()
+            processed_streamer_names = {}  # platform_key -> set(streamer_names)
+            processed_room_ids = {}  # platform_key -> set(room_ids)
             
-            if is_duplicate:
-                filtered_urls.append((url, reason))
-            else:
+            for i, (url, streamer_name) in enumerate(zip(live_urls, streamer_names)):
+                # 1. 最高优先级：检查URL是否完全相同
+                if url in processed_urls:
+                    filtered_urls.append((url, "URL完全相同"))
+                    continue
+                
+                # 2. 获取平台信息
+                platform, platform_key = RoomChecker._get_cached_platform_info(url)
+                if not platform:
+                    logger.warning(f"无法识别平台: {url}")
+                    valid_urls.append(url)
+                    processed_urls.add(url)
+                    continue
+                
+                # 3. 次优先级：检查主播名称是否重复（同平台内）
+                if streamer_name:
+                    if platform_key not in processed_streamer_names:
+                        processed_streamer_names[platform_key] = set()
+                    if streamer_name in processed_streamer_names[platform_key]:
+                        filtered_urls.append((url, "同平台同名主播"))
+                        continue
+                    processed_streamer_names[platform_key].add(streamer_name)
+                
+                # 4. 最低优先级：检查房间ID是否重复（同平台内）
+                room_id = RoomChecker.extract_room_id(url)
+                if not room_id and any(short_url in url for short_url in RoomChecker.SHORT_URL_PLATFORMS.keys()):
+                    room_id = await RoomChecker._resolve_short_url_room_id(app, url, platform, platform_key)
+                
+                if room_id:
+                    if platform_key not in processed_room_ids:
+                        processed_room_ids[platform_key] = set()
+                    if room_id in processed_room_ids[platform_key]:
+                        filtered_urls.append((url, "同平台房间ID相同"))
+                        continue
+                    processed_room_ids[platform_key].add(room_id)
+                
+                # 通过所有检查，添加到有效列表
                 valid_urls.append(url)
+                processed_urls.add(url)
+        else:
+            # 现有录制列表不为空，使用原有的批量检查逻辑
+            for url, streamer_name in zip(live_urls, streamer_names):
+                is_duplicate, reason = await RoomChecker.check_duplicate_room(
+                    app, url, streamer_name, existing_recordings
+                )
+                
+                if is_duplicate:
+                    filtered_urls.append((url, reason))
+                else:
+                    valid_urls.append(url)
         
         # 记录过滤信息
         if filtered_urls:
@@ -947,21 +999,21 @@ class RoomChecker:
                     f.write(f"原因: {reason}\n")
                     f.write("-" * 50 + "\n")
             
-            logger.info(f"差异文件已保存至: {diff_file}")
+            logger.info(f"过滤文件已保存至: {diff_file}")
             return diff_file
         except Exception as e:
-            logger.error(f"保存差异文件失败: {e}")
+            logger.error(f"保存过滤文件失败: {e}")
             return None
 
     @staticmethod
     async def get_diff_file_path() -> Optional[str]:
-        """获取最新的差异文件路径"""
+        """获取最新的过滤文件路径"""
         try:
             logs_dir = os.path.join(os.getcwd(), "logs")
             if not os.path.exists(logs_dir):
                 return None
             
-            # 获取所有差异文件
+            # 获取所有过滤文件
             diff_files = [f for f in os.listdir(logs_dir) if f.startswith("filtered_urls_")]
             if not diff_files:
                 return None
@@ -970,5 +1022,5 @@ class RoomChecker:
             latest_file = sorted(diff_files)[-1]
             return os.path.join(logs_dir, latest_file)
         except Exception as e:
-            logger.error(f"获取差异文件路径失败: {e}")
+            logger.error(f"获取过滤文件路径失败: {e}")
             return None 
