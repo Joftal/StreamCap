@@ -357,7 +357,9 @@ class RecordingDialog:
                         )
                         
                         if is_duplicate:
-                            alert_text.value = f"{self._['live_room_already_exists']} ({reason})"
+                            # 显示国际化的重复原因
+                            reason_text = self._[reason] if reason in self._ else reason
+                            alert_text.value = f"{self._['live_room_already_exists']} ({reason_text})"
                             alert_text.visible = True
                             self.page.update()
                             await asyncio.sleep(3)
@@ -545,8 +547,9 @@ class RecordingDialog:
                         total_count = len(urls)
                         success_count = len(valid_urls)
                         
-                        # 显示过滤统计信息
-                        alert_text.value = f"{self._['live_room_already_exists']} ({filtered_count}/{total_count})"
+                        # 使用国际化字符串来显示统计信息
+                        duplicate_count_info = f"{filtered_count}/{total_count}"
+                        alert_text.value = f"{self._['live_room_already_exists']} ({duplicate_count_info})"
                         alert_text.visible = True
                         self.page.update()
                         await asyncio.sleep(3)

@@ -724,7 +724,7 @@ class RoomChecker:
             for recording in existing_recordings:
                 if recording.url == live_url:
                     logger.info("发现重复: URL完全相同")
-                    return True, "URL完全相同"
+                    return True, "duplicate_reason_identical_url"
             
             # 2.2 次优先级：检查主播ID（主播名称）
             real_anchor_name = await RoomChecker._get_real_anchor_name(
@@ -737,7 +737,7 @@ class RoomChecker:
                     real_anchor_name, platform_key, existing_recordings
                 )
                 if duplicate_found:
-                    return True, "同平台同名主播"
+                    return True, "duplicate_reason_same_streamer"
             
             # 2.3 最低优先级：检查房间号
             room_id = RoomChecker.extract_room_id(live_url)
@@ -752,7 +752,7 @@ class RoomChecker:
                     room_id, platform_key, existing_recordings
                 )
                 if duplicate_found:
-                    return True, "同平台房间ID相同"
+                    return True, "duplicate_reason_same_room_id"
 
             logger.info("未发现重复直播间")
             return False, None
@@ -925,7 +925,7 @@ class RoomChecker:
             for i, (url, streamer_name) in enumerate(zip(live_urls, streamer_names)):
                 # 1. 最高优先级：检查URL是否完全相同
                 if url in processed_urls:
-                    filtered_urls.append((url, "URL完全相同"))
+                    filtered_urls.append((url, "duplicate_reason_identical_url"))
                     continue
                 
                 # 2. 获取平台信息
@@ -941,7 +941,7 @@ class RoomChecker:
                     if platform_key not in processed_streamer_names:
                         processed_streamer_names[platform_key] = set()
                     if streamer_name in processed_streamer_names[platform_key]:
-                        filtered_urls.append((url, "同平台同名主播"))
+                        filtered_urls.append((url, "duplicate_reason_same_streamer"))
                         continue
                     processed_streamer_names[platform_key].add(streamer_name)
                 
@@ -954,7 +954,7 @@ class RoomChecker:
                     if platform_key not in processed_room_ids:
                         processed_room_ids[platform_key] = set()
                     if room_id in processed_room_ids[platform_key]:
-                        filtered_urls.append((url, "同平台房间ID相同"))
+                        filtered_urls.append((url, "duplicate_reason_same_room_id"))
                         continue
                     processed_room_ids[platform_key].add(room_id)
                 
@@ -997,6 +997,7 @@ class RoomChecker:
                 f.write("=" * 50 + "\n")
                 for url, reason in filtered_urls:
                     f.write(f"URL: {url}\n")
+                    # 不需要翻译，直接记录原始键名，便于跟踪
                     f.write(f"原因: {reason}\n")
                     f.write("-" * 50 + "\n")
             
