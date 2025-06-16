@@ -932,8 +932,8 @@ class RoomChecker:
                 platform, platform_key = RoomChecker._get_cached_platform_info(url)
                 if not platform:
                     logger.warning(f"无法识别平台: {url}")
-                    valid_urls.append(url)
-                    processed_urls.add(url)
+                    # 修改: 将不支持的平台URL加入到filtered_urls而不是valid_urls
+                    filtered_urls.append((url, "platform_not_supported_tip"))
                     continue
                 
                 # 3. 次优先级：检查主播名称是否重复（同平台内）
@@ -964,6 +964,14 @@ class RoomChecker:
         else:
             # 现有录制列表不为空，使用原有的批量检查逻辑
             for url, streamer_name in zip(live_urls, streamer_names):
+                # 首先检查平台是否支持
+                platform, platform_key = RoomChecker._get_cached_platform_info(url)
+                if not platform:
+                    logger.warning(f"无法识别平台: {url}")
+                    filtered_urls.append((url, "platform_not_supported_tip"))
+                    continue
+                    
+                # 然后检查是否重复
                 is_duplicate, reason = await RoomChecker.check_duplicate_room(
                     app, url, streamer_name, existing_recordings
                 )

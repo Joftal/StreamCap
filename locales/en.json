@@ -88,7 +88,9 @@
     "remark": "Remark",
     "remark_hint": "Enter remark (max 20 Chinese characters)",
     "filtered_file_saved": "Filtered file saved to: {path}",
-    "get_filtered_file_failed": "Failed to get filtered file path: {error}"
+    "get_filtered_file_failed": "Failed to get filtered file path: {error}",
+    "url_filter_summary": "⚠️ Some URLs were filtered (unsupported platforms or duplicates)",
+    "url_filter_summary_partial": "some URLs filtered"
   },
   "search_dialog": {
     "search_keyword": "Enter search keywords",
