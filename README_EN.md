@@ -31,6 +31,7 @@ StreamCap is a multi-platform live stream recording client based on FFmpeg and S
 - **Windows Notifications**: Support for native Windows notifications with platform icons.
 - **Auto Deduplication**: Automatically prevents duplicate monitoring of the same live room.
 - **Global Search**: One-click search to find target monitoring live rooms.
+- **Note**: Supports editing note information for cards.
 
 ## 📸Main Interface
 
