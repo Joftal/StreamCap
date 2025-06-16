@@ -83,7 +83,9 @@
     "success_add_rooms": "成功添加 {count} 个直播间",
     "all_rooms_exist": "所有直播间已存在，无需添加",
     "remark": "备注",
-    "remark_hint": "请输入备注信息（最多20个中文字符）"
+    "remark_hint": "请输入备注信息（最多20个中文字符）",
+    "filtered_file_saved": "过滤文件已保存至: {path}",
+    "get_filtered_file_failed": "获取过滤文件路径失败: {error}"
   },
   "search_dialog": {
     "search_keyword": "输入搜索关键词",

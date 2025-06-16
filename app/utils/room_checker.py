@@ -1,9 +1,10 @@
+import os
 import re
 import threading
 import time
-import os
+import urllib.parse
 from datetime import datetime
-from typing import Optional, Tuple, Dict, List, Any
+from typing import Dict, List, Optional, Set, Tuple, Any
 from app.core.platform_handlers import get_platform_info
 from app.models.recording_model import Recording
 from app.utils.logger import logger
@@ -1006,21 +1007,27 @@ class RoomChecker:
             return None
 
     @staticmethod
-    async def get_diff_file_path() -> Optional[str]:
-        """获取最新的过滤文件路径"""
+    async def get_diff_file_path() -> Tuple[Optional[str], Optional[str]]:
+        """
+        获取最新的过滤文件路径
+        
+        Returns:
+            Tuple[Optional[str], Optional[str]]: (文件路径, 错误信息)
+        """
         try:
             logs_dir = os.path.join(os.getcwd(), "logs")
             if not os.path.exists(logs_dir):
-                return None
+                return None, None
             
             # 获取所有过滤文件
             diff_files = [f for f in os.listdir(logs_dir) if f.startswith("filtered_urls_")]
             if not diff_files:
-                return None
+                return None, None
             
             # 按时间戳排序，获取最新的文件
             latest_file = sorted(diff_files)[-1]
-            return os.path.join(logs_dir, latest_file)
+            return os.path.join(logs_dir, latest_file), None
         except Exception as e:
-            logger.error(f"获取过滤文件路径失败: {e}")
-            return None 
+            error_msg = str(e)
+            logger.error(f"获取过滤文件路径失败: {error_msg}")
+            return None, error_msg 

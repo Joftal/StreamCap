@@ -563,11 +563,18 @@ class RecordingDialog:
                                 duration=3000
                             )
                             # 显示过滤文件路径提示
-                            diff_file_path = await RoomChecker.get_diff_file_path()
+                            diff_file_result = await RoomChecker.get_diff_file_path()
+                            diff_file_path, error_msg = diff_file_result
                             if diff_file_path:
                                 await asyncio.sleep(3)  # 等待上一个提示消失
                                 await self.app.snack_bar.show_snack_bar(
-                                    f"过滤文件已保存至: {diff_file_path}",
+                                    self._["filtered_file_saved"].format(path=diff_file_path),
+                                    duration=5000
+                                )
+                            elif error_msg:
+                                await asyncio.sleep(3)  # 等待上一个提示消失
+                                await self.app.snack_bar.show_snack_bar(
+                                    self._["get_filtered_file_failed"].format(error=error_msg),
                                     duration=5000
                                 )
                         else:
@@ -578,11 +585,18 @@ class RecordingDialog:
                                 duration=3000
                             )
                             # 显示过滤文件路径提示
-                            diff_file_path = await RoomChecker.get_diff_file_path()
+                            diff_file_result = await RoomChecker.get_diff_file_path()
+                            diff_file_path, error_msg = diff_file_result
                             if diff_file_path:
                                 await asyncio.sleep(3)  # 等待上一个提示消失
                                 await self.app.snack_bar.show_snack_bar(
-                                    f"过滤文件已保存至: {diff_file_path}",
+                                    self._["filtered_file_saved"].format(path=diff_file_path),
+                                    duration=5000
+                                )
+                            elif error_msg:
+                                await asyncio.sleep(3)  # 等待上一个提示消失
+                                await self.app.snack_bar.show_snack_bar(
+                                    self._["get_filtered_file_failed"].format(error=error_msg),
                                     duration=5000
                                 )
                     else:
