@@ -32,20 +32,51 @@ PLATFORMS = [
     ("https://www.youtube.com/", "youtube"),
     ("https://www.twitch.tv/", "twitch"),
     ("https://www.tiktok.com/", "tiktok"),
-    ("https://www.douyin.com/", "douyin")
+    ("https://www.douyin.com/", "douyin"),
+    ("https://www.kuaishou.com/", "kuaishou"),
+    ("https://www.zhihu.com/", "zhihu"),
+    ("https://www.zhibo.tv/", "zhibo"),
+    ("https://www.panda.tv/", "panda"),
+    ("https://www.huajiao.com/", "huajiao"),
+    ("https://cc.163.com/", "netease_cc"),
+    ("https://yy.com/", "yy"),
+    ("https://www.pandatv.live/", "pandalive"),
+    ("https://chzzk.naver.com/", "chzzk"),
+    ("https://www.inke.cn/", "inke"),
+    ("https://www.17app.co/", "17live"),
+    ("https://www.showroom-live.com/", "showroom"),
+    ("https://www.acfun.cn/", "acfun"),
+    ("https://www.6.cn/", "6room"),
+    ("https://www.bigo.tv/", "bigo"),
+    ("https://www.facebook.com/gaming/", "facebook"),
+    ("https://www.twitcasting.tv/", "twitcasting"),
+    ("https://www.hkdtv.com/", "hkdtv"),
+    ("https://www.yizhibo.com/", "yizhibo"),
+    ("https://www.blued.com/", "blued"),
+    ("https://www.soop.com/", "soop"),
+    ("https://www.afreecatv.com/", "afreecatv"),
+    ("https://www.winktv.co.kr/", "winktv")
 ]
 
 # 视频质量选项
 QUALITY_OPTIONS = ["OD", "UHD", "HD", "SD"]
 
 # 随机生成的主播名称前缀
-STREAMER_PREFIXES = ["主播", "大神", "小姐姐", "老师", "解说", "歌手", "玩家", "UP主", "博主", "达人"]
+STREAMER_PREFIXES = ["主播", "大神", "小姐姐", "老师", "解说", "歌手", "玩家", "UP主", "博主", "达人",
+                     "舞者", "画师", "作家", "明星", "学霸", "厨师", "教练", "技术", "萌妹", "小哥哥",
+                     "大佬", "专家", "高手", "新秀", "导师", "能手", "学者", "创作者", "艺术家", "大神"]
 
 # 随机生成的主播名称
 STREAMER_NAMES = [
     "星海", "月影", "阳光", "雨林", "雪花", "风云", "电竞", "游戏", "音乐", "舞蹈",
     "美食", "旅行", "科技", "数码", "知识", "生活", "搞笑", "萌宠", "动漫", "影视",
-    "体育", "健身", "户外", "手工", "绘画", "摄影", "时尚", "美妆", "汽车", "教育"
+    "体育", "健身", "户外", "手工", "绘画", "摄影", "时尚", "美妆", "汽车", "教育",
+    "文学", "诗词", "历史", "哲学", "物理", "化学", "生物", "地理", "心理", "医学",
+    "法律", "经济", "金融", "管理", "营销", "设计", "编程", "网络", "安全", "人工智能",
+    "机器学习", "大数据", "云计算", "区块链", "物联网", "虚拟现实", "增强现实", "机器人", "无人机", "航天",
+    "海洋", "环保", "农业", "畜牧", "园艺", "烘焙", "调酒", "咖啡", "茶道", "香道",
+    "书法", "篆刻", "国画", "油画", "素描", "雕塑", "陶艺", "布艺", "皮革", "木工",
+    "金属", "玻璃", "珠宝", "服装", "鞋履", "包袋", "家居", "装饰", "古董", "收藏"
 ]
 
 
@@ -105,12 +136,28 @@ class StressTest:
         # 随机录制模式
         record_mode = random.choice(["auto", "manual"])
         
+        # 随机备注
+        remark_options = [
+            "高质量直播",
+            "定期开播",
+            "精彩内容",
+            "热门主播",
+            "新人推荐",
+            "正在崛起",
+            "偶尔掉线",
+            "重点关注",
+            "优质内容",
+            "互动很好",
+            "画质清晰",
+            "特别收藏"
+        ]
+        
         # 创建Recording对象
         recording = Recording(
             rec_id=rec_id,
             url=url,
             streamer_name=streamer_name,
-            record_format=random.choice(["mp4", "ts", "mkv"]),
+            record_format=random.choice(["mp4", "ts", "mkv", "flv", "webm", "m3u8"]),
             quality=quality,
             segment_record=segment_record,
             segment_time=segment_time,
@@ -120,7 +167,8 @@ class StressTest:
             monitor_hours=monitor_hours,
             recording_dir=recording_dir,
             enabled_message_push=enabled_message_push,
-            record_mode=record_mode
+            record_mode=record_mode,
+            remark=random.choice(remark_options) if random.random() > 0.3 else None  # 70%概率有备注
         )
         
         # 随机设置直播状态
@@ -135,17 +183,30 @@ class StressTest:
                 recording.start_time = datetime.now() - timedelta(minutes=random.randint(5, 120))
                 recording.speed = f"{random.randint(500, 10000)} KB/s"
                 recording.cumulative_duration = timedelta(seconds=random.randint(60, 3600))
+                recording.status_info = RecordingStatus.RECORDING
+            else:
+                # 直播中但未录制
+                recording.status_info = RecordingStatus.NOT_RECORDING
+        else:
+            # 未开播
+            recording.recording = False
+            if monitor_status:
+                recording.status_info = RecordingStatus.MONITORING
+            else:
+                recording.status_info = RecordingStatus.STOPPED_MONITORING
         
         # 随机设置直播标题
         recording.live_title = f"{''.join(random.sample(STREAMER_NAMES, 3))}直播间"
         
-        # 随机设置状态信息
-        if not recording.is_live and not recording.recording:
+        # 随机添加一些特殊状态
+        if not recording.recording and random.random() < 0.2:  # 20%概率出现特殊状态
             status_options = [
-                RecordingStatus.STOPPED_MONITORING,
-                RecordingStatus.NOT_RECORDING,
                 RecordingStatus.RECORDING_ERROR,
-                RecordingStatus.LIVE_STATUS_CHECK_ERROR
+                RecordingStatus.LIVE_STATUS_CHECK_ERROR,
+                RecordingStatus.STATUS_CHECKING,
+                RecordingStatus.NOT_IN_SCHEDULED_CHECK,
+                RecordingStatus.PREPARING_RECORDING,
+                RecordingStatus.NOT_RECORDING_SPACE
             ]
             recording.status_info = random.choice(status_options)
         
@@ -222,7 +283,7 @@ async def run_test(app, count):
 
 def main():
     parser = argparse.ArgumentParser(description="StreamCap 压力测试工具")
-    parser.add_argument("-c", "--count", type=int, default=100, help="要生成的虚拟直播间数量，默认为100")
+    parser.add_argument("-c", "--count", type=int, default=200, help="要生成的虚拟直播间数量，默认为200")
     parser.add_argument("-w", "--web", action="store_true", help="以Web模式运行")
     args = parser.parse_args()
     
