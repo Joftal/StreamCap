@@ -234,14 +234,6 @@ def cleanup_old_logs(days=7, log_dir=None):
     for log_file in log_files:
         base_name = os.path.basename(log_file)
         
-        # 处理filtered_urls_{timestamp}.txt格式的文件
-        if base_name.startswith("filtered_urls_") and base_name.endswith(".txt"):
-            log_type = "filtered_urls"
-            if log_type not in log_types:
-                log_types[log_type] = []
-            log_types[log_type].append(log_file)
-            continue
-        
         # 处理新格式的日志文件名: [类型].[年-月-日_时-分-秒_微秒].log
         if '.' in base_name:
             parts = base_name.split('.')
