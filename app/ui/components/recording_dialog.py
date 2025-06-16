@@ -24,11 +24,6 @@ class RecordingDialog:
         language = self.app.language_manager.language
         for key in ("recording_dialog", "home_page", "base", "video_quality"):
             self._.update(language.get(key, {}))
-        
-        if "room_checker" in language:
-            self._["room_checker"] = language["room_checker"]
-        else:
-            logger.error("language字典中未找到room_checker键")
 
     async def show_dialog(self):
         """Show a dialog for adding or editing a recording."""
@@ -334,8 +329,7 @@ class RecordingDialog:
             self.page.update()
             
             try:
-                if tabs.selected_index == 0:  # 单个添加
-                    # 单个添加的处理逻辑
+                if tabs.selected_index == 0:
                     quality_info = self._[quality_dropdown.value]
 
                     if not streamer_name_field.value:
@@ -351,7 +345,8 @@ class RecordingDialog:
                     platform, platform_key = get_platform_info(live_url)
                     if not platform:
                         await not_supported(url_field.value)
-                        return  # 让finally块处理关闭对话框
+                        await close_dialog(e)
+                        return
 
                     # 检查直播间是否已存在，但只在添加新房间时检查，编辑已有房间时跳过
                     if not self.recording:  # 只在添加新房间时检查
@@ -362,20 +357,13 @@ class RecordingDialog:
                         )
                         
                         if is_duplicate:
-                            # 对reason进行国际化翻译处理
-                            translated_reason = reason
-                            if reason in self._["room_checker"] if "room_checker" in self._ else {}:
-                                translated_reason = self._["room_checker"][reason]
-                            elif "room_checker" in self._ and reason in self._["room_checker"]:
-                                translated_reason = self._["room_checker"][reason]
-                            
-                            alert_text.value = f"{self._['live_room_already_exists']} ({translated_reason})"
+                            alert_text.value = f"{self._['live_room_already_exists']} ({reason})"
                             alert_text.visible = True
                             self.page.update()
                             await asyncio.sleep(3)
                             alert_text.visible = False
                             self.page.update()
-                            return  # 让finally块处理关闭对话框
+                            return
 
                     # 新增：直接获取直播间信息
                     real_anchor_name = anchor_name
@@ -468,14 +456,8 @@ class RecordingDialog:
                         }
                     ]
                     await self.on_confirm_callback(recordings_info)
-                    # 显示成功提示
-                    await self.app.snack_bar.show_snack_bar(
-                        self._["add_recording_success_tip"],
-                        duration=3000,
-                        bgcolor=ft.Colors.GREEN
-                    )
 
-                elif tabs.selected_index == 1:  # 批量添加
+                elif tabs.selected_index == 1:  # Batch entry
                     lines = batch_input.value.splitlines()
                     recordings_info = []
                     filtered_urls = []
@@ -522,10 +504,6 @@ class RecordingDialog:
                     )
                     
                     # 处理有效的URL
-                    success_count = 0  # 成功添加的计数
-                    unsupported_count = 0  # 不支持平台的数量
-                    unsupported_urls = []  # 不支持的平台URL列表
-                    
                     for i, url in enumerate(unique_urls):
                         if url in valid_urls:
                             streamer_name = unique_streamer_names[i]
@@ -541,9 +519,6 @@ class RecordingDialog:
                             
                             platform, platform_key = get_platform_info(url)
                             if not platform:
-                                # 如果平台不支持，记录并跳过
-                                unsupported_count += 1
-                                unsupported_urls.append(url)
                                 await not_supported(url)
                                 continue
 
@@ -557,157 +532,70 @@ class RecordingDialog:
                                 "url": url,
                                 "streamer_name": streamer_name,
                                 "quality": quality,
-                                "quality_info": self._[quality],
+                                "quality_info": self._[VideoQuality.OD],
                                 "title": title,
                                 "display_title": display_title,
                                 "record_mode": self.app.settings.user_config.get("record_mode", "auto")
                             }
                             recordings_info.append(recording_info)
-                            success_count += 1  # 实际成功添加的数量
 
                     # 显示过滤统计信息
-                    if filtered_urls or unsupported_count > 0:
-                        # 构建提示信息
-                        alert_msg = ""
-                        if filtered_urls:
-                            alert_msg += f"{self._['live_room_already_exists']} ({len(filtered_urls)}/{len(unique_urls)})"
+                    if filtered_urls:
+                        filtered_count = len(filtered_urls)
+                        total_count = len(urls)
+                        success_count = len(valid_urls)
                         
-                        if unsupported_count > 0:
-                            if alert_msg:
-                                alert_msg += ", "
-                            alert_msg += self._["unsupported_platforms"].format(count=unsupported_count)
-                        
-                        alert_text.value = alert_msg
+                        # 显示过滤统计信息
+                        alert_text.value = f"{self._['live_room_already_exists']} ({filtered_count}/{total_count})"
                         alert_text.visible = True
                         self.page.update()
                         await asyncio.sleep(3)
                         alert_text.visible = False
                         self.page.update()
-                    
-                    # 如果有成功添加的直播间
-                    if success_count > 0:
-                        await self.on_confirm_callback(recordings_info)
                         
-                        # 显示成功提示，包含成功添加的数量
-                        try:
-                            # 尝试使用格式化字符串
-                            success_message = self._["success_add_rooms"].format(count=success_count)
+                        # 只有当有成功添加的直播间时才显示成功提示
+                        if success_count > 0:
+                            await self.on_confirm_callback(recordings_info)
+                            await close_dialog(e)
+                            # 显示成功提示
                             await self.app.snack_bar.show_snack_bar(
-                                success_message,
+                                self._["success_add_rooms"].format(count=success_count),
                                 duration=3000
                             )
-                        except Exception as ex:
-                            # 如果格式化失败，使用简单消息
-                            logger.error(f"格式化添加成功消息时出错: {ex}")
+                            # 显示过滤文件路径提示
+                            diff_file_path = await RoomChecker.get_diff_file_path()
+                            if diff_file_path:
+                                await asyncio.sleep(3)  # 等待上一个提示消失
+                                await self.app.snack_bar.show_snack_bar(
+                                    f"过滤文件已保存至: {diff_file_path}",
+                                    duration=5000
+                                )
+                        else:
+                            # 如果所有直播间都被过滤掉了，显示提示并关闭对话框
+                            await close_dialog(e)
                             await self.app.snack_bar.show_snack_bar(
-                                f"添加成功: {success_count}个直播间",
+                                self._["all_rooms_exist"],
                                 duration=3000
                             )
-                            
-                        # 只在有过滤URL时显示过滤文件路径提示
-                        if filtered_urls:
-                            try:
-                                diff_file_path = await RoomChecker.get_diff_file_path()
-                                if diff_file_path:
-                                    await asyncio.sleep(3)  # 等待上一个提示消失
-                                    try:
-                                        if "room_checker" in self._ and "filter_file_saved_to" in self._["room_checker"]:
-                                            filter_file_message = self._["room_checker"]["filter_file_saved_to"].format(path=diff_file_path)
-                                            await self.app.snack_bar.show_snack_bar(
-                                                filter_file_message,
-                                                duration=5000
-                                            )
-                                        else:
-                                            # 直接使用硬编码消息
-                                            await self.app.snack_bar.show_snack_bar(
-                                                f"过滤文件已保存至: {diff_file_path}",
-                                                duration=5000
-                                            )
-                                    except Exception as ex:
-                                        logger.error(f"显示过滤文件路径提示时出错: {ex}")
-                                        # 直接使用硬编码的消息作为备选
-                                        await self.app.snack_bar.show_snack_bar(
-                                            f"过滤文件已保存至: {diff_file_path}",
-                                            duration=5000
-                                        )
-                            except Exception as ex:
-                                logger.error(f"获取过滤文件路径时出错: {ex}")
+                            # 显示过滤文件路径提示
+                            diff_file_path = await RoomChecker.get_diff_file_path()
+                            if diff_file_path:
+                                await asyncio.sleep(3)  # 等待上一个提示消失
+                                await self.app.snack_bar.show_snack_bar(
+                                    f"过滤文件已保存至: {diff_file_path}",
+                                    duration=5000
+                                )
                     else:
-                        # 如果没有成功添加的直播间（全部被过滤或不支持）
-                        # 根据情况显示不同提示
-                        try:
-                            if filtered_urls and unsupported_count > 0:
-                                # 同时有重复和不支持的情况
-                                await self.app.snack_bar.show_snack_bar(
-                                    f"{self._['all_rooms_exist']}, {self._['unsupported_platforms'].format(count=unsupported_count)}",
-                                    duration=3000
-                                )
-                            elif filtered_urls:
-                                # 只有重复的情况
-                                await self.app.snack_bar.show_snack_bar(
-                                    self._["all_rooms_exist"],
-                                    duration=3000
-                                )
-                            elif unsupported_count > 0:
-                                # 只有不支持的情况
-                                await self.app.snack_bar.show_snack_bar(
-                                    self._["all_urls_unsupported"].format(count=unsupported_count),
-                                    duration=3000
-                                )
-                        except Exception as ex:
-                            # 如果格式化失败，使用简单消息
-                            logger.error(f"显示提示消息时出错: {ex}")
-                            if unsupported_count > 0:
-                                await self.app.snack_bar.show_snack_bar(
-                                    f"添加失败: 所有URL不可用",
-                                    duration=3000
-                                )
-                            
-                        # 只在有过滤URL时显示过滤文件路径提示
-                        if filtered_urls:
-                            try:
-                                diff_file_path = await RoomChecker.get_diff_file_path()
-                                if diff_file_path:
-                                    await asyncio.sleep(3)  # 等待上一个提示消失
-                                    try:
-                                        # 尝试获取filter_file_saved_to的值
-                                        if "room_checker" in self._ and "filter_file_saved_to" in self._["room_checker"]:
-                                            filter_file_message = self._["room_checker"]["filter_file_saved_to"].format(path=diff_file_path)
-                                            await self.app.snack_bar.show_snack_bar(
-                                                filter_file_message,
-                                                duration=5000
-                                            )
-                                        else:
-                                            # 直接使用硬编码消息
-                                            await self.app.snack_bar.show_snack_bar(
-                                                f"过滤文件已保存至: {diff_file_path}",
-                                                duration=5000
-                                            )
-                                    except Exception as ex:
-                                        logger.error(f"显示过滤文件路径提示时出错: {ex}")
-                                        # 直接使用硬编码的消息作为备选
-                                        await self.app.snack_bar.show_snack_bar(
-                                            f"过滤文件已保存至: {diff_file_path}",
-                                            duration=5000
-                                        )
-                            except Exception as ex:
-                                logger.error(f"获取过滤文件路径时出错: {ex}")
-            except Exception as ex:
-                # 记录错误，并显示提示信息
-                logger.error(f"添加/编辑录制项时发生错误: {ex}")
-                await self.app.snack_bar.show_snack_bar(
-                    f"操作失败: {str(ex)}",
-                    duration=3000,
-                    bgcolor=ft.Colors.RED
-                )
+                        # 如果没有重复的直播间，直接添加
+                        await self.on_confirm_callback(recordings_info)
+                        await close_dialog(e)
+
+                await close_dialog(e)
             finally:
                 # 恢复确认按钮状态
                 confirm_button.disabled = False
                 confirm_button.text = self._["sure"]
                 self.page.update()
-                
-                # 在所有处理完成后，统一关闭对话框
-                await close_dialog(None)
 
         async def close_dialog(_):
             dialog.open = False
