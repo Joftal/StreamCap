@@ -208,8 +208,8 @@ class HomePage(PageBase):
                     platform_buttons,
                     alignment=ft.MainAxisAlignment.START,
                     spacing=5,
-                    scroll=ft.ScrollMode.HIDDEN,  # 隐藏滑动条
-                    wrap=True  # 启用自动换行
+                    scroll=ft.ScrollMode.AUTO,
+                    wrap=False
                 ),
                 expand=True,
         )
