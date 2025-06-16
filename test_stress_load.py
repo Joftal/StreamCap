@@ -227,10 +227,6 @@ class StressTest:
             logger.error("没有生成的Recording对象")
             return
             
-        # 如果app为None，说明是只生成URL模式，直接返回
-        if self.app is None:
-            return
-            
         # 获取应用的record_manager
         record_manager = self.app.record_manager
         
@@ -289,38 +285,7 @@ def main():
     parser = argparse.ArgumentParser(description="StreamCap 压力测试工具")
     parser.add_argument("-c", "--count", type=int, default=200, help="要生成的虚拟直播间数量，默认为200")
     parser.add_argument("-w", "--web", action="store_true", help="以Web模式运行")
-    parser.add_argument("-u", "--urls-only", action="store_true", help="只输出生成的直播间URL地址列表")
-    parser.add_argument("-o", "--output", type=str, help="将URL地址列表保存到指定文件")
     args = parser.parse_args()
-    
-    # 如果只需要输出URL列表，则使用简化流程
-    if args.urls_only:
-        async def output_urls():
-            # 创建StressTest实例，但不需要实际的App对象
-            stress_test = StressTest(None)
-            
-            print(f"正在生成 {args.count} 个虚拟直播间URL...")
-            await stress_test.generate_recordings(args.count)
-            
-            # 输出生成的URL列表
-            urls = [recording.url for recording in stress_test.recordings]
-            
-            if args.output:
-                # 保存到文件
-                with open(args.output, "w", encoding="utf-8") as f:
-                    for url in urls:
-                        f.write(f"{url}\n")
-                print(f"已将 {len(urls)} 个URL地址保存到文件: {args.output}")
-            else:
-                # 直接输出到控制台
-                print("\n".join(urls))
-                print(f"\n共生成 {len(urls)} 个URL地址")
-                
-            return urls
-        
-        # 运行异步函数
-        asyncio.run(output_urls())
-        return
     
     async def main_async(page: ft.Page):
         page.title = "StreamCap 压力测试"
