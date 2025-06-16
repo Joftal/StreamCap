@@ -326,6 +326,11 @@ class RecordingManager:
             was_live = recording.is_live
             recording.is_live = stream_info.is_live
             
+            # 如果直播状态从离线变为在线，重置end_notification_sent标志
+            if not was_live and recording.is_live:
+                recording.end_notification_sent = False
+                logger.info(f"主播开播，重置关播通知状态: {recording.streamer_name}")
+            
             # 如果直播状态从在线变为离线，重置通知状态并更新UI
             if was_live and not recording.is_live:
                 recording.notification_sent = False
