@@ -68,6 +68,9 @@
     "live_room": "直播间",
     "platform_not_supported_tip": "⚠️ 暂不支持该平台录制",
     "live_room_already_exists": "⚠️ 直播间已存在",
+    "duplicate_reason_identical_url": "URL完全相同",
+    "duplicate_reason_same_streamer": "同平台同名主播",
+    "duplicate_reason_same_room_id": "同平台房间ID相同",
     "pick_time": "选择时间",
     "pick_time_tip": "配置定时时间",
     "time_out_of_range": "时间超出范围",
@@ -85,7 +88,9 @@
     "remark": "备注",
     "remark_hint": "请输入备注信息（最多20个中文字符）",
     "filtered_file_saved": "过滤文件已保存至: {path}",
-    "get_filtered_file_failed": "获取过滤文件路径失败: {error}"
+    "get_filtered_file_failed": "获取过滤文件路径失败: {error}",
+    "url_filter_summary": "⚠️ 部分URL被过滤（不支持的平台或已存在）",
+    "url_filter_summary_partial": "部分URL被过滤"
   },
   "search_dialog": {
     "search_keyword": "输入搜索关键词",

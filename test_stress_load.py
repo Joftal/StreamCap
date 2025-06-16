@@ -3,6 +3,7 @@
 """
 StreamCap 压力测试脚本
 用于生成大量虚拟直播间卡片，测试界面切换和刷新时的性能表现
+还可用于生成批量URL地址，以及特殊的重复URL测试用例
 """
 
 import os
@@ -274,6 +275,282 @@ class StressTest:
         }
 
 
+def generate_url_list(count, output_file=None, include_quality=True):
+    """
+    生成指定数量的虚拟URL地址并保存到文件
+    
+    Args:
+        count: 要生成的URL数量
+        output_file: 输出文件路径，如果为None则输出到控制台
+        include_quality: 是否包含质量信息，格式: "0,URL,主播名"
+    """
+    url_list = []
+    
+    for i in range(count):
+        # 随机选择平台
+        platform_url, platform_key = random.choice(PLATFORMS)
+        
+        # 生成随机主播ID和名称
+        streamer_id = str(random.randint(10000, 999999))
+        streamer_prefix = random.choice(STREAMER_PREFIXES)
+        streamer_name = f"{streamer_prefix}{random.choice(STREAMER_NAMES)}{random.randint(1, 999)}"
+        
+        # 生成完整URL
+        url = f"{platform_url}{streamer_id}"
+        
+        # 随机选择视频质量编号
+        quality_num = str(random.randint(0, 4))
+        
+        if include_quality:
+            # 格式: "0,URL,主播名"
+            url_entry = f"{quality_num},{url},{streamer_name}"
+        else:
+            # 只包含URL
+            url_entry = url
+            
+        url_list.append(url_entry)
+    
+    # 如果指定了输出文件，则写入文件
+    if output_file:
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write("\n".join(url_list))
+        print(f"已生成 {count} 个URL地址并保存到: {output_file}")
+    else:
+        # 否则输出到控制台
+        print("\n".join(url_list))
+    
+    return url_list
+
+
+def generate_duplicate_test_cases(output_file=None):
+    """
+    生成用于测试重复检测的URL测试用例
+    
+    Args:
+        output_file: 输出文件路径，如果为None则输出到控制台
+    """
+    test_cases = []
+    
+    # 1. 生成一些正常的URL作为基础
+    base_cases = generate_url_list(10, None, True)
+    test_cases.extend(base_cases)
+    test_cases.append("\n# 以下是 URL完全相同 的测试用例")
+    
+    # 2. 生成URL完全相同的测试用例（duplicate_reason_identical_url）
+    for i in range(3):
+        # 随机选择一个已有的URL条目
+        original_entry = random.choice(base_cases)
+        test_cases.append(original_entry)  # 直接添加相同的URL条目
+        
+    test_cases.append("\n# 以下是 同平台同名主播 的测试用例")
+    
+    # 3. 生成同平台同名主播的测试用例（duplicate_reason_same_streamer）
+    platform_test_cases = []
+    for platform_url, platform_key in PLATFORMS[:5]:  # 只用前几个平台做测试
+        # 为每个平台创建一个固定主播名
+        streamer_name = f"测试主播{platform_key}"
+        
+        # 生成3个不同ID但相同主播名的URL
+        for i in range(3):
+            streamer_id = str(random.randint(10000, 999999))
+            url = f"{platform_url}{streamer_id}"
+            quality_num = "0"  # 使用原画质量
+            url_entry = f"{quality_num},{url},{streamer_name}"
+            platform_test_cases.append(url_entry)
+    
+    test_cases.extend(platform_test_cases)
+    test_cases.append("\n# 以下是 同平台房间ID相同 的测试用例")
+    
+    # 4. 生成同平台房间ID相同的测试用例（duplicate_reason_same_room_id）
+    # 这里我们使用不同的URL格式但实际指向相同ID
+    room_id_test_cases = []
+    for platform_url, platform_key in PLATFORMS[:5]:  # 只用前几个平台做测试
+        room_id = str(random.randint(10000, 999999))
+        
+        # 为同一个房间ID创建3个不同格式的URL
+        base_url = f"{platform_url}{room_id}"
+        
+        # 变体1：基本URL
+        url_entry1 = f"0,{base_url},主播{room_id}A"
+        
+        # 变体2：添加参数
+        url_entry2 = f"1,{base_url}?param=value,主播{room_id}B"
+        
+        # 变体3：添加锚点
+        url_entry3 = f"2,{base_url}#anchor,主播{room_id}C"
+        
+        room_id_test_cases.extend([url_entry1, url_entry2, url_entry3])
+    
+    test_cases.extend(room_id_test_cases)
+    
+    # 5. 添加一个完整的测试场景说明
+    test_cases.insert(0, "# StreamCap 批量添加URL测试用例")
+    test_cases.insert(1, "# 包含：普通URL、URL完全相同、同平台同名主播、同平台房间ID相同")
+    test_cases.insert(2, "# 格式：质量编号(0-4),直播间URL,主播名称")
+    test_cases.insert(3, "# 说明：0=原画, 1=超清, 2=高清, 3=标清, 4=流畅\n")
+    
+    # 如果指定了输出文件，则写入文件
+    if output_file:
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write("\n".join(test_cases))
+        print(f"已生成重复测试用例并保存到: {output_file}")
+    else:
+        # 否则输出到控制台
+        print("\n".join(test_cases))
+    
+    return test_cases
+
+
+def generate_platform_duplicate_tests(platform_key, output_file=None):
+    """
+    生成特定平台的重复URL测试用例
+    
+    Args:
+        platform_key: 平台标识，如"bilibili", "douyu", "douyin", "kuaishou"等
+        output_file: 输出文件路径，如果为None则输出到控制台
+    """
+    test_cases = []
+    platform_map = {p[1]: p[0] for p in PLATFORMS}
+    
+    if platform_key not in platform_map:
+        print(f"不支持的平台: {platform_key}")
+        print(f"请使用 -l/--list-platforms 参数查看支持的平台列表")
+        return []
+    
+    platform_url = platform_map[platform_key]
+    test_cases.append(f"# {platform_key} 平台URL重复测试用例")
+    test_cases.append(f"# 包含：普通URL、URL完全相同、同平台同名主播、同平台房间ID相同")
+    test_cases.append("# 格式：质量编号(0-4),直播间URL,主播名称")
+    test_cases.append("# 说明：0=原画, 1=超清, 2=高清, 3=标清, 4=流畅\n")
+    
+    # 基本测试用例 - 每种平台生成5个基本URL
+    base_cases = []
+    for i in range(5):
+        room_id = str(random.randint(10000, 999999))
+        streamer_name = f"{platform_key}主播{i+1}"
+        url = f"{platform_url}{room_id}"
+        quality_num = "0"  # 使用原画质量
+        url_entry = f"{quality_num},{url},{streamer_name}"
+        base_cases.append(url_entry)
+    
+    test_cases.extend(base_cases)
+    test_cases.append("\n# URL完全相同")
+    
+    # URL完全相同测试
+    duplicate_url = random.choice(base_cases)
+    test_cases.append(duplicate_url)
+    test_cases.append(duplicate_url)
+    
+    test_cases.append("\n# 同平台同名主播")
+    
+    # 同平台同名主播测试
+    streamer_name = f"重复主播{platform_key}"
+    for i in range(3):
+        room_id = str(random.randint(10000, 999999))
+        url = f"{platform_url}{room_id}"
+        quality_num = str(random.randint(0, 2))  # 使用不同质量
+        url_entry = f"{quality_num},{url},{streamer_name}"
+        test_cases.append(url_entry)
+    
+    test_cases.append("\n# 同平台房间ID相同 - 不同URL格式")
+    
+    # 根据不同平台生成特定的URL格式
+    room_id = str(random.randint(100000, 999999))
+    
+    if platform_key == "bilibili":
+        # bilibili直播间格式变体
+        test_cases.append(f"0,https://live.bilibili.com/{room_id},B站主播A")
+        test_cases.append(f"1,https://live.bilibili.com/h5/{room_id},B站主播B")
+        test_cases.append(f"2,https://live.bilibili.com/{room_id}?visit_id=123456,B站主播C")
+        
+    elif platform_key == "douyu":
+        # 斗鱼直播间格式变体
+        test_cases.append(f"0,https://www.douyu.com/{room_id},斗鱼主播A")
+        test_cases.append(f"1,https://www.douyu.com/room/{room_id},斗鱼主播B")
+        test_cases.append(f"2,https://www.douyu.com/{room_id}?rid={room_id},斗鱼主播C")
+        
+    elif platform_key == "douyin":
+        # 抖音直播间格式变体
+        test_cases.append(f"0,https://live.douyin.com/{room_id},抖音主播A")
+        test_cases.append(f"1,https://v.douyin.com/{room_id},抖音主播B")  # 短链接
+        test_cases.append(f"2,https://live.douyin.com/{room_id}?enter_from=main_page,抖音主播C")
+        
+    elif platform_key == "kuaishou":
+        # 快手直播间格式变体
+        test_cases.append(f"0,https://live.kuaishou.com/{room_id},快手主播A")
+        test_cases.append(f"1,https://live.kuaishou.com/u/{room_id},快手主播B")
+        test_cases.append(f"2,https://v.kuaishou.com/{room_id},快手主播C")  # 短链接
+        
+    elif platform_key == "huya":
+        # 虎牙直播间格式变体
+        test_cases.append(f"0,https://www.huya.com/{room_id},虎牙主播A")
+        test_cases.append(f"1,https://www.huya.com/{room_id}/,虎牙主播B")
+        test_cases.append(f"2,https://www.huya.com/{room_id}?huya_abc=123,虎牙主播C")
+    
+    elif platform_key == "yy":
+        # YY直播间格式变体
+        test_cases.append(f"0,https://yy.com/{room_id},YY主播A")
+        test_cases.append(f"1,https://www.yy.com/{room_id},YY主播B")
+        test_cases.append(f"2,https://www.yy.com/s/{room_id},YY主播C")
+    
+    elif platform_key == "netease_cc":
+        # 网易CC直播间格式变体
+        test_cases.append(f"0,https://cc.163.com/{room_id},网易CC主播A")
+        test_cases.append(f"1,https://cc.163.com/{room_id}/,网易CC主播B")
+        test_cases.append(f"2,https://cc.163.com/{room_id}?param=value,网易CC主播C")
+    
+    elif platform_key == "xiaohongshu":
+        # 小红书直播间格式变体
+        test_cases.append(f"0,https://www.xiaohongshu.com/user/profile/{room_id},小红书主播A")
+        test_cases.append(f"1,https://www.xiaohongshu.com/{room_id},小红书主播B")
+        test_cases.append(f"2,https://xhslink.com/{room_id},小红书主播C")
+    
+    elif platform_key == "twitch":
+        # Twitch直播间格式变体
+        test_cases.append(f"0,https://www.twitch.tv/{room_id},Twitch主播A")
+        test_cases.append(f"1,https://twitch.tv/{room_id}/,Twitch主播B")
+        test_cases.append(f"2,https://m.twitch.tv/{room_id},Twitch主播C")
+        
+    elif platform_key == "youtube":
+        # YouTube直播间格式变体
+        vid_id = f"{room_id[:6]}{random.choice(['AB','CD','EF'])}"
+        test_cases.append(f"0,https://www.youtube.com/watch?v={vid_id},YouTube主播A")
+        test_cases.append(f"1,https://youtu.be/{vid_id},YouTube主播B")
+        test_cases.append(f"2,https://www.youtube.com/watch?v={vid_id}&feature=live,YouTube主播C")
+    
+    else:
+        # 通用格式变体
+        test_cases.append(f"0,{platform_url}{room_id},平台主播A")
+        test_cases.append(f"1,{platform_url}{room_id}?param=value,平台主播B")
+        test_cases.append(f"2,{platform_url}{room_id}#anchor,平台主播C")
+    
+    # 添加更多URL格式变体的测试
+    test_cases.append("\n# 更多URL格式变体测试")
+    room_id2 = str(random.randint(100000, 999999))
+    
+    if platform_key == "bilibili":
+        test_cases.append(f"0,https://live.bilibili.com/{room_id2},B站变体测试A")
+        test_cases.append(f"1,https://space.bilibili.com/{room_id2}/live,B站变体测试B")  # 用户空间直播页
+        test_cases.append(f"2,https://live.bilibili.com/blanc/{room_id2},B站变体测试C")  # 特殊版式
+    
+    elif platform_key == "douyin":
+        nickname = f"user{room_id2}"
+        test_cases.append(f"0,https://live.douyin.com/{room_id2},抖音变体测试A")
+        test_cases.append(f"1,https://live.douyin.com/@{nickname},抖音变体测试B")  # @用户名格式
+        test_cases.append(f"2,https://www.douyin.com/user/{nickname}/live,抖音变体测试C")  # 用户页面直播
+    
+    # 如果指定了输出文件，则写入文件
+    if output_file:
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write("\n".join(test_cases))
+        print(f"已生成 {platform_key} 平台重复测试用例并保存到: {output_file}")
+    else:
+        # 否则输出到控制台
+        print("\n".join(test_cases))
+    
+    return test_cases
+
+
 async def run_test(app, count):
     """运行测试并返回结果"""
     stress_test = StressTest(app)
@@ -281,11 +558,60 @@ async def run_test(app, count):
     return result
 
 
+def list_supported_platforms():
+    """列出所有支持的平台"""
+    print("支持的平台列表:")
+    print("=" * 50)
+    print(f"{'平台名称':<15} {'平台URL':<30}")
+    print("-" * 50)
+    for platform_url, platform_key in sorted(PLATFORMS, key=lambda x: x[1]):
+        print(f"{platform_key:<15} {platform_url:<30}")
+    return {p[1]: p[0] for p in PLATFORMS}
+
+
 def main():
-    parser = argparse.ArgumentParser(description="StreamCap 压力测试工具")
+    parser = argparse.ArgumentParser(description="StreamCap 压力测试与测试数据生成工具")
     parser.add_argument("-c", "--count", type=int, default=200, help="要生成的虚拟直播间数量，默认为200")
     parser.add_argument("-w", "--web", action="store_true", help="以Web模式运行")
+    parser.add_argument("-g", "--generate-urls", action="store_true", help="生成URL列表而不是运行压力测试")
+    parser.add_argument("-d", "--duplicate-test", action="store_true", help="生成重复检测测试用例")
+    parser.add_argument("-o", "--output", type=str, help="输出文件路径")
+    parser.add_argument("-q", "--quality", action="store_true", default=True, help="包含质量信息和主播名称")
+    parser.add_argument("-p", "--platform", type=str, help="为特定平台生成重复测试用例，例如：bilibili, douyu, douyin, kuaishou")
+    parser.add_argument("-l", "--list-platforms", action="store_true", help="列出所有支持的平台")
     args = parser.parse_args()
+    
+    # 显示帮助信息
+    if len(sys.argv) == 1:
+        parser.print_help()
+        print("\n使用示例:")
+        print("  1. 运行压力测试生成100个虚拟直播间: python test_stress_load.py -c 100")
+        print("  2. 以Web模式运行压力测试: python test_stress_load.py -c 50 -w")
+        print("  3. 生成50个URL地址并保存到文件: python test_stress_load.py -g -c 50 -o urls.txt")
+        print("  4. 生成重复检测测试用例: python test_stress_load.py -d -o duplicate_tests.txt")
+        print("  5. 生成B站特定的重复测试用例: python test_stress_load.py -p bilibili -o bilibili_tests.txt")
+        print("  6. 列出支持的平台: python test_stress_load.py -l")
+        return
+    
+    # 显示平台列表
+    if args.list_platforms:
+        list_supported_platforms()
+        return
+    
+    # 处理生成特定平台重复测试用例的情况
+    if args.platform:
+        generate_platform_duplicate_tests(args.platform, args.output)
+        return
+    
+    # 处理生成URL列表的情况
+    if args.generate_urls:
+        generate_url_list(args.count, args.output, args.quality)
+        return
+        
+    # 处理生成重复测试用例的情况
+    if args.duplicate_test:
+        generate_duplicate_test_cases(args.output)
+        return
     
     async def main_async(page: ft.Page):
         page.title = "StreamCap 压力测试"

@@ -357,7 +357,9 @@ class RecordingDialog:
                         )
                         
                         if is_duplicate:
-                            alert_text.value = f"{self._['live_room_already_exists']} ({reason})"
+                            # 显示国际化的重复原因
+                            reason_text = self._[reason] if reason in self._ else reason
+                            alert_text.value = f"{self._['live_room_already_exists']} ({reason_text})"
                             alert_text.visible = True
                             self.page.update()
                             await asyncio.sleep(3)
@@ -541,12 +543,21 @@ class RecordingDialog:
 
                     # 显示过滤统计信息
                     if filtered_urls:
-                        filtered_count = len(filtered_urls)
+                        # 统计不同原因的过滤数量
+                        duplicate_count = sum(1 for _, reason in filtered_urls if reason != "platform_not_supported_tip")
+                        unsupported_count = sum(1 for _, reason in filtered_urls if reason == "platform_not_supported_tip")
                         total_count = len(urls)
-                        success_count = len(valid_urls)
+                        success_count = len(recordings_info)
                         
-                        # 显示过滤统计信息
-                        alert_text.value = f"{self._['live_room_already_exists']} ({filtered_count}/{total_count})"
+                        # 构建统计信息 - 精简显示格式
+                        if unsupported_count > 0 and duplicate_count > 0:
+                            # 同时存在不支持和重复的情况，使用统一提示
+                            alert_text.value = f"{self._['url_filter_summary']} ({len(filtered_urls)}/{total_count})"
+                        elif unsupported_count > 0:
+                            alert_text.value = f"{self._['platform_not_supported_tip']}: {unsupported_count}/{total_count}"
+                        else:
+                            alert_text.value = f"{self._['live_room_already_exists']}: {duplicate_count}/{total_count}"
+                        
                         alert_text.visible = True
                         self.page.update()
                         await asyncio.sleep(3)
@@ -557,11 +568,19 @@ class RecordingDialog:
                         if success_count > 0:
                             await self.on_confirm_callback(recordings_info)
                             await close_dialog(e)
-                            # 显示成功提示
-                            await self.app.snack_bar.show_snack_bar(
-                                self._["success_add_rooms"].format(count=success_count),
-                                duration=3000
-                            )
+                            # 显示成功提示，如果同时有过滤URL，使用组合信息
+                            if len(filtered_urls) > 0:
+                                # 同时存在成功添加和被过滤的URL，使用精简提示
+                                await self.app.snack_bar.show_snack_bar(
+                                    f"{self._['success_add_rooms'].format(count=success_count)} ({self._['url_filter_summary_partial']})",
+                                    duration=3000
+                                )
+                            else:
+                                # 仅有成功添加的情况
+                                await self.app.snack_bar.show_snack_bar(
+                                    self._["success_add_rooms"].format(count=success_count),
+                                    duration=3000
+                                )
                             # 显示过滤文件路径提示
                             diff_file_result = await RoomChecker.get_diff_file_path()
                             diff_file_path, error_msg = diff_file_result
@@ -580,10 +599,23 @@ class RecordingDialog:
                         else:
                             # 如果所有直播间都被过滤掉了，显示提示并关闭对话框
                             await close_dialog(e)
-                            await self.app.snack_bar.show_snack_bar(
-                                self._["all_rooms_exist"],
-                                duration=3000
-                            )
+                            # 精简提示信息
+                            if unsupported_count > 0 and duplicate_count > 0:
+                                # 同时存在不支持和重复的情况
+                                await self.app.snack_bar.show_snack_bar(
+                                    self._["url_filter_summary"],
+                                    duration=3000
+                                )
+                            elif unsupported_count > 0:
+                                await self.app.snack_bar.show_snack_bar(
+                                    f"{self._['platform_not_supported_tip']}: {unsupported_count}",
+                                    duration=3000
+                                )
+                            else:
+                                await self.app.snack_bar.show_snack_bar(
+                                    self._["all_rooms_exist"],
+                                    duration=3000
+                                )
                             # 显示过滤文件路径提示
                             diff_file_result = await RoomChecker.get_diff_file_path()
                             diff_file_path, error_msg = diff_file_result

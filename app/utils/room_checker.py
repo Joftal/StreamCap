@@ -724,7 +724,7 @@ class RoomChecker:
             for recording in existing_recordings:
                 if recording.url == live_url:
                     logger.info("发现重复: URL完全相同")
-                    return True, "URL完全相同"
+                    return True, "duplicate_reason_identical_url"
             
             # 2.2 次优先级：检查主播ID（主播名称）
             real_anchor_name = await RoomChecker._get_real_anchor_name(
@@ -737,7 +737,7 @@ class RoomChecker:
                     real_anchor_name, platform_key, existing_recordings
                 )
                 if duplicate_found:
-                    return True, "同平台同名主播"
+                    return True, "duplicate_reason_same_streamer"
             
             # 2.3 最低优先级：检查房间号
             room_id = RoomChecker.extract_room_id(live_url)
@@ -752,7 +752,7 @@ class RoomChecker:
                     room_id, platform_key, existing_recordings
                 )
                 if duplicate_found:
-                    return True, "同平台房间ID相同"
+                    return True, "duplicate_reason_same_room_id"
 
             logger.info("未发现重复直播间")
             return False, None
@@ -925,15 +925,15 @@ class RoomChecker:
             for i, (url, streamer_name) in enumerate(zip(live_urls, streamer_names)):
                 # 1. 最高优先级：检查URL是否完全相同
                 if url in processed_urls:
-                    filtered_urls.append((url, "URL完全相同"))
+                    filtered_urls.append((url, "duplicate_reason_identical_url"))
                     continue
                 
                 # 2. 获取平台信息
                 platform, platform_key = RoomChecker._get_cached_platform_info(url)
                 if not platform:
                     logger.warning(f"无法识别平台: {url}")
-                    valid_urls.append(url)
-                    processed_urls.add(url)
+                    # 修改: 将不支持的平台URL加入到filtered_urls而不是valid_urls
+                    filtered_urls.append((url, "platform_not_supported_tip"))
                     continue
                 
                 # 3. 次优先级：检查主播名称是否重复（同平台内）
@@ -941,7 +941,7 @@ class RoomChecker:
                     if platform_key not in processed_streamer_names:
                         processed_streamer_names[platform_key] = set()
                     if streamer_name in processed_streamer_names[platform_key]:
-                        filtered_urls.append((url, "同平台同名主播"))
+                        filtered_urls.append((url, "duplicate_reason_same_streamer"))
                         continue
                     processed_streamer_names[platform_key].add(streamer_name)
                 
@@ -954,7 +954,7 @@ class RoomChecker:
                     if platform_key not in processed_room_ids:
                         processed_room_ids[platform_key] = set()
                     if room_id in processed_room_ids[platform_key]:
-                        filtered_urls.append((url, "同平台房间ID相同"))
+                        filtered_urls.append((url, "duplicate_reason_same_room_id"))
                         continue
                     processed_room_ids[platform_key].add(room_id)
                 
@@ -964,6 +964,14 @@ class RoomChecker:
         else:
             # 现有录制列表不为空，使用原有的批量检查逻辑
             for url, streamer_name in zip(live_urls, streamer_names):
+                # 首先检查平台是否支持
+                platform, platform_key = RoomChecker._get_cached_platform_info(url)
+                if not platform:
+                    logger.warning(f"无法识别平台: {url}")
+                    filtered_urls.append((url, "platform_not_supported_tip"))
+                    continue
+                    
+                # 然后检查是否重复
                 is_duplicate, reason = await RoomChecker.check_duplicate_room(
                     app, url, streamer_name, existing_recordings
                 )
@@ -997,6 +1005,7 @@ class RoomChecker:
                 f.write("=" * 50 + "\n")
                 for url, reason in filtered_urls:
                     f.write(f"URL: {url}\n")
+                    # 不需要翻译，直接记录原始键名，便于跟踪
                     f.write(f"原因: {reason}\n")
                     f.write("-" * 50 + "\n")
             
