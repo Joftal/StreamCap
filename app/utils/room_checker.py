@@ -296,6 +296,9 @@ class RoomChecker:
         }
     }
     
+    # 添加一个类变量来存储最新的过滤文件路径
+    _latest_diff_file = None
+    
     @staticmethod
     def _get_cached_platform_info(url: str) -> Tuple[Optional[str], Optional[str]]:
         if not url or not isinstance(url, str):
@@ -723,7 +726,7 @@ class RoomChecker:
             for recording in existing_recordings:
                 if recording.url == live_url:
                     logger.info("发现重复: URL完全相同")
-                    return True, "URL完全相同"
+                    return True, "url_completely_same"
             
             # 2.2 次优先级：检查主播ID（主播名称）
             real_anchor_name = await RoomChecker._get_real_anchor_name(
@@ -736,7 +739,7 @@ class RoomChecker:
                     real_anchor_name, platform_key, existing_recordings
                 )
                 if duplicate_found:
-                    return True, "同平台同名主播"
+                    return True, "same_platform_same_streamer"
             
             # 2.3 最低优先级：检查房间号
             room_id = RoomChecker.extract_room_id(live_url)
@@ -751,7 +754,7 @@ class RoomChecker:
                     room_id, platform_key, existing_recordings
                 )
                 if duplicate_found:
-                    return True, "同平台房间ID相同"
+                    return True, "same_platform_same_room_id"
 
             logger.info("未发现重复直播间")
             return False, None
@@ -924,7 +927,9 @@ class RoomChecker:
             for i, (url, streamer_name) in enumerate(zip(live_urls, streamer_names)):
                 # 1. 最高优先级：检查URL是否完全相同
                 if url in processed_urls:
-                    filtered_urls.append((url, "URL完全相同"))
+                    # 使用国际化键名而非硬编码中文文本
+                    filtered_urls.append((url, "url_completely_same"))
+                    logger.info(f"发现重复: URL完全相同 (url_completely_same)")
                     continue
                 
                 # 2. 获取平台信息
@@ -940,7 +945,8 @@ class RoomChecker:
                     if platform_key not in processed_streamer_names:
                         processed_streamer_names[platform_key] = set()
                     if streamer_name in processed_streamer_names[platform_key]:
-                        filtered_urls.append((url, "同平台同名主播"))
+                        filtered_urls.append((url, "same_platform_same_streamer"))
+                        logger.info(f"发现重复: 同平台同名主播 (same_platform_same_streamer)")
                         continue
                     processed_streamer_names[platform_key].add(streamer_name)
                 
@@ -953,7 +959,8 @@ class RoomChecker:
                     if platform_key not in processed_room_ids:
                         processed_room_ids[platform_key] = set()
                     if room_id in processed_room_ids[platform_key]:
-                        filtered_urls.append((url, "同平台房间ID相同"))
+                        filtered_urls.append((url, "same_platform_same_room_id"))
+                        logger.info(f"发现重复: 同平台房间ID相同 (same_platform_same_room_id)")
                         continue
                     processed_room_ids[platform_key].add(room_id)
                 
@@ -980,47 +987,44 @@ class RoomChecker:
 
     @staticmethod
     def _log_filtered_urls(filtered_urls: List[Tuple[str, str]]):
-        """记录被过滤的URL信息"""
-        try:
-            # 创建logs目录（如果不存在）
-            logs_dir = os.path.join(os.getcwd(), "logs")
-            os.makedirs(logs_dir, exist_ok=True)
-            
-            # 生成文件名（使用当前时间）
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            diff_file = os.path.join(logs_dir, f"filtered_urls_{timestamp}.txt")
-            
-            # 写入文件
-            with open(diff_file, "w", encoding="utf-8") as f:
-                f.write("被过滤的直播间URL列表：\n")
-                f.write("=" * 50 + "\n")
-                for url, reason in filtered_urls:
-                    f.write(f"URL: {url}\n")
-                    f.write(f"原因: {reason}\n")
-                    f.write("-" * 50 + "\n")
-            
-            logger.info(f"过滤文件已保存至: {diff_file}")
-            return diff_file
-        except Exception as e:
-            logger.error(f"保存过滤文件失败: {e}")
-            return None
+        """记录被过滤的URL到日志和文件"""
+        if not filtered_urls:
+            return
+        
+        diff_file = RoomChecker.get_filtered_urls_file_path()
+        
+        with open(diff_file, "a", encoding="utf-8") as f:
+            for url, reason in filtered_urls:
+                # 保存原始键名，不进行国际化处理
+                f.write(f"{url} - {reason}\n")
+        
+        # 保存最新的过滤文件路径
+        RoomChecker._latest_diff_file = diff_file
+        
+        # 修改为只记录日志，不尝试获取国际化文本
+        logger.info(f"过滤文件已保存至: {diff_file}")
 
     @staticmethod
     async def get_diff_file_path() -> Optional[str]:
-        """获取最新的过滤文件路径"""
-        try:
-            logs_dir = os.path.join(os.getcwd(), "logs")
-            if not os.path.exists(logs_dir):
-                return None
+        """获取过滤文件路径"""
+        # 返回最新的过滤文件路径
+        if RoomChecker._latest_diff_file:
+            return RoomChecker._latest_diff_file
             
-            # 获取所有过滤文件
-            diff_files = [f for f in os.listdir(logs_dir) if f.startswith("filtered_urls_")]
-            if not diff_files:
-                return None
-            
-            # 按时间戳排序，获取最新的文件
-            latest_file = sorted(diff_files)[-1]
-            return os.path.join(logs_dir, latest_file)
-        except Exception as e:
-            logger.error(f"获取过滤文件路径失败: {e}")
-            return None 
+        # 如果没有最新的过滤文件路径，则生成一个新的文件路径
+        diff_file = RoomChecker.get_filtered_urls_file_path()
+        RoomChecker._latest_diff_file = diff_file
+        return diff_file
+
+    @staticmethod
+    def get_filtered_urls_file_path() -> str:
+        """获取过滤文件路径"""
+        logs_dir = os.path.join(os.getcwd(), "logs")
+        os.makedirs(logs_dir, exist_ok=True)
+        
+        # 生成文件名（使用当前时间）
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        diff_file = os.path.join(logs_dir, f"filtered_urls_{timestamp}.txt")
+        
+        logger.debug(f"创建过滤文件路径: {diff_file}")
+        return diff_file 
