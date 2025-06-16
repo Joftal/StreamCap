@@ -120,6 +120,11 @@ class RecordingManager:
             self.app.page.run_task(self.check_if_live, recording)
             self.app.page.run_task(self.app.record_card_manager.update_card, recording)
             self.app.page.pubsub.send_others_on_topic("update", recording)
+            
+            # 确保在当前页面是主页时重新应用筛选条件
+            if hasattr(self.app, 'current_page') and hasattr(self.app.current_page, 'apply_filter'):
+                self.app.page.run_task(self.app.current_page.apply_filter)
+                
             if auto_save:
                 self.app.page.run_task(self.persist_recordings)
             return True
@@ -149,6 +154,11 @@ class RecordingManager:
             
             self.app.page.run_task(self.app.record_card_manager.update_card, recording)
             self.app.page.pubsub.send_others_on_topic("update", recording)
+            
+            # 确保在当前页面是主页时重新应用筛选条件
+            if hasattr(self.app, 'current_page') and hasattr(self.app.current_page, 'apply_filter'):
+                self.app.page.run_task(self.app.current_page.apply_filter)
+                
             if auto_save:
                 self.app.page.run_task(self.persist_recordings)
 
@@ -297,6 +307,10 @@ class RecordingManager:
                     # 更新UI
                     self.app.page.run_task(self.app.record_card_manager.update_card, recording)
                     self.app.page.pubsub.send_others_on_topic("update", recording)
+                    
+                    # 确保在当前页面是主页时重新应用筛选条件
+                    if hasattr(self.app, 'current_page') and hasattr(self.app.current_page, 'apply_filter'):
+                        self.app.page.run_task(self.app.current_page.apply_filter)
                 return
             
             if not stream_info.anchor_name:
@@ -326,6 +340,10 @@ class RecordingManager:
                 # 更新UI
                 self.app.page.run_task(self.app.record_card_manager.update_card, recording)
                 self.app.page.pubsub.send_others_on_topic("update", recording)
+                
+                # 确保在当前页面是主页时重新应用筛选条件
+                if hasattr(self.app, 'current_page') and hasattr(self.app.current_page, 'apply_filter'):
+                    self.app.page.run_task(self.app.current_page.apply_filter)
                 
                 # 修改：无论是否之前处于录制状态，只要状态从"直播中"变为"未开播"，就发送直播结束通知
                 # 这样可以确保从"直播中（未录制）"状态变为"未开播"状态时也会发送通知
@@ -473,6 +491,10 @@ class RecordingManager:
 
                     self.app.page.run_task(self.app.record_card_manager.update_card, recording)
                     self.app.page.pubsub.send_others_on_topic("update", recording)
+                    
+                    # 确保在当前页面是主页时重新应用筛选条件
+                    if hasattr(self.app, 'current_page') and hasattr(self.app.current_page, 'apply_filter'):
+                        self.app.page.run_task(self.app.current_page.apply_filter)
                 else:
                     # 手动录制模式下，设置状态为"直播中（未录制）"
                     recording.status_info = RecordingStatus.NOT_RECORDING
@@ -547,6 +569,10 @@ class RecordingManager:
                     
                     self.app.page.run_task(self.app.record_card_manager.update_card, recording)
                     self.app.page.pubsub.send_others_on_topic("update", recording)
+                    
+                    # 确保在当前页面是主页时重新应用筛选条件
+                    if hasattr(self.app, 'current_page') and hasattr(self.app.current_page, 'apply_filter'):
+                        self.app.page.run_task(self.app.current_page.apply_filter)
 
     @staticmethod
     def start_update(recording: Recording):

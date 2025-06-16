@@ -503,6 +503,10 @@ class RecordingCardManager:
         await self.update_card(recording)
         self.app.page.pubsub.send_others_on_topic("update", recording)
         self.app.page.run_task(self.app.record_manager.persist_recordings)
+        
+        # 重新应用筛选条件，确保卡片在状态变更后显示在正确的分类中
+        if hasattr(self.app, 'current_page') and hasattr(self.app.current_page, 'apply_filter'):
+            await self.app.current_page.apply_filter()
 
         # 无论是哪种录制模式，都更新录制按钮的状态
         recording_card = self.cards_obj.get(recording.rec_id)
@@ -537,6 +541,10 @@ class RecordingCardManager:
 
         await self.update_card(recording)
         self.app.page.pubsub.send_others_on_topic("update", recording_dict)
+        
+        # 重新应用筛选条件，确保卡片在状态变更后显示在正确的分类中
+        if hasattr(self.app, 'current_page') and hasattr(self.app.current_page, 'apply_filter'):
+            await self.app.current_page.apply_filter()
 
     async def on_toggle_recording(self, recording: Recording):
         """Toggle recording state."""
@@ -672,6 +680,10 @@ class RecordingCardManager:
                     pass
             await self.update_card(recording)
             self.app.page.pubsub.send_others_on_topic("update", recording)
+            
+            # 重新应用筛选条件，确保卡片在状态变更后显示在正确的分类中
+            if hasattr(self.app, 'current_page') and hasattr(self.app.current_page, 'apply_filter'):
+                await self.app.current_page.apply_filter()
 
     async def on_delete_recording(self, recording: Recording):
         """Delete a recording from the list and update UI."""
@@ -914,6 +926,10 @@ class RecordingCardManager:
 
     async def subscribe_update_card(self, _, recording: Recording):
         await self.update_card(recording)
+        
+        # 重新应用筛选条件，确保卡片在状态变更后显示在正确的分类中
+        if hasattr(self.app, 'current_page') and hasattr(self.app.current_page, 'apply_filter'):
+            await self.app.current_page.apply_filter()
 
     async def subscribe_remove_cards(self, _, recordings: list[Recording]):
         await self.remove_recording_card(recordings)
