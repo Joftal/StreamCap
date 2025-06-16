@@ -150,11 +150,38 @@ class App:
                 
                 # 如果是切换到主页，确保内存状态良好
                 if isinstance(page, HomePage):
-                    # 执行一次轻量级清理，确保内存状态良好
-                    await self._perform_light_cleanup()
-                
-                # 加载新页面
-                await page.load()
+                    # 获取当前内存使用情况
+                    memory_info = self._get_memory_usage()
+                    is_high_memory = memory_info["percent"] >= MEMORY_CLEANUP_THRESHOLD
+                    
+                    # 检查是否从非主页面切换到主页面，并且停留时间较长
+                    is_from_other_page = previous_page and not isinstance(previous_page, HomePage)
+                    
+                    if is_from_other_page:
+                        # 先加载页面UI，确保用户看到界面
+                        await page.load()
+                        # 页面加载后，再执行清理，避免阻塞UI
+                        self.page.update()
+                        
+                        # 使用更长的延迟确保UI已经渲染完成
+                        await asyncio.sleep(0.3)
+                        
+                        # 分两阶段执行清理，避免长时间阻塞
+                        # 1. 先执行轻量级清理
+                        await self._perform_light_cleanup()
+                        
+                        # 2. 如果内存使用率高，再执行完整清理
+                        if is_high_memory:
+                            logger.info(f"从其他页面切换到主页面，内存使用率高({memory_info['percent']:.1f}%)，执行完整清理")
+                            # 再次等待一小段时间，避免连续清理导致卡顿
+                            await asyncio.sleep(0.2)
+                            await self._perform_full_cleanup()
+                    else:
+                        # 正常加载页面
+                        await page.load()
+                else:
+                    # 非主页面，正常加载
+                    await page.load()
         except Exception as e:
             logger.error(f"切换页面时出错: {e}")
         finally:
@@ -321,18 +348,27 @@ class App:
         # 1. 清理平台处理器实例
         PlatformHandler.clear_unused_instances()
         
-        # 2. 强制垃圾回收
+        # 2. 短暂暂停，让UI线程有机会更新
+        await asyncio.sleep(0.05)
+        
+        # 3. 强制垃圾回收
         gc.collect(generation=2)  # 强制完整垃圾回收
         
-        # 3. 清理未引用的全局对象缓存
+        # 4. 清理未引用的全局对象缓存
         # 注意：这是一个示例，实际上需要根据具体情况清理
         # 在此处可以添加清理特定缓存的代码
         
-        # 4. 记录清理后状态
+        # 5. 检查进程状态
+        await self.process_manager.check_system_processes()
+        
+        # 6. 再次短暂暂停
+        await asyncio.sleep(0.05)
+        
+        # 7. 记录清理后状态
         after_memory = self._get_memory_usage()
         after_instances = PlatformHandler.get_instances_count()
         
-        # 5. 日志记录清理结果
+        # 8. 日志记录清理结果
         memory_change = before_memory["percent"] - after_memory["percent"]
         logger.info(f"完整清理完成 - 内存使用率: {before_memory['percent']:.1f}% -> {after_memory['percent']:.1f}% "
                    f"(减少: {memory_change:.1f}%)")
@@ -352,10 +388,7 @@ class App:
                    f"实例数: {instance_stats.get('current_count', 0)}, "
                    f"强引用实例数: {instance_stats.get('strong_refs', 0)}, "
                    f"使用时间记录数: {instance_stats.get('usage_records', 0)}")
-                   
-        # 检查系统中的进程
-        await self.process_manager.check_system_processes()
-    
+
     def _get_memory_usage(self):
         """获取当前进程的内存使用情况"""
         try:
