@@ -45,11 +45,7 @@
     "filter_live_monitoring_not_recording": "直播中（未录制）",
     "platform_filter": "平台筛选",
     "filter_all_platforms": "全部平台",
-    "recording_cannot_delete_tip": "正在录制中，无法删除直播间",
-    "previous_page": "上一页",
-    "next_page": "下一页",
-    "page_size": "每页显示数量",
-    "items_count": "{count}"
+    "recording_cannot_delete_tip": "正在录制中，无法删除直播间"
   },
   "recording_dialog": {
     "input_live_link": "输入直播间链接",
@@ -87,9 +83,7 @@
     "success_add_rooms": "成功添加 {count} 个直播间",
     "all_rooms_exist": "所有直播间已存在，无需添加",
     "remark": "备注",
-    "remark_hint": "请输入备注信息（最多20个中文字符）",
-    "unsupported_platforms": "不支持的平台: {count}个",
-    "all_urls_unsupported": "所有URL都是不支持的平台 ({count}个)"
+    "remark_hint": "请输入备注信息（最多20个中文字符）"
   },
   "search_dialog": {
     "search_keyword": "输入搜索关键词",
@@ -509,11 +503,5 @@
     "input_required": "请输入用户名和密码",
     "login_failed": "用户名或密码错误",
     "login_success": "登录成功"
-  },
-  "room_checker": {
-    "url_completely_same": "URL完全相同",
-    "same_platform_same_streamer": "同平台同名主播",
-    "same_platform_same_room_id": "同平台房间ID相同",
-    "filter_file_saved_to": "过滤文件已保存至: {path}"
   }
 }

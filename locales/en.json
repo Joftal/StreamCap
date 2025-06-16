@@ -45,11 +45,7 @@
     "filter_live_monitoring_not_recording": "Live (Not Recording)",
     "platform_filter": "Platform Filter",
     "filter_all_platforms": "All Platforms",
-    "recording_cannot_delete_tip": "Cannot delete while recording is in progress",
-    "previous_page": "Previous Page",
-    "next_page": "Next Page",
-    "page_size": "Items per page",
-    "items_count": "{count}"
+    "recording_cannot_delete_tip": "Cannot delete live room while recording is in progress"
   },
   "recording_dialog": {
     "input_live_link": "Enter live room link",
@@ -87,9 +83,7 @@
     "success_add_rooms": "Successfully added {count} live rooms",
     "all_rooms_exist": "All live rooms already exist, no need to add",
     "remark": "Remark",
-    "remark_hint": "Enter remark (max 20 Chinese characters)",
-    "unsupported_platforms": "Unsupported platforms: {count}",
-    "all_urls_unsupported": "All URLs are unsupported platforms ({count})"
+    "remark_hint": "Enter remark (max 20 Chinese characters)"
   },
   "search_dialog": {
     "search_keyword": "Enter search keywords",
@@ -510,11 +504,5 @@
   "vlc_path_hint": "e.g. C:\\Program Files\\VideoLAN\\VLC\\vlc.exe",
   "vlc_not_set": "VLC path not set, cannot play",
   "play_stream": "Play",
-  "play_failed": "Play failed, no stream or VLC path",
-  "room_checker": {
-    "url_completely_same": "URL completely identical",
-    "filter_file_saved_to": "Filter file has been saved to: {path}",
-    "same_platform_same_streamer": "Same platform, same streamer name",
-    "same_platform_same_room_id": "Same platform, same room ID"
-  }
+  "play_failed": "Play failed, no stream or VLC path"
 }
