@@ -16,3 +16,10 @@ class PageBase:
         """Load page content into the content area.
         """
         raise NotImplementedError("Subclasses must implement this method")
+
+    async def unload(self):
+        """Clean up resources when page is unloaded.
+        This method is called when switching away from this page.
+        Override this method in subclasses if specific cleanup is needed.
+        """
+        pass
