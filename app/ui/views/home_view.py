@@ -627,6 +627,91 @@ class HomePage(PageBase):
         self.current_filter = "live_monitoring_not_recording"
         await self.apply_filter()
     
+    async def handle_empty_results(self, query=""):
+        """处理空结果的通用方法，显示适当的提示信息
+        
+        参数:
+            query: 搜索关键词，如果有的话
+        """
+        search_message = f"搜索 \"{query}\"" if query else ""
+        
+        # 检查是否已经有提示信息
+        has_empty_tip = False
+        for control in self.recording_card_area.content.controls:
+            if hasattr(control, 'key') and control.key == 'empty_filter_tip':
+                # 更新现有提示
+                if hasattr(control, 'content') and hasattr(control.content, 'controls'):
+                    for text_control in control.content.controls:
+                        if isinstance(text_control, ft.Text):
+                            if query:
+                                text_control.value = self._.get("no_search_results", "没有找到匹配的结果") + f": {search_message}"
+                            else:
+                                text_control.value = self._.get("no_matching_items", "没有匹配的项目")
+                has_empty_tip = True
+                control.visible = True
+                control.update()
+                break
+        
+        # 如果没有提示信息，添加一个
+        if not has_empty_tip:
+            message = self._.get("no_search_results", "没有找到匹配的结果") + f": {search_message}" if query else self._.get("no_matching_items", "没有匹配的项目")
+            empty_tip = ft.Container(
+                key='empty_filter_tip',
+                content=ft.Column(
+                    [
+                        ft.Icon(ft.icons.SEARCH_OFF, size=40, color=ft.colors.OUTLINE),
+                        ft.Text(message, size=16)
+                    ],
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                    spacing=10
+                ),
+                alignment=ft.alignment.center,
+                expand=True,
+                visible=True
+            )
+            self.recording_card_area.content.controls.append(empty_tip)
+            self.recording_card_area.content.update()
+        return True
+
+    async def hide_empty_results_tip(self):
+        """隐藏空结果提示"""
+        for control in self.recording_card_area.content.controls:
+            if hasattr(control, 'key') and control.key == 'empty_filter_tip':
+                control.visible = False
+                control.update()
+                return True
+        return False
+
+    async def reset_cards_visibility(self):
+        cards_obj = self.app.record_card_manager.cards_obj
+        for card_info in cards_obj.values():
+            if not card_info["card"].visible:
+                card_info["card"].visible = True
+                card_info["card"].update()
+
+    @staticmethod
+    def should_show_recording(filter_type, recording, platform_filter="all"):
+        """检查录制项是否应该显示在当前筛选条件下"""
+        # 先检查平台筛选
+        if platform_filter != "all":
+            _, platform_key = get_platform_info(recording.url)
+            if platform_key != platform_filter:
+                return False
+        
+        if filter_type == "all":
+            return True
+        elif filter_type == "recording":
+            return recording.recording
+        elif filter_type == "live_monitoring_not_recording":
+            return recording.is_live and recording.monitor_status and not recording.recording
+        elif filter_type == "error":
+            return recording.status_info == RecordingStatus.RECORDING_ERROR
+        elif filter_type == "offline":
+            return not recording.is_live and recording.monitor_status
+        elif filter_type == "stopped":
+            return not recording.monitor_status
+        return True
+
     async def apply_filter(self):
         self.content_area.controls[1] = self.create_filter_area()
         
@@ -659,70 +744,13 @@ class HomePage(PageBase):
         # 更新页面显示
         await self.update_page_display()
         
-        # 如果没有匹配项，显示提示信息
+        # 处理空结果
         if len(self.visible_cards) == 0:
-            # 检查是否已经有提示信息
-            has_empty_tip = False
-            for control in self.recording_card_area.content.controls:
-                if hasattr(control, 'key') and control.key == 'empty_filter_tip':
-                    has_empty_tip = True
-                    break
-            
-            # 如果没有提示信息，添加一个
-            if not has_empty_tip:
-                empty_tip = ft.Container(
-                    key='empty_filter_tip',
-                    content=ft.Column(
-                        [
-                            ft.Icon(ft.icons.SEARCH_OFF, size=40, color=ft.colors.OUTLINE),
-                            ft.Text(self._.get("no_matching_items", "没有匹配的项目"), size=16)
-                        ],
-                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                        spacing=10
-                    ),
-                    alignment=ft.alignment.center,
-                    expand=True,
-                    visible=True
-                )
-                self.recording_card_area.content.controls.append(empty_tip)
+            await self.handle_empty_results()
         else:
-            # 如果有匹配项，移除提示信息
-            for i, control in enumerate(self.recording_card_area.content.controls):
-                if hasattr(control, 'key') and control.key == 'empty_filter_tip':
-                    self.recording_card_area.content.controls.pop(i)
-                    break
+            await self.hide_empty_results_tip()
         
         self.content_area.update()
-
-    async def reset_cards_visibility(self):
-        cards_obj = self.app.record_card_manager.cards_obj
-        for card_info in cards_obj.values():
-            if not card_info["card"].visible:
-                card_info["card"].visible = True
-                card_info["card"].update()
-
-    @staticmethod
-    def should_show_recording(filter_type, recording, platform_filter="all"):
-        """检查录制项是否应该显示在当前筛选条件下"""
-        # 先检查平台筛选
-        if platform_filter != "all":
-            _, platform_key = get_platform_info(recording.url)
-            if platform_key != platform_filter:
-                return False
-        
-        if filter_type == "all":
-            return True
-        elif filter_type == "recording":
-            return recording.recording
-        elif filter_type == "live_monitoring_not_recording":
-            return recording.is_live and recording.monitor_status and not recording.recording
-        elif filter_type == "error":
-            return recording.status_info == RecordingStatus.RECORDING_ERROR
-        elif filter_type == "offline":
-            return not recording.is_live and recording.monitor_status
-        elif filter_type == "stopped":
-            return not recording.monitor_status
-        return True
 
     async def filter_recordings(self, query="", use_current_filter=True):
         """
@@ -800,52 +828,11 @@ class HomePage(PageBase):
         # 更新页面显示
         await self.update_page_display()
         
-        # 如果没有匹配项，显示提示信息
-        search_message = f"搜索 \"{query}\"" if query else ""
+        # 处理空结果
         if len(self.visible_cards) == 0:
-            # 检查是否已经有提示信息
-            has_empty_tip = False
-            for control in self.recording_card_area.content.controls:
-                if hasattr(control, 'key') and control.key == 'empty_filter_tip':
-                    # 更新现有提示
-                    if hasattr(control, 'content') and hasattr(control.content, 'controls'):
-                        for text_control in control.content.controls:
-                            if isinstance(text_control, ft.Text):
-                                if query:
-                                    text_control.value = self._.get("no_search_results", "没有找到匹配的结果") + f": {search_message}"
-                                else:
-                                    text_control.value = self._.get("no_matching_items", "没有匹配的项目")
-                    has_empty_tip = True
-                    control.visible = True
-                    control.update()
-                    break
-            
-            # 如果没有提示信息，添加一个
-            if not has_empty_tip:
-                message = self._.get("no_search_results", "没有找到匹配的结果") + f": {search_message}" if query else self._.get("no_matching_items", "没有匹配的项目")
-                empty_tip = ft.Container(
-                    key='empty_filter_tip',
-                    content=ft.Column(
-                        [
-                            ft.Icon(ft.icons.SEARCH_OFF, size=40, color=ft.colors.OUTLINE),
-                            ft.Text(message, size=16)
-                        ],
-                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                        spacing=10
-                    ),
-                    alignment=ft.alignment.center,
-                    expand=True,
-                    visible=True
-                )
-                self.recording_card_area.content.controls.append(empty_tip)
-                self.recording_card_area.content.update()
+            await self.handle_empty_results(query)
         else:
-            # 如果有匹配项，移除或隐藏提示信息
-            for control in self.recording_card_area.content.controls:
-                if hasattr(control, 'key') and control.key == 'empty_filter_tip':
-                    control.visible = False
-                    control.update()
-                    break
+            await self.hide_empty_results_tip()
 
     def create_home_content_area(self):
         return ft.Column(
