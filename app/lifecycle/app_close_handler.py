@@ -76,10 +76,26 @@ async def handle_app_close(page: ft.Page, app, save_progress_overlay) -> None:
         except Exception as ex:
             logger.error(f"保存窗口大小时出错: {ex}")
         
+        # 确保在关闭前先切换到主页面，避免在非主界面时可能的资源清理问题
+        try:
+            # 如果当前不在主页面，先切换到主页面
+            if app.current_page and app.current_page.__class__.__name__ != "HomePage":
+                logger.info("在关闭程序前，先切换到主页面以确保资源正确清理")
+                await app.switch_page("home")
+                # 给UI一点时间更新
+                await asyncio.sleep(0.3)
+        except Exception as ex:
+            logger.error(f"切换到主页面时出错: {ex}")
+        
         # 立即执行一次完整的资源清理
         try:
             # 在web模式下不执行资源清理
             if not app.is_web_mode:
+                # 先执行轻量级清理
+                await app._perform_light_cleanup()
+                # 短暂等待
+                await asyncio.sleep(0.1)
+                # 再执行完整清理
                 await app._perform_full_cleanup()
         except Exception as ex:
             logger.error(f"关闭前清理资源时出错: {ex}")

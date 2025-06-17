@@ -67,27 +67,57 @@ class HomePage(PageBase):
 
     async def load(self):
         """Load the home page content."""
-        self.content_area.controls.extend(
-            [
-                self.create_home_title_area(),
-                self.create_filter_area(),
-                self.create_home_content_area()
-            ]
-        )
-        self.content_area.update()
-        
-        self.recording_card_area.content.controls.clear()
-        await self.add_record_cards()
-        
-        if self.is_grid_view:
-            await self.recalculate_grid_columns()
-        
-        self.page.on_keyboard_event = self.on_keyboard
-        self.page.on_resized = self.update_grid_layout
-        
-        # 确保录制卡片显示正确的格式和分段时间
-        if hasattr(self.app, "config_validator"):
-            self.page.run_task(self.app.config_validator.update_recording_cards)
+        try:
+            # 第一阶段：加载基本UI框架
+            self.content_area.controls.extend(
+                [
+                    self.create_home_title_area(),
+                    self.create_filter_area(),
+                    self.create_home_content_area()
+                ]
+            )
+            self.content_area.update()
+            
+            # 短暂暂停，让UI有时间渲染
+            await asyncio.sleep(0.05)
+            
+            # 第二阶段：清空卡片区域，准备加载卡片
+            self.recording_card_area.content.controls.clear()
+            self.recording_card_area.update()
+            
+            # 显示加载指示器
+            if hasattr(self, 'loading_indicator'):
+                self.loading_indicator.visible = True
+                self.content_area.update()
+            
+            # 第三阶段：加载录制卡片
+            await self.add_record_cards()
+            
+            # 隐藏加载指示器
+            if hasattr(self, 'loading_indicator'):
+                self.loading_indicator.visible = False
+                self.content_area.update()
+            
+            # 第四阶段：调整网格布局（如果是网格视图）
+            if self.is_grid_view:
+                await self.recalculate_grid_columns()
+            
+            # 设置键盘和窗口大小调整事件处理
+            self.page.on_keyboard_event = self.on_keyboard
+            self.page.on_resized = self.update_grid_layout
+            
+            # 确保录制卡片显示正确的格式和分段时间
+            if hasattr(self.app, "config_validator"):
+                self.page.run_task(self.app.config_validator.update_recording_cards)
+                
+        except Exception as e:
+            logger.error(f"加载主页面时出错: {e}")
+            # 确保即使出错也能显示基本UI
+            if not self.content_area.controls:
+                self.content_area.controls.append(
+                    ft.Text("加载页面时出错，请尝试刷新", color=ft.colors.RED)
+                )
+                self.content_area.update()
 
     def pubsub_subscribe(self):
         self.app.page.pubsub.subscribe_topic('add', self.subscribe_add_cards)

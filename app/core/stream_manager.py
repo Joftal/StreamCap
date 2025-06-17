@@ -639,6 +639,9 @@ class LiveStreamRecorder:
                     if isinstance(self.app.current_page, HomePage):
                         await self.app.record_card_manager.update_card(self.recording)
                         self.app.page.pubsub.send_others_on_topic("update", self.recording)
+                        # 确保重新应用筛选条件
+                        if hasattr(self.app.current_page, 'apply_filter'):
+                            await self.app.current_page.apply_filter()
                     await self.app.snack_bar.show_snack_bar(
                         record_name + " " + self._["record_stream_error"], duration=2000
                     )
@@ -699,6 +702,9 @@ class LiveStreamRecorder:
                     if isinstance(self.app.current_page, HomePage):
                         await self.app.record_card_manager.update_card(self.recording)
                         self.app.page.pubsub.send_others_on_topic("update", self.recording)
+                        # 确保重新应用筛选条件
+                        if hasattr(self.app.current_page, 'apply_filter'):
+                            await self.app.current_page.apply_filter()
                     if self.app.recording_enabled and process in self.app.process_manager.ffmpeg_processes:
                         self.app.page.run_task(self.app.record_manager.check_if_live, self.recording)
                     else:

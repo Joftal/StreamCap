@@ -202,18 +202,52 @@ class PlatformHandler(abc.ABC):
                 if current_time - last_used > cls._INACTIVE_THRESHOLD
             ]
             
-            for key in inactive_keys:
-                if key in cls._instances:
-                    logger.info(f"实例清理 - 移除长时间未使用的实例: {key[2]}-{key[3] or 'default'}")
-                    # 从WeakValueDictionary中移除引用，允许GC回收
-                    del cls._instances[key]
-                    # 同时从强引用字典中移除
-                    if key in cls._active_instances:
-                        del cls._active_instances[key]
+            # 计算要清理的实例总数
+            total_to_clean = len(inactive_keys)
+            if total_to_clean > 10:
+                # 如果需要清理的实例过多，分批处理以避免阻塞
+                logger.info(f"实例清理 - 发现大量需要清理的实例({total_to_clean})，将分批处理")
+                
+                # 每批处理的实例数
+                batch_size = 10
+                batches = [inactive_keys[i:i+batch_size] for i in range(0, len(inactive_keys), batch_size)]
+                
+                cleaned_count = 0
+                for batch in batches:
+                    # 处理当前批次
+                    for key in batch:
+                        if key in cls._instances:
+                            # 从WeakValueDictionary中移除引用，允许GC回收
+                            del cls._instances[key]
+                            # 同时从强引用字典中移除
+                            if key in cls._active_instances:
+                                del cls._active_instances[key]
+                        
+                        # 从使用时间记录中移除
+                        if key in cls._instance_last_used:
+                            del cls._instance_last_used[key]
                     
-                # 从使用时间记录中移除
-                if key in cls._instance_last_used:
-                    del cls._instance_last_used[key]
+                    cleaned_count += len(batch)
+                    # 每批处理后记录进度
+                    if len(batches) > 1:
+                        logger.debug(f"实例清理进度: {cleaned_count}/{total_to_clean} ({(cleaned_count/total_to_clean)*100:.1f}%)")
+                    
+                    # 每批次处理后短暂暂停，避免长时间阻塞
+                    if len(batches) > 1:
+                        time.sleep(0.01)
+            else:
+                # 实例数量不多，直接清理
+                for key in inactive_keys:
+                    if key in cls._instances:
+                        # 从WeakValueDictionary中移除引用，允许GC回收
+                        del cls._instances[key]
+                        # 同时从强引用字典中移除
+                        if key in cls._active_instances:
+                            del cls._active_instances[key]
+                    
+                    # 从使用时间记录中移除
+                    if key in cls._instance_last_used:
+                        del cls._instance_last_used[key]
             
             # 清理_instance_last_used中不存在于_instances的键
             orphaned_keys = [key for key in list(cls._instance_last_used.keys()) if key not in cls._instances]
