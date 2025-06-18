@@ -124,6 +124,14 @@ class App:
             # 记录从哪个页面切换
             previous_page = self.current_page
             
+            # 如果有上一个页面，尝试调用其unload方法
+            if previous_page:
+                try:
+                    if hasattr(previous_page, 'unload') and callable(previous_page.unload):
+                        await previous_page.unload()
+                except Exception as e:
+                    logger.error(f"调用页面unload方法时出错: {e}")
+            
             # 如果是从设置页面切换，检查是否有更改
             if isinstance(previous_page, SettingsPage):
                 await previous_page.is_changed()

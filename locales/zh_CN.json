@@ -45,7 +45,17 @@
     "filter_live_monitoring_not_recording": "直播中（未录制）",
     "platform_filter": "平台筛选",
     "filter_all_platforms": "全部平台",
-    "recording_cannot_delete_tip": "正在录制中，无法删除直播间"
+    "recording_cannot_delete_tip": "正在录制中，无法删除直播间",
+    "no_matching_items": "没有匹配的项目",
+    "no_search_results": "没有找到匹配的结果",
+    "pagination": {
+      "page_info": "第 {current_page}/{total_pages} 页，共 {total_items} 项",
+      "prev_page": "上一页",
+      "next_page": "下一页",
+      "first_page": "首页",
+      "last_page": "末页",
+      "items_per_page": "每页显示"
+    }
   },
   "recording_dialog": {
     "input_live_link": "输入直播间链接",

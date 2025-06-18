@@ -27,12 +27,76 @@ class HomePage(PageBase):
         self.current_filter = "all"
         self.current_platform_filter = "all"
         self.platform_dropdown = None
+        
+        # 分页相关属性
+        self.current_page = 1
+        self.items_per_page = app.settings.user_config.get("items_per_page", 12)
+        self.total_pages = 1
+        self.pagination_controls = None
+        self.page_info_text = None
+        self.visible_cards = []
+        
         self.init()
 
     def load_language(self):
         language = self.app.language_manager.language
         for key in ("home_page", "video_quality", "base", "recording_manager"):
             self._.update(language.get(key, {}))
+        
+        # 添加默认分页相关的语言项，如果语言文件中没有定义
+        if "pagination" not in self._:
+            self._["pagination"] = {
+                "page_info": "第 {current_page}/{total_pages} 页，共 {total_items} 项",
+                "prev_page": "上一页",
+                "next_page": "下一页",
+                "first_page": "首页",
+                "last_page": "末页",
+                "items_per_page": "每页显示",
+            }
+            
+        # 如果分页控件已经创建，更新其文本
+        if hasattr(self, 'pagination_controls') and self.pagination_controls:
+            self.update_pagination_texts()
+            
+    def update_pagination_texts(self):
+        """更新分页控件的文本以反映当前语言"""
+        if not self.pagination_controls:
+            return
+            
+        # 更新页码信息文本
+        if hasattr(self, 'page_info_text') and self.page_info_text:
+            self.page_info_text.value = self._["pagination"]["page_info"].format(
+                current_page=self.current_page, 
+                total_pages=self.total_pages,
+                total_items=len(self.visible_cards) if hasattr(self, 'visible_cards') else 0
+            )
+            
+        try:
+            # 更新按钮提示文本
+            pagination_row = self.pagination_controls.content.content.content
+            pagination_row.controls[0].tooltip = self._["pagination"]["first_page"]
+            pagination_row.controls[1].tooltip = self._["pagination"]["prev_page"]
+            pagination_row.controls[3].tooltip = self._["pagination"]["next_page"]
+            pagination_row.controls[4].tooltip = self._["pagination"]["last_page"]
+            
+            # 更新每页显示数量下拉框标签
+            pagination_row.controls[5].label = self._["pagination"]["items_per_page"]
+            
+            # 更新控件
+            self.pagination_controls.update()
+        except Exception as e:
+            logger.error(f"更新分页控件文本时出错: {e}", exc_info=True)
+        
+    def on_language_changed(self):
+        """语言变更时的回调函数"""
+        self.load_language()
+        
+        # 如果当前页面是活跃的，更新UI
+        if self.app.current_page == self:
+            # 更新分页控件文本
+            self.update_pagination_texts()
+            self.content_area.update()
+            self.page.update()
 
     def init(self):
         self.loading_indicator = ft.ProgressRing(
@@ -62,8 +126,196 @@ class HomePage(PageBase):
             content=initial_content,
             expand=True
         )
+        
+        # 不在初始化时创建分页控件，而是在load方法中创建
+        self.pagination_controls = None
+        
         self.add_recording_dialog = RecordingDialog(self.app, self.add_recording)
         self.pubsub_subscribe()
+
+    def create_pagination_controls(self):
+        """创建分页控制组件"""
+        self.page_info_text = ft.Text(
+            value=self._["pagination"]["page_info"].format(
+                current_page=self.current_page, 
+                total_pages=self.total_pages,
+                total_items=0
+            ),
+            size=14
+        )
+        
+        # 每页显示数量下拉框
+        items_per_page_dropdown = ft.Dropdown(
+            value=str(self.items_per_page),
+            options=[
+                ft.dropdown.Option(key="6", text="6"),
+                ft.dropdown.Option(key="12", text="12"),
+                ft.dropdown.Option(key="24", text="24"),
+                ft.dropdown.Option(key="48", text="48"),
+                ft.dropdown.Option(key="96", text="96"),
+            ],
+            on_change=self.on_items_per_page_change,
+            width=80,
+            label=self._["pagination"]["items_per_page"]
+        )
+        
+        # 获取安全的背景色和文本颜色
+        is_dark = hasattr(self.page, 'theme_mode') and self.page.theme_mode == ft.ThemeMode.DARK
+        bg_color = ft.colors.with_opacity(0.9, ft.colors.SURFACE_TINT if is_dark else ft.colors.WHITE)
+        border_color = ft.colors.OUTLINE_VARIANT
+        
+        # 创建分页按钮
+        pagination_row = ft.Row(
+            [
+                ft.IconButton(
+                    icon=ft.icons.FIRST_PAGE,
+                    tooltip=self._["pagination"]["first_page"],
+                    on_click=self.go_to_first_page,
+                    disabled=True,
+                    icon_size=20,
+                ),
+                ft.IconButton(
+                    icon=ft.icons.NAVIGATE_BEFORE,
+                    tooltip=self._["pagination"]["prev_page"],
+                    on_click=self.go_to_prev_page,
+                    disabled=True,
+                    icon_size=20,
+                ),
+                self.page_info_text,
+                ft.IconButton(
+                    icon=ft.icons.NAVIGATE_NEXT,
+                    tooltip=self._["pagination"]["next_page"],
+                    on_click=self.go_to_next_page,
+                    disabled=True,
+                    icon_size=20,
+                ),
+                ft.IconButton(
+                    icon=ft.icons.LAST_PAGE,
+                    tooltip=self._["pagination"]["last_page"],
+                    on_click=self.go_to_last_page,
+                    disabled=True,
+                    icon_size=20,
+                ),
+                items_per_page_dropdown
+            ],
+            alignment=ft.MainAxisAlignment.CENTER,
+            spacing=5,
+            tight=True,
+        )
+        
+        # 创建一个居中的容器
+        self.pagination_controls = ft.Container(
+            content=ft.Card(
+                content=ft.Container(
+                    content=pagination_row,
+                    padding=ft.padding.symmetric(horizontal=15, vertical=8),
+                ),
+                elevation=4,
+            ),
+            alignment=ft.alignment.center,
+            width=None,  # 自适应宽度
+            margin=ft.margin.only(bottom=10),
+        )
+
+    async def on_items_per_page_change(self, e):
+        """处理每页显示数量变化"""
+        self.items_per_page = int(e.control.value)
+        self.current_page = 1  # 重置到第一页
+        
+        # 保存到用户配置
+        self.app.settings.user_config["items_per_page"] = self.items_per_page
+        self.page.run_task(self.app.config_manager.save_user_config, self.app.settings.user_config)
+        
+        # 重新应用过滤和分页
+        await self.apply_filter()
+
+    async def go_to_first_page(self, _):
+        """跳转到第一页"""
+        if self.current_page != 1:
+            self.current_page = 1
+            await self.update_page_display()
+
+    async def go_to_prev_page(self, _):
+        """跳转到上一页"""
+        if self.current_page > 1:
+            self.current_page -= 1
+            await self.update_page_display()
+
+    async def go_to_next_page(self, _):
+        """跳转到下一页"""
+        if self.current_page < self.total_pages:
+            self.current_page += 1
+            await self.update_page_display()
+
+    async def go_to_last_page(self, _):
+        """跳转到最后一页"""
+        if self.current_page != self.total_pages:
+            self.current_page = self.total_pages
+            await self.update_page_display()
+
+    async def update_page_display(self):
+        """更新页面显示，根据当前页码显示对应的卡片"""
+        # 确保分页控件已创建
+        if not self.pagination_controls:
+            return
+            
+        # 更新页码信息文本
+        self.page_info_text.value = self._["pagination"]["page_info"].format(
+            current_page=self.current_page, 
+            total_pages=self.total_pages,
+            total_items=len(self.visible_cards)
+        )
+        
+        # 更新翻页按钮状态
+        pagination_row = self.pagination_controls.content.content.content
+        pagination_row.controls[0].disabled = self.current_page == 1  # 首页按钮
+        pagination_row.controls[1].disabled = self.current_page == 1  # 上一页按钮
+        pagination_row.controls[3].disabled = self.current_page == self.total_pages  # 下一页按钮
+        pagination_row.controls[4].disabled = self.current_page == self.total_pages  # 末页按钮
+        
+        self.pagination_controls.update()
+        
+        # 计算当前页应显示的卡片
+        start_idx = (self.current_page - 1) * self.items_per_page
+        end_idx = min(start_idx + self.items_per_page, len(self.visible_cards))
+        
+        # 检查当前页是否为空页（除非没有任何匹配项）
+        if start_idx >= len(self.visible_cards) and len(self.visible_cards) > 0:
+            # 当前页为空但有匹配项，自动调整到最后一页
+            self.current_page = self.total_pages
+            # 重新计算索引范围
+            start_idx = (self.current_page - 1) * self.items_per_page
+            end_idx = min(start_idx + self.items_per_page, len(self.visible_cards))
+            
+            # 更新页码信息文本
+            self.page_info_text.value = self._["pagination"]["page_info"].format(
+                current_page=self.current_page, 
+                total_pages=self.total_pages,
+                total_items=len(self.visible_cards)
+            )
+            
+            # 更新翻页按钮状态
+            pagination_row.controls[0].disabled = self.current_page == 1  # 首页按钮
+            pagination_row.controls[1].disabled = self.current_page == 1  # 上一页按钮
+            pagination_row.controls[3].disabled = self.current_page == self.total_pages  # 下一页按钮
+            pagination_row.controls[4].disabled = self.current_page == self.total_pages  # 末页按钮
+            
+            self.pagination_controls.update()
+        
+        # 隐藏所有卡片
+        cards_obj = self.app.record_card_manager.cards_obj
+        for card_info in cards_obj.values():
+            card_info["card"].visible = False
+        
+        # 只显示当前页的卡片
+        for i in range(start_idx, end_idx):
+            if i < len(self.visible_cards):
+                card_id = self.visible_cards[i]
+                if card_id in cards_obj:
+                    cards_obj[card_id]["card"].visible = True
+        
+        # 更新卡片区域
+        self.recording_card_area.content.update()
 
     async def load(self):
         """Load the home page content."""
@@ -76,7 +328,35 @@ class HomePage(PageBase):
                     self.create_home_content_area()
                 ]
             )
+            
+            # 重新创建分页控件，确保使用最新的语言设置
+            self.create_pagination_controls()
+            
+            # 将分页控件添加到页面底部固定位置
+            # 先检查是否已经存在分页控件，避免重复添加
+            pagination_exists = False
+            for overlay_item in self.page.overlay:
+                if hasattr(overlay_item, 'key') and overlay_item.key == 'home_pagination_container':
+                    pagination_exists = True
+                    break
+                    
+            if not pagination_exists:
+                # 给分页控件添加key，方便识别
+                self.pagination_controls.key = 'home_pagination'
+                self.page.overlay.append(
+                    ft.Container(
+                        key='home_pagination_container',
+                        content=self.pagination_controls,
+                        alignment=ft.alignment.bottom_center,
+                        left=0,
+                        right=0,
+                        bottom=0,
+                        padding=ft.padding.only(bottom=10, left=60),  # 左侧留出空间避免遮挡按钮
+                    )
+                )
+            
             self.content_area.update()
+            self.page.update()
             
             # 短暂暂停，让UI有时间渲染
             await asyncio.sleep(0.05)
@@ -347,22 +627,60 @@ class HomePage(PageBase):
         self.current_filter = "live_monitoring_not_recording"
         await self.apply_filter()
     
-    async def apply_filter(self):
-        self.content_area.controls[1] = self.create_filter_area()
+    async def handle_empty_results(self, query=""):
+        """处理空结果的通用方法，显示适当的提示信息
         
-        cards_obj = self.app.record_card_manager.cards_obj
-        recordings = self.app.record_manager.recordings
+        参数:
+            query: 搜索关键词，如果有的话
+        """
+        search_message = f"搜索 \"{query}\"" if query else ""
         
-        for recording in recordings:
-            card_info = cards_obj.get(recording.rec_id)
-            if not card_info:
-                continue
-                
-            visible = self.should_show_recording(self.current_filter, recording, self.current_platform_filter)
-            card_info["card"].visible = visible
+        # 检查是否已经有提示信息
+        has_empty_tip = False
+        for control in self.recording_card_area.content.controls:
+            if hasattr(control, 'key') and control.key == 'empty_filter_tip':
+                # 更新现有提示
+                if hasattr(control, 'content') and hasattr(control.content, 'controls'):
+                    for text_control in control.content.controls:
+                        if isinstance(text_control, ft.Text):
+                            if query:
+                                text_control.value = self._.get("no_search_results", "没有找到匹配的结果") + f": {search_message}"
+                            else:
+                                text_control.value = self._.get("no_matching_items", "没有匹配的项目")
+                has_empty_tip = True
+                control.visible = True
+                control.update()
+                break
         
-        self.recording_card_area.content.update()
-        self.content_area.update()
+        # 如果没有提示信息，添加一个
+        if not has_empty_tip:
+            message = self._.get("no_search_results", "没有找到匹配的结果") + f": {search_message}" if query else self._.get("no_matching_items", "没有匹配的项目")
+            empty_tip = ft.Container(
+                key='empty_filter_tip',
+                content=ft.Column(
+                    [
+                        ft.Icon(ft.icons.SEARCH_OFF, size=40, color=ft.colors.OUTLINE),
+                        ft.Text(message, size=16)
+                    ],
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                    spacing=10
+                ),
+                alignment=ft.alignment.center,
+                expand=True,
+                visible=True
+            )
+            self.recording_card_area.content.controls.append(empty_tip)
+            self.recording_card_area.content.update()
+        return True
+
+    async def hide_empty_results_tip(self):
+        """隐藏空结果提示"""
+        for control in self.recording_card_area.content.controls:
+            if hasattr(control, 'key') and control.key == 'empty_filter_tip':
+                control.visible = False
+                control.update()
+                return True
+        return False
 
     async def reset_cards_visibility(self):
         cards_obj = self.app.record_card_manager.cards_obj
@@ -394,6 +712,46 @@ class HomePage(PageBase):
             return not recording.monitor_status
         return True
 
+    async def apply_filter(self):
+        self.content_area.controls[1] = self.create_filter_area()
+        
+        cards_obj = self.app.record_card_manager.cards_obj
+        recordings = self.app.record_manager.recordings
+        
+        # 重置可见卡片列表
+        self.visible_cards = []
+        
+        for recording in recordings:
+            card_info = cards_obj.get(recording.rec_id)
+            if not card_info:
+                continue
+                
+            visible = self.should_show_recording(self.current_filter, recording, self.current_platform_filter)
+            card_info["card"].visible = False  # 先设置所有卡片为不可见
+            
+            if visible:
+                self.visible_cards.append(recording.rec_id)
+        
+        # 计算总页数
+        self.total_pages = max(1, (len(self.visible_cards) + self.items_per_page - 1) // self.items_per_page)
+        
+        # 确保当前页码有效
+        if self.current_page > self.total_pages:
+            self.current_page = min(self.current_page, self.total_pages)
+            if self.current_page < 1:
+                self.current_page = 1
+        
+        # 更新页面显示
+        await self.update_page_display()
+        
+        # 处理空结果
+        if len(self.visible_cards) == 0:
+            await self.handle_empty_results()
+        else:
+            await self.hide_empty_results_tip()
+        
+        self.content_area.update()
+
     async def filter_recordings(self, query="", use_current_filter=True):
         """
         过滤录制卡片显示
@@ -404,6 +762,9 @@ class HomePage(PageBase):
         """
         cards_obj = self.app.record_card_manager.cards_obj
         recordings = self.app.record_manager.recordings
+        
+        # 重置可见卡片列表
+        self.visible_cards = []
         
         # 首先重置所有卡片可见性
         if not use_current_filter:
@@ -450,9 +811,28 @@ class HomePage(PageBase):
                 
             # 确定最终可见性
             visible = match_query and (not use_current_filter or match_filter)
-            card_info["card"].visible = visible
+            card_info["card"].visible = False  # 先设置所有卡片为不可见
+            
+            if visible:
+                self.visible_cards.append(recording.rec_id)
         
-        self.recording_card_area.content.update()
+        # 计算总页数
+        self.total_pages = max(1, (len(self.visible_cards) + self.items_per_page - 1) // self.items_per_page)
+        
+        # 确保当前页码有效
+        if self.current_page > self.total_pages:
+            self.current_page = min(self.current_page, self.total_pages)
+            if self.current_page < 1:
+                self.current_page = 1
+            
+        # 更新页面显示
+        await self.update_page_display()
+        
+        # 处理空结果
+        if len(self.visible_cards) == 0:
+            await self.handle_empty_results(query)
+        else:
+            await self.hide_empty_results_tip()
 
     def create_home_content_area(self):
         return ft.Column(
@@ -464,6 +844,8 @@ class HomePage(PageBase):
                     alignment=ft.alignment.center
                 ),
                 self.recording_card_area,
+                # 添加底部空间，避免内容被固定在底部的分页控件遮挡
+                ft.Container(height=60)
             ],
             scroll=ft.ScrollMode.AUTO,
         )
@@ -481,7 +863,7 @@ class HomePage(PageBase):
                 cards_to_create.append(recording)
             else:
                 existing_card = self.app.record_card_manager.cards_obj[recording.rec_id]["card"]
-                existing_card.visible = True
+                existing_card.visible = False  # 初始设置为不可见，由分页控制显示
                 existing_cards.append(existing_card)
         
         async def create_card_with_time_range(_recording: Recording):
@@ -512,6 +894,7 @@ class HomePage(PageBase):
                 ])
                 
                 for card, recording in results:
+                    card.visible = False  # 初始设置为不可见，由分页控制显示
                     self.recording_card_area.content.controls.append(card)
                     self.app.record_card_manager.cards_obj[recording.rec_id]["card"] = card
                 
@@ -541,7 +924,6 @@ class HomePage(PageBase):
 
         self.loading_indicator.visible = False
         self.loading_indicator.update()
-        self.recording_card_area.update()
         
         if not self.app.record_manager.periodic_task_started:
             self.page.run_task(
@@ -549,6 +931,7 @@ class HomePage(PageBase):
                 self.app.record_manager.loop_time_seconds
             )
         
+        # 应用过滤和分页
         await self.apply_filter()
 
     async def show_all_cards(self):
@@ -628,11 +1011,24 @@ class HomePage(PageBase):
             ])
 
             for card, recording in results:
+                card.visible = False  # 初始设置为不可见，由分页控制显示
                 self.recording_card_area.content.controls.append(card)
                 self.app.record_card_manager.cards_obj[recording.rec_id]["card"] = card
                 self.app.page.pubsub.send_others_on_topic("add", recording)
+                
+                # 将新添加的卡片添加到可见卡片列表
+                if self.should_show_recording(self.current_filter, recording, self.current_platform_filter):
+                    self.visible_cards.append(recording.rec_id)
+
+            # 重新计算总页数
+            self.total_pages = max(1, (len(self.visible_cards) + self.items_per_page - 1) // self.items_per_page)
             
-            self.recording_card_area.update()
+            # 如果添加了新卡片，自动跳转到最后一页以显示新卡片
+            if self.visible_cards:
+                self.current_page = self.total_pages
+                await self.update_page_display()
+            else:
+                self.recording_card_area.update()
 
         await self.app.snack_bar.show_snack_bar(self._["add_recording_success_tip"], bgcolor=ft.Colors.GREEN)
         self.content_area.controls[1] = self.create_filter_area()
@@ -672,7 +1068,10 @@ class HomePage(PageBase):
             card_key = card["card"].key
             cards_obj.pop(card_key, None)
             self.recording_card_area.controls.remove(card["card"])
-        await self.show_all_cards()
+            
+            # 从可见卡片列表中移除
+            if card_key in self.visible_cards:
+                self.visible_cards.remove(card_key)
 
         # 批量更新卡片，每批最多更新15个
         batch_size = 15
@@ -696,15 +1095,15 @@ class HomePage(PageBase):
             if update_tasks:
                 await asyncio.gather(*update_tasks)
                 
-                # 更新UI
-                self.recording_card_area.update()
-                
                 # 如果不是最后一批，添加短暂延迟让UI有时间响应
                 if batch_index < total_batches - 1:
                     await asyncio.sleep(0.05)
 
         self.loading_indicator.visible = False
         self.loading_indicator.update()
+
+        # 重新应用过滤和分页
+        await self.apply_filter()
 
         await self.app.snack_bar.show_snack_bar(self._["refresh_success_tip"], bgcolor=ft.Colors.GREEN)
 
@@ -787,6 +1186,29 @@ class HomePage(PageBase):
         self.recording_card_area.content.controls.clear()
         self.recording_card_area.update()
         self.app.record_card_manager.cards_obj = {}
+        
+        # 重置分页相关状态
+        self.visible_cards = []
+        self.current_page = 1
+        self.total_pages = 1
+        
+        # 确保分页控件已创建
+        if self.pagination_controls:
+            # 更新分页信息
+            self.page_info_text.value = self._["pagination"]["page_info"].format(
+                current_page=self.current_page, 
+                total_pages=self.total_pages,
+                total_items=0
+            )
+            
+            # 更新分页控件状态
+            pagination_row = self.pagination_controls.content.content.content
+            pagination_row.controls[0].disabled = True  # 首页按钮
+            pagination_row.controls[1].disabled = True  # 上一页按钮
+            pagination_row.controls[3].disabled = True  # 下一页按钮
+            pagination_row.controls[4].disabled = True  # 末页按钮
+            self.pagination_controls.update()
+        
         self.content_area.controls[1] = self.create_filter_area()
         self.content_area.update()
 
@@ -807,13 +1229,24 @@ class HomePage(PageBase):
                 recording.scheduled_start_time, recording.monitor_hours
             )
             
+            card.visible = False  # 初始设置为不可见，由分页控制显示
             self.recording_card_area.content.controls.append(card)
             self.app.record_card_manager.cards_obj[recording.rec_id]["card"] = card
+            
+            # 将新添加的卡片添加到可见卡片列表
+            if self.should_show_recording(self.current_filter, recording, self.current_platform_filter):
+                self.visible_cards.append(recording.rec_id)
+                
+                # 重新计算总页数
+                self.total_pages = max(1, (len(self.visible_cards) + self.items_per_page - 1) // self.items_per_page)
+                
+                # 如果添加了新卡片，自动跳转到最后一页以显示新卡片
+                self.current_page = self.total_pages
+                await self.update_page_display()
             
             self.loading_indicator.visible = False
             self.loading_indicator.update()
             
-            self.recording_card_area.update()
             self.content_area.controls[1] = self.create_filter_area()
             self.content_area.update()
 
@@ -850,6 +1283,15 @@ class HomePage(PageBase):
                 self.page.run_task(self.stop_monitor_recordings_on_click, e)
             elif e.alt and e.key == "D":
                 self.page.run_task(self.delete_monitor_recordings_on_click, e)
+            # 添加翻页快捷键
+            elif e.ctrl and e.shift and e.key == "LEFT":  # Ctrl+Shift+左箭头：首页
+                self.page.run_task(self.go_to_first_page, e)
+            elif e.ctrl and e.key == "LEFT":  # Ctrl+左箭头：上一页
+                self.page.run_task(self.go_to_prev_page, e)
+            elif e.ctrl and e.key == "RIGHT":  # Ctrl+右箭头：下一页
+                self.page.run_task(self.go_to_next_page, e)
+            elif e.ctrl and e.shift and e.key == "RIGHT":  # Ctrl+Shift+右箭头：末页
+                self.page.run_task(self.go_to_last_page, e)
 
     async def filter_all_platforms_on_click(self, _):
         self.current_platform_filter = "all"
@@ -858,3 +1300,25 @@ class HomePage(PageBase):
     async def on_platform_button_click(self, key):
         self.current_platform_filter = key
         await self.apply_filter()
+
+    async def unload(self):
+        """页面卸载时清理资源"""
+        # 移除分页控件
+        overlay_to_remove = []
+        for i, overlay_item in enumerate(self.page.overlay):
+            # 检查是否为分页控件容器
+            if hasattr(overlay_item, 'key') and overlay_item.key == 'home_pagination_container':
+                overlay_to_remove.append(i)
+        
+        # 从后向前移除，避免索引变化
+        for i in sorted(overlay_to_remove, reverse=True):
+            try:
+                self.page.overlay.pop(i)
+            except:
+                logger.error("移除分页控件时出错", exc_info=True)
+                
+        self.page.update()
+        
+        # 移除键盘和窗口大小调整事件处理
+        self.page.on_keyboard_event = None
+        self.page.on_resized = None

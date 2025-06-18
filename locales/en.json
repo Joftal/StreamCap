@@ -45,7 +45,17 @@
     "filter_live_monitoring_not_recording": "Live (Not Recording)",
     "platform_filter": "Platform Filter",
     "filter_all_platforms": "All Platforms",
-    "recording_cannot_delete_tip": "Cannot delete live room while recording is in progress"
+    "recording_cannot_delete_tip": "Cannot delete live room while recording is in progress",
+    "no_matching_items": "No matching items",
+    "no_search_results": "No search results found",
+    "pagination": {
+      "page_info": "Page {current_page}/{total_pages}, Total {total_items} items",
+      "prev_page": "Previous",
+      "next_page": "Next",
+      "first_page": "First",
+      "last_page": "Last",
+      "items_per_page": "Items per page"
+    }
   },
   "recording_dialog": {
     "input_live_link": "Enter live room link",
