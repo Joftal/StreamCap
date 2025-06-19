@@ -43,7 +43,15 @@ class LiveStreamRecorder:
 
         self.platform = self._get_info("platform")
         self.live_url = self._get_info("live_url")
-        self.output_dir = self._get_info("output_dir")
+        base_output_dir = self._get_info("output_dir")
+        
+        # 为每个直播间创建独立的文件夹
+        streamer_name = recording.streamer_name.strip()
+        # 移除文件名中的非法字符
+        streamer_name = re.sub(r'[<>:"/\\|?*]', '', streamer_name)
+        # 创建独立的文件夹路径
+        self.output_dir = os.path.join(base_output_dir, self.platform_key, streamer_name)
+        
         self.segment_record = self._get_info("segment_record", default=False)
         
         # 验证并设置分段时间

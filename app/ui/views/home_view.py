@@ -149,10 +149,9 @@ class HomePage(PageBase):
             value=str(self.items_per_page),
             options=[
                 ft.dropdown.Option(key="6", text="6"),
+                ft.dropdown.Option(key="8", text="8"),
+                ft.dropdown.Option(key="10", text="10"),
                 ft.dropdown.Option(key="12", text="12"),
-                ft.dropdown.Option(key="24", text="24"),
-                ft.dropdown.Option(key="48", text="48"),
-                ft.dropdown.Option(key="96", text="96"),
             ],
             on_change=self.on_items_per_page_change,
             width=80,
