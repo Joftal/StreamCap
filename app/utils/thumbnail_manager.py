@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 import threading
 import random
+import sys
 from typing import Dict, List, Optional, Tuple
 
 from ..models.recording_model import Recording
@@ -48,7 +49,14 @@ class ThumbnailManager:
         self.user_config = self.settings.user_config
         
         # 缩略图存储目录
-        self.thumbnail_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "Live preview image")
+        if getattr(sys, 'frozen', False):
+            # 如果是打包后的可执行文件
+            base_path = os.path.dirname(sys.executable)
+        else:
+            # 如果是开发环境
+            base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        
+        self.thumbnail_dir = os.path.join(base_path, "Live preview image")
         os.makedirs(self.thumbnail_dir, exist_ok=True)
         
         # 目录锁，用于保护目录扫描操作

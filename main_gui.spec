@@ -8,7 +8,7 @@ from pathlib import Path
 icon_path = os.path.join('assets', 'icon.ico')
 
 # 要包含的文件夹列表
-folders_to_include = ['assets', 'config', 'downloads', 'locales', 'logs']
+folders_to_include = ['assets', 'config', 'downloads', 'locales', 'logs', 'Live preview image']
 
 # 确保文件夹存在
 for folder in folders_to_include:
