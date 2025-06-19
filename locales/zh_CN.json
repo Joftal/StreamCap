@@ -15,7 +15,20 @@
     "toggle_show_speed": "开启录制速度检测",
     "toggle_hide_speed": "关闭录制速度检测",
     "speed_monitor_enabled": "速度监控已开启，每3秒更新一次速度",
-    "speed_monitor_disabled": "速度监控已关闭"
+    "speed_monitor_disabled": "速度监控已关闭",
+    "show_thumbnail": "直播缩略图",
+    "hide_thumbnail": "直播缩略图",
+    "toggle_show_thumbnail": "开启直播间缩略图",
+    "toggle_hide_thumbnail": "关闭直播间缩略图",
+    "thumbnail_enabled": "直播间缩略图已开启",
+    "thumbnail_disabled": "直播间缩略图已关闭",
+    "thumbnail_update_interval": "缩略图更新间隔",
+    "update_interval_15s": "15秒",
+    "update_interval_30s": "30秒",
+    "update_interval_60s": "60秒",
+    "update_interval_120s": "120秒",
+    "update_interval_180s": "180秒",
+    "update_interval_300s": "300秒"
   },
   "home_page": {
     "recording_list": "录制列表",
@@ -378,7 +391,16 @@
     "platform_filter_style_tip": "设置主界面直播平台筛选的展示风格。平铺为按钮组，聚合为下拉框。",
     "notification_both_required": "发送通知需同时满足全局设置和单独直播间的消息推送开关",
     "auto_clean_logs": "自动清理日志",
-    "log_retention_days": "日志保留天数"
+    "log_retention_days": "日志保留天数",
+    "show_live_thumbnail": "显示直播缩略图",
+    "show_live_thumbnail_tip": "是否在主界面显示直播缩略图",
+    "thumbnail_update_interval": "缩略图更新间隔",
+    "update_interval_15s": "15秒",
+    "update_interval_30s": "30秒",
+    "update_interval_60s": "60秒",
+    "update_interval_120s": "120秒",
+    "update_interval_180s": "180秒",
+    "update_interval_300s": "300秒"
   },
   "about_page": {
     "about_project": "关于本程序",

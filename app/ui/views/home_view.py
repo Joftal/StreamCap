@@ -54,13 +54,18 @@ class HomePage(PageBase):
                 "items_per_page": "每页显示",
             }
             
-        # 如果分页控件已经创建，更新其文本
-        if hasattr(self, 'pagination_controls') and self.pagination_controls:
-            self.update_pagination_texts()
+        # 如果分页控件已经创建，且当前页面是活跃的，尝试更新其文本
+        if (hasattr(self, 'pagination_controls') and 
+            self.pagination_controls and 
+            self.app.current_page == self):
+            try:
+                self.update_pagination_texts()
+            except Exception as e:
+                logger.error(f"加载语言时更新分页控件文本出错: {e}")
             
     def update_pagination_texts(self):
         """更新分页控件的文本以反映当前语言"""
-        if not self.pagination_controls:
+        if not hasattr(self, 'pagination_controls') or not self.pagination_controls:
             return
             
         # 更新页码信息文本
@@ -72,6 +77,12 @@ class HomePage(PageBase):
             )
             
         try:
+            # 确保分页控件已经添加到页面并且内容结构完整
+            if (not self.pagination_controls.content or 
+                not self.pagination_controls.content.content or 
+                not hasattr(self.pagination_controls.content.content, 'content')):
+                return
+                
             # 更新按钮提示文本
             pagination_row = self.pagination_controls.content.content.content
             pagination_row.controls[0].tooltip = self._["pagination"]["first_page"]
@@ -85,7 +96,7 @@ class HomePage(PageBase):
             # 更新控件
             self.pagination_controls.update()
         except Exception as e:
-            logger.error(f"更新分页控件文本时出错: {e}", exc_info=True)
+            logger.error(f"更新分页控件文本时出错: {e}")
         
     def on_language_changed(self):
         """语言变更时的回调函数"""
@@ -93,6 +104,42 @@ class HomePage(PageBase):
         
         # 如果当前页面是活跃的，更新UI
         if self.app.current_page == self:
+            # 检查分页控件是否已添加到页面
+            pagination_exists = False
+            pagination_container = None
+            
+            for overlay_item in self.page.overlay:
+                if hasattr(overlay_item, 'key') and overlay_item.key == 'home_pagination_container':
+                    pagination_exists = True
+                    pagination_container = overlay_item
+                    break
+            
+            # 确保分页控件已创建并正确初始化
+            if not hasattr(self, 'pagination_controls') or not self.pagination_controls or not pagination_exists:
+                # 创建新的分页控件
+                self.create_pagination_controls()
+                
+                # 如果已存在容器，更新其内容
+                if pagination_exists and pagination_container:
+                    pagination_container.content = self.pagination_controls
+                    pagination_container.update()
+                    logger.debug("语言变更：更新了已存在分页控件的内容")
+                else:
+                    # 否则添加新的容器
+                    self.pagination_controls.key = 'home_pagination'
+                    self.page.overlay.append(
+                        ft.Container(
+                            key='home_pagination_container',
+                            content=self.pagination_controls,
+                            alignment=ft.alignment.bottom_center,
+                            left=0,
+                            right=0,
+                            bottom=0,
+                            padding=ft.padding.only(bottom=10, left=60),  # 左侧留出空间避免遮挡按钮
+                        )
+                    )
+                    logger.debug("语言变更：创建并添加了新的分页控件")
+            
             # 更新分页控件文本
             self.update_pagination_texts()
             self.content_area.update()
@@ -328,18 +375,23 @@ class HomePage(PageBase):
                 ]
             )
             
-            # 重新创建分页控件，确保使用最新的语言设置
-            self.create_pagination_controls()
-            
-            # 将分页控件添加到页面底部固定位置
-            # 先检查是否已经存在分页控件，避免重复添加
+            # 检查页面overlay中是否已存在分页控件，只是被隐藏了
             pagination_exists = False
             for overlay_item in self.page.overlay:
                 if hasattr(overlay_item, 'key') and overlay_item.key == 'home_pagination_container':
                     pagination_exists = True
+                    # 重新显示已存在的分页控件
+                    overlay_item.visible = True
+                    overlay_item.update()
+                    logger.debug("已显示现有分页控件")
                     break
                     
+            # 如果不存在分页控件，则创建新的
             if not pagination_exists:
+                # 重新创建分页控件，确保使用最新的语言设置
+                self.create_pagination_controls()
+                
+                # 将分页控件添加到页面底部固定位置
                 # 给分页控件添加key，方便识别
                 self.pagination_controls.key = 'home_pagination'
                 self.page.overlay.append(
@@ -353,6 +405,7 @@ class HomePage(PageBase):
                         padding=ft.padding.only(bottom=10, left=60),  # 左侧留出空间避免遮挡按钮
                     )
                 )
+                logger.debug("已创建并添加新的分页控件")
             
             self.content_area.update()
             self.page.update()
@@ -1018,6 +1071,10 @@ class HomePage(PageBase):
                 # 将新添加的卡片添加到可见卡片列表
                 if self.should_show_recording(self.current_filter, recording, self.current_platform_filter):
                     self.visible_cards.append(recording.rec_id)
+                
+                # 如果监控状态已开启，立即检查直播状态
+                if recording.monitor_status:
+                    self.app.page.run_task(self.app.record_manager.check_if_live, recording)
 
             # 重新计算总页数
             self.total_pages = max(1, (len(self.visible_cards) + self.items_per_page - 1) // self.items_per_page)
@@ -1302,22 +1359,18 @@ class HomePage(PageBase):
 
     async def unload(self):
         """页面卸载时清理资源"""
-        # 移除分页控件
-        overlay_to_remove = []
-        for i, overlay_item in enumerate(self.page.overlay):
-            # 检查是否为分页控件容器
+        logger.debug("主页面开始卸载...")
+        
+        # 不做任何可能阻止或延迟页面切换的操作
+        # 仅隐藏分页控件，保留其状态
+        for overlay_item in self.page.overlay:
             if hasattr(overlay_item, 'key') and overlay_item.key == 'home_pagination_container':
-                overlay_to_remove.append(i)
+                overlay_item.visible = False
+                overlay_item.update()
+                logger.debug("分页控件已隐藏")
         
-        # 从后向前移除，避免索引变化
-        for i in sorted(overlay_to_remove, reverse=True):
-            try:
-                self.page.overlay.pop(i)
-            except:
-                logger.error("移除分页控件时出错", exc_info=True)
-                
-        self.page.update()
-        
-        # 移除键盘和窗口大小调整事件处理
+        # 移除事件处理器
         self.page.on_keyboard_event = None
         self.page.on_resized = None
+        
+        logger.debug("主页面卸载完成")

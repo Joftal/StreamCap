@@ -140,12 +140,31 @@ def handle_route_change(page: ft.Page, app: App) -> callable:
     route_map = get_route_handler()
 
     def route_change(e: ft.RouteChangeEvent) -> None:
+        logger.debug(f"路由变更事件: {e.route}")
         tr = ft.TemplateRoute(e.route)
         page_name = route_map.get(tr.route)
+        
         if page_name:
-            page.run_task(app.switch_page, page_name)
+            # 检查当前页面和目标页面
+            current_page = app.current_page
+            current_page_name = getattr(current_page, 'page_name', None) if current_page else None
+            
+            logger.debug(f"路由变更: 当前页面={current_page_name}, 目标页面={page_name}")
+            
+            # 只有当目标页面与当前页面不同时才切换
+            if current_page_name != page_name:
+                # 检查应用是否正在加载页面
+                if getattr(app, '_loading_page', False):
+                    logger.debug(f"应用正在加载页面，将路由请求排队: {page_name}")
+                    # 记录请求但不立即执行
+                    setattr(app, '_pending_page_request', page_name)
+                else:
+                    logger.debug(f"路由变更触发页面切换: {page_name}")
+                    page.run_task(app.switch_page, page_name)
+            else:
+                logger.debug(f"路由变更目标与当前页面相同，不触发切换: {page_name}")
         else:
-            logger.warning(f"Unknown route: {e.route}, redirecting to /")
+            logger.warning(f"未知路由: {e.route}, 重定向到 /")
             page.go("/")
 
     return route_change
