@@ -181,7 +181,7 @@ class App:
                 
                 # 如果是切换到主页，确保内存状态良好
                 if isinstance(page, HomePage):
-                    logger.debug(f"准备加载主页面")
+                    logger.debug("准备加载主页面")
                     # 获取当前内存使用情况
                     memory_info = self._get_memory_usage()
                     is_high_memory = memory_info["percent"] >= MEMORY_CLEANUP_THRESHOLD
@@ -214,7 +214,7 @@ class App:
                             await self._perform_full_cleanup()
                     else:
                         # 正常加载页面
-                        logger.debug(f"正常加载主页面")
+                        logger.debug("正常加载主页面")
                         await page.load()
                         # 更新路由状态
                         self._update_route(page_name)

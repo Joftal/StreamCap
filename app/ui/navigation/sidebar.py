@@ -64,7 +64,7 @@ class NavigationColumn(ft.Column):
         if getattr(self.app, '_loading_page', False):
             logger.debug(f"应用正在加载页面，将请求排队: {destination_name}")
             # 记录请求但不立即执行
-            setattr(self.app, '_pending_page_request', destination_name)
+            self.app._pending_page_request = destination_name
             # 更新选中状态，提供视觉反馈
             self.selected_index = destination_index
             self.update_selected_item()

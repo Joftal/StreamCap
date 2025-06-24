@@ -157,7 +157,7 @@ def handle_route_change(page: ft.Page, app: App) -> callable:
                 if getattr(app, '_loading_page', False):
                     logger.debug(f"应用正在加载页面，将路由请求排队: {page_name}")
                     # 记录请求但不立即执行
-                    setattr(app, '_pending_page_request', page_name)
+                    app._pending_page_request = page_name
                 else:
                     logger.debug(f"路由变更触发页面切换: {page_name}")
                     page.run_task(app.switch_page, page_name)
