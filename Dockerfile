@@ -5,6 +5,7 @@ WORKDIR /app
 # Install system dependencies for build
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    git \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

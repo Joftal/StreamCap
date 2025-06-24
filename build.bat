@@ -125,6 +125,7 @@ xcopy /E /I /Y config dist\StreamCap\config
 xcopy /E /I /Y downloads dist\StreamCap\downloads
 xcopy /E /I /Y locales dist\StreamCap\locales
 xcopy /E /I /Y logs dist\StreamCap\logs
+mkdir "dist\StreamCap\Live preview image"
 
 echo =====================================
 echo    Build complete! 

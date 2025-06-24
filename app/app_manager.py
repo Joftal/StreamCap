@@ -24,6 +24,7 @@ from .ui.views.settings_view import SettingsPage
 from .ui.views.storage_view import StoragePage
 from .utils import utils
 from .utils.logger import logger
+from .utils.thumbnail_manager import ThumbnailManager
 from .models.platform_logo_cache import PlatformLogoCache
 
 # 定义内存清理阈值，当内存使用率超过这个值时执行更激进的清理
@@ -58,8 +59,16 @@ class App:
         self.disk_space_notification_sent = False
         self.disk_space_last_notification_time = 0
 
+        # 初始化基础组件
         self.settings = SettingsPage(self)
+        
+        # 初始化语言配置
+        self._ = {}
         self.language_manager = LanguageManager(self)
+        self.language_manager.add_observer(self)
+        self.load()
+        
+        # 初始化其他页面和组件
         self.about = AboutPage(self)
         self.home = HomePage(self)
         self.pages = self.initialize_pages()
@@ -85,6 +94,9 @@ class App:
         # 初始化平台logo缓存管理器
         self.platform_logo_cache = PlatformLogoCache()
         
+        # 初始化缩略图管理器
+        self.thumbnail_manager = ThumbnailManager(self)
+        
         self.record_card_manager = RecordingCardManager(self)
         self.record_manager = RecordingManager(self)
         self.current_page = None
@@ -105,6 +117,7 @@ class App:
             self.page.run_task(self._setup_periodic_cleanup)
             
         self.page.run_task(self._validate_configs)
+        self._pending_page_request = None  # 添加这行，用于存储待处理的页面请求
 
     def initialize_pages(self):
         return {
@@ -116,21 +129,30 @@ class App:
 
     async def switch_page(self, page_name):
         if self._loading_page:
+            logger.debug(f"页面切换请求被忽略，正在加载页面: {page_name}")
+            # 保存被忽略的请求，以便在当前操作完成后处理
+            self._pending_page_request = page_name
             return
 
         self._loading_page = True
+        self._pending_page_request = None  # 清除任何挂起的请求
+        logger.info(f"开始切换页面到: {page_name}")
 
         try:
             # 记录从哪个页面切换
             previous_page = self.current_page
+            previous_page_name = getattr(previous_page, 'page_name', 'unknown') if previous_page else 'none'
+            
+            logger.debug(f"页面切换: {previous_page_name} -> {page_name}")
             
             # 如果有上一个页面，尝试调用其unload方法
             if previous_page:
                 try:
                     if hasattr(previous_page, 'unload') and callable(previous_page.unload):
+                        logger.debug(f"调用{previous_page_name}页面的unload方法")
                         await previous_page.unload()
                 except Exception as e:
-                    logger.error(f"调用页面unload方法时出错: {e}")
+                    logger.error(f"调用页面{previous_page_name}的unload方法时出错: {e}")
             
             # 如果是从设置页面切换，检查是否有更改
             if isinstance(previous_page, SettingsPage):
@@ -155,9 +177,11 @@ class App:
                 
                 # 设置当前页面
                 self.current_page = page
+                logger.debug(f"当前页面已设置为: {page_name}")
                 
                 # 如果是切换到主页，确保内存状态良好
                 if isinstance(page, HomePage):
+                    logger.debug("准备加载主页面")
                     # 获取当前内存使用情况
                     memory_info = self._get_memory_usage()
                     is_high_memory = memory_info["percent"] >= MEMORY_CLEANUP_THRESHOLD
@@ -166,10 +190,14 @@ class App:
                     is_from_other_page = previous_page and not isinstance(previous_page, HomePage)
                     
                     if is_from_other_page:
+                        logger.debug(f"从{previous_page_name}切换到主页面")
                         # 先加载页面UI，确保用户看到界面
                         await page.load()
                         # 页面加载后，再执行清理，避免阻塞UI
                         self.page.update()
+                        
+                        # 更新路由状态
+                        self._update_route(page_name)
                         
                         # 使用更长的延迟确保UI已经渲染完成
                         await asyncio.sleep(0.3)
@@ -186,14 +214,55 @@ class App:
                             await self._perform_full_cleanup()
                     else:
                         # 正常加载页面
+                        logger.debug("正常加载主页面")
                         await page.load()
+                        # 更新路由状态
+                        self._update_route(page_name)
                 else:
                     # 非主页面，正常加载
+                    logger.debug(f"加载非主页面: {page_name}")
                     await page.load()
+                    # 更新路由状态
+                    self._update_route(page_name)
+                
+                logger.info(f"页面已切换到: {page_name}")
+            else:
+                logger.error(f"页面未找到: {page_name}")
         except Exception as e:
-            logger.error(f"切换页面时出错: {e}")
+            logger.error(f"切换页面时出错: {e}", exc_info=True)
         finally:
+            # 标记加载完成
+            current_loading_page = self._loading_page
             self._loading_page = False
+            
+            # 检查是否有待处理的页面切换请求
+            pending_request = self._pending_page_request
+            if pending_request and pending_request != page_name:
+                logger.info(f"处理被忽略的页面切换请求: {pending_request}")
+                # 使用短暂延迟，确保UI有时间刷新
+                await asyncio.sleep(0.1)
+                # 处理被忽略的请求
+                self.page.run_task(self.switch_page, pending_request)
+
+    def _update_route(self, page_name):
+        """更新路由状态，但不触发路由变更事件"""
+        current_route = self.page.route
+        target_route = f"/{page_name}"
+        
+        # 检查当前路由是否需要更新
+        if current_route != target_route:
+            logger.debug(f"更新路由状态: {current_route} -> {target_route}")
+            # 临时禁用路由事件处理
+            original_handler = self.page.on_route_change
+            self.page.on_route_change = None
+            
+            try:
+                # 更新路由
+                self.page.route = target_route
+                self.page.update()
+            finally:
+                # 恢复路由事件处理
+                self.page.on_route_change = original_handler
 
     async def clear_content_area(self):
         self.content_area.clean()
@@ -204,8 +273,18 @@ class App:
         if self.is_web_mode:
             logger.info("Web模式下不执行清理")
             return
-            
+
         try:
+            # 停止所有缩略图捕获并清理过期缩略图
+            if hasattr(self, 'thumbnail_manager'):
+                logger.info("停止所有缩略图捕获任务...")
+                await self.thumbnail_manager.stop_all_thumbnail_captures()
+                
+                # 清理所有过期的缩略图（应用退出时清理所有超过1天的缩略图）
+                logger.info("清理过期缩略图文件...")
+                deleted_count = await self.thumbnail_manager.cleanup_old_thumbnails(max_age_days=1)
+                logger.info(f"已清理 {deleted_count} 个过期缩略图文件")
+                
             # 保存平台logo缓存
             if hasattr(self, 'platform_logo_cache'):
                 logger.info("保存平台logo缓存...")
@@ -366,6 +445,15 @@ class App:
         # 注意：这是一个示例，实际上需要根据具体情况清理
         # 在此处可以添加清理特定缓存的代码
         
+        # 清理过期的缩略图文件（定期清理超过3天的缩略图）
+        if hasattr(self, 'thumbnail_manager'):
+            try:
+                deleted_count = await self.thumbnail_manager.cleanup_old_thumbnails(max_age_days=3)
+                if deleted_count > 0:
+                    logger.info(f"定期清理 - 已删除 {deleted_count} 个过期缩略图文件")
+            except Exception as e:
+                logger.error(f"清理过期缩略图文件失败: {e}")
+        
         # 5. 检查进程状态
         await self.process_manager.check_system_processes()
         
@@ -498,3 +586,28 @@ class App:
         
         # 直接显示对话框
         await self.show_disk_space_warning_dialog(threshold, free_space)
+
+    async def show_error_message(self, title: str, message: str):
+        """显示错误消息对话框"""
+        async def close_dialog(_):
+            error_dialog.open = False
+            self.dialog_area.update()
+
+        error_dialog = ft.AlertDialog(
+            title=ft.Text(title),
+            content=ft.Text(message),
+            actions=[
+                ft.TextButton(text=self._["base"]["sure"], on_click=close_dialog),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+            modal=True,
+        )
+        error_dialog.open = True
+        self.dialog_area.content = error_dialog
+        self.dialog_area.update()
+
+    def load(self):
+        """加载语言配置"""
+        language = self.language_manager.language
+        # 直接加载整个语言配置
+        self._ = language

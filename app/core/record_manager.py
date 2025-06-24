@@ -65,6 +65,14 @@ class RecordingManager:
             GlobalRecordingState.recordings.append(recording)
             await self.persist_recordings()
 
+            # 如果缩略图功能已开启，且直播间处于直播或录制状态，启动缩略图捕获任务
+            if self.app.settings.user_config.get("show_live_thumbnail", False) and hasattr(self.app, 'thumbnail_manager'):
+                if recording.is_live or recording.recording:
+                    logger.info(f"为新添加的直播间 {recording.streamer_name} 启动缩略图捕获任务")
+                    self.app.page.run_task(self.app.thumbnail_manager.start_thumbnail_capture, recording)
+            
+            return recording
+
     async def remove_recording(self, recording: Recording):
         with GlobalRecordingState.lock:
             GlobalRecordingState.recordings.remove(recording)
@@ -121,6 +129,10 @@ class RecordingManager:
             self.app.page.run_task(self.app.record_card_manager.update_card, recording)
             self.app.page.pubsub.send_others_on_topic("update", recording)
             
+            # 如果启用了缩略图功能，开始捕获缩略图
+            if self.app.settings.user_config.get("show_live_thumbnail", False) and hasattr(self.app, 'thumbnail_manager'):
+                self.app.page.run_task(self.app.thumbnail_manager.start_thumbnail_capture, recording)
+            
             # 确保在当前页面是主页时重新应用筛选条件
             if hasattr(self.app, 'current_page') and hasattr(self.app.current_page, 'apply_filter'):
                 self.app.page.run_task(self.app.current_page.apply_filter)
@@ -151,6 +163,10 @@ class RecordingManager:
             if hasattr(recording, 'was_recording'):
                 recording.was_recording = False
             logger.info(f"手动停止监控，重置通知状态: {recording.streamer_name}")
+            
+            # 如果启用了缩略图功能，停止捕获缩略图
+            if hasattr(self.app, 'thumbnail_manager'):
+                self.app.page.run_task(self.app.thumbnail_manager.stop_thumbnail_capture, recording)
             
             self.app.page.run_task(self.app.record_card_manager.update_card, recording)
             self.app.page.pubsub.send_others_on_topic("update", recording)
@@ -330,11 +346,21 @@ class RecordingManager:
             if not was_live and recording.is_live:
                 recording.end_notification_sent = False
                 logger.info(f"主播开播，重置关播通知状态: {recording.streamer_name}")
+                
+                # 如果缩略图功能已开启，启动缩略图捕获任务
+                if self.app.settings.user_config.get("show_live_thumbnail", False) and hasattr(self.app, 'thumbnail_manager'):
+                    logger.info(f"主播开播，启动缩略图捕获任务: {recording.streamer_name}")
+                    self.app.page.run_task(self.app.thumbnail_manager.start_thumbnail_capture, recording)
             
             # 如果直播状态从在线变为离线，重置通知状态并更新UI
             if was_live and not recording.is_live:
                 recording.notification_sent = False
                 logger.info(f"直播已结束，重置通知状态: {recording.streamer_name}")
+                
+                # 如果启用了缩略图功能，停止缩略图捕获任务
+                if hasattr(self.app, 'thumbnail_manager'):
+                    logger.info(f"直播已结束，停止缩略图捕获任务: {recording.streamer_name}")
+                    self.app.page.run_task(self.app.thumbnail_manager.stop_thumbnail_capture, recording)
                 
                 # 添加这部分代码，处理直播结束状态的更新
                 recording.display_title = f"{recording.title}"

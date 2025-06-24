@@ -28,6 +28,9 @@ class LiveStreamRecorder:
     VALID_VIDEO_FORMATS = ["ts", "flv", "mkv", "mov", "mp4"]   #有效视频格式列表
     VALID_AUDIO_FORMATS = ["mp3", "m4a", "wav", "wma", "aac"]   #有效音频格式列表
     VALID_SAVE_FORMATS = VALID_VIDEO_FORMATS + VALID_AUDIO_FORMATS   #所有有效格式列表
+    
+    # 添加类变量来跟踪 soop cookie 缺失提示的显示状态
+    _soop_cookie_missing_notified = False
 
     def __init__(self, app, recording, recording_info):
         self.app = app
@@ -400,6 +403,25 @@ class LiveStreamRecorder:
         
         if self.recording is not None:
             self.recording.use_proxy = bool(self.proxy)
+        
+        # 检查 soop 平台的 cookie
+        if self.platform_key == "soop":
+            if not self.cookies:
+                logger.warning("Soop平台需要cookie但未找到cookie配置")
+                # 只在程序运行期间第一次显示 cookie 缺失提示
+                if not LiveStreamRecorder._soop_cookie_missing_notified:
+                    await self.app.show_error_message(
+                        self._["cookie_error_title"],
+                        self._["soop_cookie_missing_message"]
+                    )
+                    LiveStreamRecorder._soop_cookie_missing_notified = True
+            elif "AuthTicket=" not in self.cookies:
+                # cookie 过期提示保持每次都显示
+                logger.warning("Soop平台的cookie无效，缺少AuthTicket")
+                await self.app.show_error_message(
+                    self._["cookie_error_title"],
+                    self._["soop_cookie_invalid_message"]
+                )
         
         original_proxy = self.proxy
         retry_without_proxy = False

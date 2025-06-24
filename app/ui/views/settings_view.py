@@ -1,8 +1,10 @@
 import asyncio
 import os
 import json
+import httpx
 
 import flet as ft
+import streamget
 
 from ...models.video_format_model import VideoFormat
 from ...models.video_quality_model import VideoQuality
@@ -44,7 +46,7 @@ class SettingsPage(PageBase):
     async def load(self):
         self.content_area.clean()
         language = self.app.language_manager.language
-        self._ = language["settings_page"] | language["video_quality"] | language["base"] | language["recording_dialog"]
+        self._ = language["settings_page"] | language["video_quality"] | language["base"] | language["recording_dialog"] | language.get("sidebar", {})
         self.tab_recording = self.create_recording_settings_tab()
         self.tab_push = self.create_push_settings_tab()
         self.tab_cookies = self.create_cookies_settings_tab()
@@ -176,10 +178,15 @@ class SettingsPage(PageBase):
             self.page.run_task(self.app.record_manager.persist_recordings)
             
         if key == "language":
+            logger.info(f"语言设置已更改为: {e.data}")
+            # 更新语言设置
             self.load_language()
             self.app.language_manager.load()
             self.app.language_manager.notify_observers()
+            
+            # 重新加载当前页面
             self.page.run_task(self.load)
+            
             # 国际化提示
             is_zh = getattr(self.app, "language_code", "zh_CN").startswith("zh")
             tip = "请点击主界面的刷新按钮来刷新监控卡片信息" if is_zh else "Please click the refresh button on the main page to refresh the monitor cards"
@@ -297,6 +304,37 @@ class SettingsPage(PageBase):
             self.app.dialog_area.content.open = False
             self.app.dialog_area.update()
 
+        # 添加缩略图更新间隔设置
+        thumbnail_interval_value = self.get_config_value("thumbnail_update_interval", 60)
+        
+        # 确保有默认文本，防止翻译项缺失导致错误
+        interval_texts = {
+            "15": self._.get("update_interval_15s", "15 seconds"),
+            "30": self._.get("update_interval_30s", "30 seconds"),
+            "60": self._.get("update_interval_60s", "60 seconds"),
+            "120": self._.get("update_interval_120s", "120 seconds"),
+            "180": self._.get("update_interval_180s", "180 seconds"),
+            "300": self._.get("update_interval_300s", "300 seconds"),
+        }
+        
+        thumbnail_interval_dropdown = ft.Dropdown(
+            value=str(thumbnail_interval_value),
+            options=[
+                ft.dropdown.Option(key, text) for key, text in interval_texts.items()
+            ],
+            width=180,
+            data="thumbnail_update_interval",
+            on_change=self.on_change,
+        )
+        
+        # 确保有默认文本，防止翻译项缺失导致错误
+        thumbnail_interval_label = self._.get("thumbnail_update_interval", "Thumbnail Update Interval")
+        
+        thumbnail_interval_row = self.create_setting_row(
+            thumbnail_interval_label,
+            thumbnail_interval_dropdown,
+        )
+
         return ft.Column(
             [
                 self.create_setting_group(
@@ -405,6 +443,7 @@ class SettingsPage(PageBase):
                                 on_change=self.on_change,
                             ),
                         ),
+                        thumbnail_interval_row,
                     ],
                 ),
                 self.create_setting_group(
@@ -997,6 +1036,58 @@ class SettingsPage(PageBase):
             scroll=ft.ScrollMode.AUTO,
         )
 
+    async def get_sooplive_cookie(self, e):
+        """Get sooplive cookie using username and password."""
+        username = self.get_accounts_value("sooplive_username")
+        password = self.get_accounts_value("sooplive_password")
+        
+        if not username or not password:
+            await self.app.snack_bar.show_snack_bar(self._["sooplive_login_required"], bgcolor=ft.Colors.RED)
+            return
+            
+        if len(username) < 6 or len(password) < 10:
+            await self.app.snack_bar.show_snack_bar("账号长度需大于6位，密码长度需大于10位", bgcolor=ft.Colors.RED)
+            return
+            
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0',
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'Origin': 'https://play.sooplive.co.kr',
+                'Referer': 'https://play.sooplive.co.kr/superbsw123/277837074',
+            }
+
+            data = {
+                'szWork': 'login',
+                'szType': 'json',
+                'szUid': username,
+                'szPassword': password,
+                'isSaveId': 'true',
+                'isSavePw': 'true',
+                'isSaveJoin': 'true',
+                'isLoginRetain': 'Y',
+            }
+
+            url = 'https://login.sooplive.co.kr/app/LoginAction.php'
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(url, headers=headers, data=data)
+                cookies = response.cookies
+                
+                if cookies:
+                    cookie_str = '; '.join([f"{k}={v}" for k, v in cookies.items()])
+                    if 'AuthTicket=' in cookie_str:
+                        self.cookies_config["soop"] = cookie_str
+                        await self.config_manager.save_cookies_config(self.cookies_config)
+                        await self.app.snack_bar.show_snack_bar(self._["sooplive_get_cookie_success"], bgcolor=ft.Colors.GREEN)
+                    else:
+                        await self.app.snack_bar.show_snack_bar(self._["sooplive_get_cookie_failed"], bgcolor=ft.Colors.RED)
+                else:
+                    await self.app.snack_bar.show_snack_bar(self._["sooplive_get_cookie_failed"], bgcolor=ft.Colors.RED)
+                    
+        except Exception as ex:
+            await self.app.snack_bar.show_snack_bar(str(ex), bgcolor=ft.Colors.RED)
+
     def create_accounts_settings_tab(self):
         """Create UI elements for platform accounts configuration."""
         return ft.Column(
@@ -1021,6 +1112,14 @@ class SettingsPage(PageBase):
                                 width=500,
                                 data="sooplive_password",
                                 on_change=self.on_accounts_change,
+                            ),
+                        ),
+                        self.create_setting_row(
+                            "",
+                            ft.ElevatedButton(
+                                text=self._["sooplive_get_cookie"],
+                                on_click=self.get_sooplive_cookie,
+                                width=200,
                             ),
                         ),
                         self.create_setting_row(
@@ -1355,3 +1454,15 @@ class SettingsPage(PageBase):
             spacing=10,
             scroll=ft.ScrollMode.AUTO,
         )
+
+    async def unload(self):
+        """页面卸载时清理资源"""
+        logger.debug("设置页面开始卸载...")
+        
+        # 先检查是否有未保存的更改
+        await self.is_changed()
+        
+        # 移除事件处理器
+        self.page.on_keyboard_event = None
+        
+        logger.debug("设置页面卸载完成")

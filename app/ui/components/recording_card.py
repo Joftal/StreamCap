@@ -3,6 +3,7 @@ import os.path
 from datetime import datetime, timedelta
 from functools import partial
 import sys
+import os
 
 import flet as ft
 
@@ -170,21 +171,66 @@ class RecordingCardManager:
         _, platform_key = get_platform_info(recording.url)
         logo_path = self.app.platform_logo_cache.get_logo_path(recording.rec_id, platform_key)
         
-        # 创建平台logo图片组件
-        platform_logo = ft.Image(
+        # 获取缩略图设置并设置初始可见状态
+        show_live_thumbnail = self.app.settings.user_config.get("show_live_thumbnail", False)
+        
+        # 如果开启了缩略图并且正在直播/录制，初始化为不可见（等待缩略图加载）
+        platform_logo_visible = not (show_live_thumbnail and (recording.is_live or recording.recording))
+        
+        # 创建平台logo图片组件（当不显示缩略图时使用）
+        platform_logo = ft.Container(
+            content=ft.Image(
             src=logo_path if logo_path else None,
             width=50,
             height=50,
             fit=ft.ImageFit.CONTAIN,
             border_radius=ft.border_radius.all(5),
+            ),
+            alignment=ft.alignment.center,
+            expand=True,  # 使其可以填充整个Stack空间
+            visible=platform_logo_visible,  # 根据缩略图设置设置初始可见状态
         )
         
-        # 创建左侧logo容器
+        # 创建缩略图组件（初始不显示）
+        thumbnail_image = ft.Image(
+            src=None,
+            width=230,
+            height=120,
+            fit=ft.ImageFit.CONTAIN,
+            visible=False,
+        )
+        
+        # 创建叠加在缩略图上的小logo（当缩略图显示时使用）
+        overlay_logo = ft.Container(
+            content=ft.Image(
+                src=logo_path if logo_path else None,
+                width=30,
+                height=30,
+                fit=ft.ImageFit.CONTAIN,
+            ),
+            margin=ft.margin.only(left=5, top=0),
+            visible=False,
+        )
+        
+        # 创建左侧logo/缩略图容器
+        logo_container_content = ft.Stack(
+            [
+                thumbnail_image,  # 缩略图（底层）
+                platform_logo,    # 主logo（当无缩略图时显示）
+                overlay_logo,     # 叠加logo（当有缩略图时显示）
+            ],
+            width=230,
+            height=120,
+            clip_behavior=ft.ClipBehavior.ANTI_ALIAS,  # 添加剪裁行为，避免溢出
+        )
+        
         logo_container = ft.Container(
-            content=platform_logo,
-            width=60,
+            content=logo_container_content,
+            width=230,
+            height=120,
             alignment=ft.alignment.center,
             padding=ft.padding.all(5),
+            border_radius=ft.border_radius.all(5),
         )
         
         # 创建右侧内容容器
@@ -255,6 +301,8 @@ class RecordingCardManager:
             "preview_button": preview_button,
             "delete_button": delete_button,
             "platform_logo": platform_logo,
+            "thumbnail_image": thumbnail_image,
+            "overlay_logo": overlay_logo,
         }
         
     def get_card_background_color(self, recording: Recording):
@@ -342,6 +390,9 @@ class RecordingCardManager:
 
             # 获取速度监控设置
             show_recording_speed = self.app.settings.user_config.get("show_recording_speed", True)
+            
+            # 获取缩略图设置
+            show_live_thumbnail = self.app.settings.user_config.get("show_live_thumbnail", False)
 
             new_status_label = self.create_status_label(recording)
             
@@ -395,14 +446,28 @@ class RecordingCardManager:
                 elif new_status_label:
                     title_row_controls.append(new_status_label)
                 
-                # 更新平台logo
-                if recording_card.get("platform_logo"):
-                    # 获取平台信息
-                    _, platform_key = get_platform_info(recording.url)
-                    # 获取logo路径
-                    logo_path = self.app.platform_logo_cache.get_logo_path(recording.rec_id, platform_key)
-                    # 更新logo图片
-                    recording_card["platform_logo"].src = logo_path if logo_path else None
+                # 更新平台logo和缩略图状态
+                if recording_card.get("platform_logo") and recording_card.get("thumbnail_image") and recording_card.get("overlay_logo"):
+                    # 检查是否应该显示缩略图
+                    if show_live_thumbnail and (recording.is_live or recording.recording):
+                        # 尝试获取最新的缩略图
+                        if hasattr(self.app, 'thumbnail_manager'):
+                            thumbnail_path = self.app.thumbnail_manager.get_latest_thumbnail(recording)
+                            if thumbnail_path and os.path.exists(thumbnail_path):
+                                recording_card["thumbnail_image"].src = thumbnail_path
+                                recording_card["thumbnail_image"].visible = True
+                                recording_card["platform_logo"].visible = False
+                                recording_card["overlay_logo"].visible = True
+                            else:
+                                # 没有缩略图时显示普通logo
+                                recording_card["thumbnail_image"].visible = False
+                                recording_card["platform_logo"].visible = True
+                                recording_card["overlay_logo"].visible = False
+                    else:
+                        # 不显示缩略图时只显示普通logo
+                        recording_card["thumbnail_image"].visible = False
+                        recording_card["platform_logo"].visible = True
+                        recording_card["overlay_logo"].visible = False
             
             recording_card["status_label"] = new_status_label
             
@@ -715,6 +780,10 @@ class RecordingCardManager:
             # 删除平台logo缓存
             self.app.platform_logo_cache.remove_logo_cache(recording.rec_id)
             
+            # 删除缩略图文件
+            if hasattr(self.app, 'thumbnail_manager'):
+                self.app.thumbnail_manager.delete_thumbnails_for_recording(recording.rec_id)
+            
             # 执行删除操作
             await self.app.record_manager.delete_recording_cards([recording])
             
@@ -736,6 +805,10 @@ class RecordingCardManager:
         
         # 批量删除平台logo缓存
         self.app.platform_logo_cache.remove_multiple_logo_cache(list(remove_ids))
+        
+        # 批量删除缩略图文件
+        if hasattr(self.app, 'thumbnail_manager'):
+            self.app.thumbnail_manager.delete_thumbnails_for_recordings(list(remove_ids))
 
         cards_to_remove = [
             card_data["card"]
@@ -963,3 +1036,51 @@ class RecordingCardManager:
                 await self.app.snack_bar.show_snack_bar(self._["play_failed"] + f"\n{e}", bgcolor=ft.Colors.RED)
         else:
             await self.app.snack_bar.show_snack_bar(err or self._["play_failed"], bgcolor=ft.Colors.RED)
+
+    async def update_thumbnail(self, recording: Recording, thumbnail_path: str):
+        """更新卡片中的缩略图"""
+        try:
+            rec_id = recording.rec_id
+            card_data = self.cards_obj.get(rec_id)
+            
+            if not card_data:
+                logger.debug(f"无法更新缩略图: 未找到卡片数据 {rec_id}")
+                return
+            
+            # 获取缩略图设置
+            show_live_thumbnail = self.app.settings.user_config.get("show_live_thumbnail", False)
+            
+            # 获取缩略图和logo组件
+            thumbnail_image = card_data.get("thumbnail_image")
+            platform_logo = card_data.get("platform_logo")
+            overlay_logo = card_data.get("overlay_logo")
+            
+            if not thumbnail_image or not platform_logo or not overlay_logo:
+                logger.debug(f"无法更新缩略图: 缺少必要组件 {rec_id}")
+                return
+            
+            # 更新UI组件
+            if show_live_thumbnail and (recording.is_live or recording.recording):
+                # 确保文件存在
+                if not os.path.exists(thumbnail_path):
+                    logger.error(f"缩略图文件不存在: {thumbnail_path}")
+                    return
+                
+                # 更新缩略图
+                thumbnail_image.src = thumbnail_path
+                thumbnail_image.visible = True
+                
+                # 隐藏主logo，显示小logo
+                platform_logo.visible = False
+                overlay_logo.visible = True
+            else:
+                # 显示主logo，隐藏缩略图和小logo
+                thumbnail_image.visible = False
+                platform_logo.visible = True
+                overlay_logo.visible = False
+            
+            # 更新UI
+            self.app.page.update()
+            
+        except Exception as e:
+            logger.error(f"更新缩略图时发生错误: {e}")

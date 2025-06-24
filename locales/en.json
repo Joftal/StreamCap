@@ -4,18 +4,24 @@
     "settings": "Settings",
     "storage": "Storage",
     "about": "About",
-    "light_theme": "Light theme",
-    "dark_theme": "Dark theme",
+    "light_theme": "Light Theme",
+    "dark_theme": "Dark Theme",
     "theme_color": "Theme Color",
-    "toggle_day_theme": "Toggle Day Theme",
-    "toggle_night_theme": "Toggle Night Theme",
-    "colors": "Color List",
-    "show_speed": "Speed Detection",
-    "hide_speed": "Speed Detection",
-    "toggle_show_speed": "Enable Recording Speed Detection",
-    "toggle_hide_speed": "Disable Recording Speed Detection",
-    "speed_monitor_enabled": "Speed monitoring enabled, updating every 3 seconds",
-    "speed_monitor_disabled": "Speed monitoring disabled"
+    "toggle_day_theme": "Switch to Light Mode",
+    "toggle_night_theme": "Switch to Dark Mode",
+    "colors": "Colors",
+    "show_speed": "Show Speed",
+    "hide_speed": "Hide Speed",
+    "toggle_show_speed": "Enable Speed Monitor",
+    "toggle_hide_speed": "Disable Speed Monitor",
+    "speed_monitor_enabled": "Speed monitoring enabled, updates every 3 seconds",
+    "speed_monitor_disabled": "Speed monitoring disabled",
+    "show_thumbnail": "Live Thumbnails",
+    "hide_thumbnail": "Live Thumbnails",
+    "toggle_show_thumbnail": "Enable Live Thumbnails",
+    "toggle_hide_thumbnail": "Disable Live Thumbnails",
+    "thumbnail_enabled": "Live thumbnails enabled",
+    "thumbnail_disabled": "Live thumbnails disabled"
   },
   "home_page": {
     "recording_list": "Recording List",
@@ -140,9 +146,13 @@
     "check_later": "Check Later",
     "processed": "Processed",
     "current_free_space": "Current Free Space",
-    "recording_in_progress_tip": "Live room is recording, cannot be deleted"
+    "recording_in_progress_tip": "Live room is recording, cannot be deleted",
+    "cookie_error_title": "Cookie Error",
+    "soop_cookie_missing_message": "Soop platform live room, it is recommended to add Cookie, but no valid Cookie configuration found.\nPlease follow these steps:\n1. Go to Settings page\n2. Fill in Soop account and password in Account Settings\n3. Click 'Get Cookie' button\n4. Wait for successful cookie acquisition and delete the card to add it again",
+    "soop_cookie_invalid_message": "Current Soop platform Cookie is invalid or expired.\nPlease get a new Cookie:\n1. Go to Settings page\n2. Re-enter Soop account and password in Account Settings\n3. Click 'Get Cookie' button to update Cookie\n4. Wait for successful cookie acquisition and delete the card to add it again",
+    "cookie_not_configured": "Cookie Not Configured"
   },
-    "stream_manager": {
+  "stream_manager": {
     "record_stream_error": "Live streaming source recording error"
   },
   "recording_card": {
@@ -347,6 +357,10 @@
     "configure_platform_accounts": "Configure Platform Accounts",
     "sooplive_username": "Soop Username",
     "sooplive_password": "Soop Password",
+    "sooplive_get_cookie": "Get Cookie",
+    "sooplive_get_cookie_success": "Cookie obtained successfully",
+    "sooplive_get_cookie_failed": "Failed to obtain cookie",
+    "sooplive_login_required": "Please enter your account and password",
     "flextv_username": "FlexTV Username",
     "flextv_password": "FlexTV Password",
     "popkontv_username": "PopkonTV Username",
@@ -374,7 +388,14 @@
     "platform_filter_style_tip": "Set the display style of the platform filter on the main page. Tile is a button group, Dropdown is a dropdown box.",
     "notification_both_required": "Sending notifications requires both global settings and individual live room message push switches to be enabled",
     "auto_clean_logs": "Auto Clean Expired Logs",
-    "log_retention_days": "Log Retention Days"
+    "log_retention_days": "Log Retention Days",
+    "thumbnail_update_interval": "Thumbnail Update Interval",
+    "update_interval_15s": "15 seconds",
+    "update_interval_30s": "30 seconds",
+    "update_interval_60s": "60 seconds",
+    "update_interval_120s": "120 seconds",
+    "update_interval_180s": "180 seconds",
+    "update_interval_300s": "300 seconds"
   },
   "about_page": {
     "about_project": "About This Application",

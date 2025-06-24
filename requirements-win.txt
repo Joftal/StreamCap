@@ -3,7 +3,7 @@ flet-video==0.1.0
 httpx>=0.28.1
 screeninfo>=0.8.1
 aiofiles>=24.1.0
-streamget>=4.0.5
+streamget @ git+https://github.com/Joftal/streamget.git
 python-dotenv>=1.0.1
 pyyaml>=6.0
 requests>=2.31.0
