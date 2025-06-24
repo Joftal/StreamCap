@@ -1,8 +1,10 @@
 import asyncio
 import os
 import json
+import httpx
 
 import flet as ft
+import streamget
 
 from ...models.video_format_model import VideoFormat
 from ...models.video_quality_model import VideoQuality
@@ -1034,6 +1036,58 @@ class SettingsPage(PageBase):
             scroll=ft.ScrollMode.AUTO,
         )
 
+    async def get_sooplive_cookie(self, e):
+        """Get sooplive cookie using username and password."""
+        username = self.get_accounts_value("sooplive_username")
+        password = self.get_accounts_value("sooplive_password")
+        
+        if not username or not password:
+            await self.app.snack_bar.show_snack_bar(self._["sooplive_login_required"], bgcolor=ft.Colors.RED)
+            return
+            
+        if len(username) < 6 or len(password) < 10:
+            await self.app.snack_bar.show_snack_bar("账号长度需大于6位，密码长度需大于10位", bgcolor=ft.Colors.RED)
+            return
+            
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0',
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'Origin': 'https://play.sooplive.co.kr',
+                'Referer': 'https://play.sooplive.co.kr/superbsw123/277837074',
+            }
+
+            data = {
+                'szWork': 'login',
+                'szType': 'json',
+                'szUid': username,
+                'szPassword': password,
+                'isSaveId': 'true',
+                'isSavePw': 'true',
+                'isSaveJoin': 'true',
+                'isLoginRetain': 'Y',
+            }
+
+            url = 'https://login.sooplive.co.kr/app/LoginAction.php'
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(url, headers=headers, data=data)
+                cookies = response.cookies
+                
+                if cookies:
+                    cookie_str = '; '.join([f"{k}={v}" for k, v in cookies.items()])
+                    if 'AuthTicket=' in cookie_str:
+                        self.cookies_config["soop"] = cookie_str
+                        await self.config_manager.save_cookies_config(self.cookies_config)
+                        await self.app.snack_bar.show_snack_bar(self._["sooplive_get_cookie_success"], bgcolor=ft.Colors.GREEN)
+                    else:
+                        await self.app.snack_bar.show_snack_bar(self._["sooplive_get_cookie_failed"], bgcolor=ft.Colors.RED)
+                else:
+                    await self.app.snack_bar.show_snack_bar(self._["sooplive_get_cookie_failed"], bgcolor=ft.Colors.RED)
+                    
+        except Exception as ex:
+            await self.app.snack_bar.show_snack_bar(str(ex), bgcolor=ft.Colors.RED)
+
     def create_accounts_settings_tab(self):
         """Create UI elements for platform accounts configuration."""
         return ft.Column(
@@ -1058,6 +1112,14 @@ class SettingsPage(PageBase):
                                 width=500,
                                 data="sooplive_password",
                                 on_change=self.on_accounts_change,
+                            ),
+                        ),
+                        self.create_setting_row(
+                            "",
+                            ft.ElevatedButton(
+                                text=self._["sooplive_get_cookie"],
+                                on_click=self.get_sooplive_cookie,
+                                width=200,
                             ),
                         ),
                         self.create_setting_row(
