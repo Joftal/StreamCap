@@ -2,6 +2,7 @@ import asyncio
 import os
 import json
 import httpx
+import base64
 
 import flet as ft
 import streamget
@@ -15,6 +16,7 @@ from ..base_page import PageBase
 from ..components.help_dialog import HelpDialog
 from ...core.platform_handlers import get_platform_info
 from app.core.platform_handlers.platform_map import get_platform_display_name, platform_map
+from ...utils.bilibili_login import BilibiliLogin
 
 
 class SettingsPage(PageBase):
@@ -1088,6 +1090,141 @@ class SettingsPage(PageBase):
         except Exception as ex:
             await self.app.snack_bar.show_snack_bar(str(ex), bgcolor=ft.Colors.RED)
 
+    async def get_bilibili_cookie(self, e):
+        """通过二维码获取B站cookie"""
+        try:
+            # 创建登录实例
+            bili_login = BilibiliLogin()
+            
+            # 显示加载中提示
+            await self.app.snack_bar.show_snack_bar(self._["bilibili_qrcode_generating"], bgcolor=ft.Colors.AMBER)
+            
+            # 创建二维码对话框
+            qrcode_dialog = ft.AlertDialog(
+                title=ft.Text(self._["bilibili_qrcode_login"]),
+                content=ft.Column(
+                    [
+                        ft.Text(self._["bilibili_qrcode_scan_tip"], text_align=ft.TextAlign.CENTER),
+                        ft.Container(
+                            content=ft.ProgressRing(),
+                            alignment=ft.alignment.center,
+                            padding=20
+                        ),
+                    ],
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                    spacing=10,
+                ),
+                actions=[
+                    ft.TextButton(self._["cancel"], on_click=lambda _: self.close_qrcode_dialog()),
+                ],
+                actions_alignment=ft.MainAxisAlignment.END,
+            )
+            
+            # 显示对话框
+            self.app.dialog_area.content = qrcode_dialog
+            self.app.dialog_area.content.open = True
+            self.app.dialog_area.update()
+            
+            # 在后台执行二维码登录
+            async def qrcode_login_task():
+                try:
+                    # 执行二维码登录
+                    success, message, cookies, qrcode_data = await bili_login.login_by_qrcode()
+                    
+                    # 如果有二维码数据，更新对话框显示二维码
+                    if qrcode_data:
+                        # 将二维码数据转换为Base64编码
+                        qrcode_base64 = base64.b64encode(qrcode_data).decode('utf-8')
+                        
+                        # 更新对话框内容
+                        if hasattr(self.app.dialog_area, "content") and self.app.dialog_area.content and self.app.dialog_area.content.open:
+                            self.app.dialog_area.content.content = ft.Column(
+                                [
+                                    ft.Text(self._["bilibili_qrcode_scan_tip"], text_align=ft.TextAlign.CENTER),
+                                    ft.Container(
+                                        content=ft.Image(
+                                            src=f"data:image/png;base64,{qrcode_base64}",
+                                            width=200,
+                                            height=200,
+                                            fit=ft.ImageFit.CONTAIN,
+                                        ),
+                                        alignment=ft.alignment.center,
+                                        padding=20
+                                    ),
+                                    ft.Text(message, color=ft.colors.AMBER, text_align=ft.TextAlign.CENTER),
+                                ],
+                                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                                spacing=10,
+                            )
+                            self.app.dialog_area.update()
+                    
+                    # 等待登录结果
+                    if success:
+                        # 检查是否包含buvid3
+                        has_buvid3 = "buvid3" in cookies
+                        
+                        # 登录成功，保存cookie
+                        cookie_str = "; ".join([f"{k}={v}" for k, v in cookies.items()])
+                        self.cookies_config["bilibili"] = cookie_str
+                        await self.config_manager.save_cookies_config(self.cookies_config)
+                        
+                        # 关闭对话框
+                        self.close_qrcode_dialog()
+                        
+                        # 显示成功提示，包含cookie信息
+                        if has_buvid3:
+                            success_message = f"{self._['bilibili_get_cookie_success']} (buvid3: {cookies.get('buvid3', '')[:8]}...)"
+                        else:
+                            success_message = f"{self._['bilibili_get_cookie_success']} ({self._['bilibili_missing_buvid3']})"
+                        
+                        await self.app.snack_bar.show_snack_bar(success_message, bgcolor=ft.Colors.GREEN)
+                        
+                        # 如果没有buvid3，显示警告
+                        if not has_buvid3:
+                            await self.app.snack_bar.show_snack_bar(self._["bilibili_buvid3_warning"], bgcolor=ft.Colors.AMBER)
+                    else:
+                        # 登录失败，但不关闭对话框，让用户可以看到错误信息
+                        if hasattr(self.app.dialog_area, "content") and self.app.dialog_area.content and self.app.dialog_area.content.open:
+                            # 显示已获取到的cookie信息（如果有）
+                            cookie_info = ""
+                            if cookies:
+                                cookie_keys = list(cookies.keys())
+                                cookie_info = f"\n已获取到的Cookie: {', '.join(cookie_keys)}"
+                                
+                                # 特别检查buvid3
+                                if "buvid3" not in cookies:
+                                    cookie_info += f"\n{self._['bilibili_missing_buvid3']}"
+                            
+                            self.app.dialog_area.content.content.controls.append(
+                                ft.Text(f"{message}{cookie_info}", color=ft.colors.RED, text_align=ft.TextAlign.CENTER)
+                            )
+                            self.app.dialog_area.update()
+                finally:
+                    # 关闭会话
+                    await bili_login.close()
+            
+            # 启动登录任务
+            self.page.run_task(qrcode_login_task)
+            
+        except Exception as ex:
+            self.close_qrcode_dialog()
+            await self.app.snack_bar.show_snack_bar(str(ex), bgcolor=ft.Colors.RED)
+        
+    def close_qrcode_dialog(self):
+        """关闭二维码对话框"""
+        if hasattr(self.app.dialog_area, "content") and self.app.dialog_area.content:
+            self.app.dialog_area.content.open = False
+            self.app.dialog_area.update()
+            
+            # 尝试删除二维码文件
+            try:
+                logs_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'logs')
+                qrcode_path = os.path.join(logs_dir, "bilibili_qrcode.png")
+                if os.path.exists(qrcode_path):
+                    os.remove(qrcode_path)
+            except Exception:
+                pass
+
     def create_accounts_settings_tab(self):
         """Create UI elements for platform accounts configuration."""
         return ft.Column(
@@ -1096,6 +1233,16 @@ class SettingsPage(PageBase):
                     self._["accounts_settings"],
                     self._["configure_platform_accounts"],
                     [
+                        # B站账号设置 - 改为二维码登录
+                        self.create_setting_row(
+                            self._["bilibili_qrcode_login"],
+                            ft.ElevatedButton(
+                                text=self._["bilibili_get_cookie"],
+                                on_click=self.get_bilibili_cookie,
+                                width=200,
+                            ),
+                        ),
+                        # 原有的Sooplive账号设置
                         self.create_setting_row(
                             self._["sooplive_username"],
                             ft.TextField(
@@ -1122,6 +1269,7 @@ class SettingsPage(PageBase):
                                 width=200,
                             ),
                         ),
+                        # 其他原有账号设置
                         self.create_setting_row(
                             self._["flextv_username"],
                             ft.TextField(
