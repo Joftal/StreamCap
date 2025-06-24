@@ -401,6 +401,22 @@ class LiveStreamRecorder:
         if self.recording is not None:
             self.recording.use_proxy = bool(self.proxy)
         
+        # 检查 soop 平台的 cookie
+        if self.platform_key == "soop":
+            if not self.cookies:
+                logger.warning("Soop平台需要cookie但未找到cookie配置")
+                # 显示错误提示
+                await self.app.show_error_message(
+                    self._["cookie_error_title"],
+                    self._["soop_cookie_missing_message"]
+                )
+            elif "AuthTicket=" not in self.cookies:
+                logger.warning("Soop平台的cookie无效，缺少AuthTicket")
+                await self.app.show_error_message(
+                    self._["cookie_error_title"],
+                    self._["soop_cookie_invalid_message"]
+                )
+        
         original_proxy = self.proxy
         retry_without_proxy = False
         

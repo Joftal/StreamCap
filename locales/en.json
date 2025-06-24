@@ -146,9 +146,13 @@
     "check_later": "Check Later",
     "processed": "Processed",
     "current_free_space": "Current Free Space",
-    "recording_in_progress_tip": "Live room is recording, cannot be deleted"
+    "recording_in_progress_tip": "Live room is recording, cannot be deleted",
+    "cookie_error_title": "Cookie Error",
+    "soop_cookie_missing_message": "Soop platform live room requires Cookie, but no valid Cookie configuration found.\nPlease follow these steps:\n1. Go to Settings page\n2. Fill in Soop account and password in Account Settings\n3. Click 'Get Cookie' button\n4. Wait for successful cookie acquisition and delete the card to add it again",
+    "soop_cookie_invalid_message": "Current Soop platform Cookie is invalid or expired.\nPlease get a new Cookie:\n1. Go to Settings page\n2. Re-enter Soop account and password in Account Settings\n3. Click 'Get Cookie' button to update Cookie\n4. Wait for successful cookie acquisition and delete the card to add it again",
+    "cookie_not_configured": "Cookie Not Configured"
   },
-    "stream_manager": {
+  "stream_manager": {
     "record_stream_error": "Live streaming source recording error"
   },
   "recording_card": {

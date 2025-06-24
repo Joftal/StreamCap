@@ -59,8 +59,16 @@ class App:
         self.disk_space_notification_sent = False
         self.disk_space_last_notification_time = 0
 
+        # 初始化基础组件
         self.settings = SettingsPage(self)
+        
+        # 初始化语言配置
+        self._ = {}
         self.language_manager = LanguageManager(self)
+        self.language_manager.add_observer(self)
+        self.load()
+        
+        # 初始化其他页面和组件
         self.about = AboutPage(self)
         self.home = HomePage(self)
         self.pages = self.initialize_pages()
@@ -578,3 +586,28 @@ class App:
         
         # 直接显示对话框
         await self.show_disk_space_warning_dialog(threshold, free_space)
+
+    async def show_error_message(self, title: str, message: str):
+        """显示错误消息对话框"""
+        async def close_dialog(_):
+            error_dialog.open = False
+            self.dialog_area.update()
+
+        error_dialog = ft.AlertDialog(
+            title=ft.Text(title),
+            content=ft.Text(message),
+            actions=[
+                ft.TextButton(text=self._["base"]["sure"], on_click=close_dialog),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+            modal=True,
+        )
+        error_dialog.open = True
+        self.dialog_area.content = error_dialog
+        self.dialog_area.update()
+
+    def load(self):
+        """加载语言配置"""
+        language = self.language_manager.language
+        # 直接加载整个语言配置
+        self._ = language
