@@ -156,7 +156,7 @@
     "current_free_space": "当前剩余空间",
     "recording_in_progress_tip": "直播间正在录制中，无法删除",
     "cookie_error_title": "Cookie错误",
-    "soop_cookie_missing_message": "检测到Soop平台直播间需要Cookie，但未找到有效的Cookie配置。\n请按以下步骤操作：\n1. 进入设置页面\n2. 在账号设置中填写Soop账号和密码\n3. 点击'获取Cookie'按钮\n4. 等待获取成功后删除卡片重新添加",
+    "soop_cookie_missing_message": "检测到Soop平台直播间，建议添加Cookie，但未找到有效的Cookie配置。\n请按以下步骤操作：\n1. 进入设置页面\n2. 在账号设置中填写Soop账号和密码\n3. 点击'获取Cookie'按钮\n4. 等待获取成功后删除卡片重新添加",
     "soop_cookie_invalid_message": "当前配置的Soop平台Cookie无效或已过期。\n请重新获取Cookie：\n1. 进入设置页面\n2. 在账号设置中重新填写Soop账号和密码\n3. 点击'获取Cookie'按钮更新Cookie\n4. 等待获取成功后删除卡片重新添加",
     "cookie_not_configured": "Cookie未配置"
   },
