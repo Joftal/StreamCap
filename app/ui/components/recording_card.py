@@ -208,7 +208,7 @@ class RecordingCardManager:
                 height=30,
                 fit=ft.ImageFit.CONTAIN,
             ),
-            margin=ft.margin.only(left=5, top=5),
+            margin=ft.margin.only(left=5, top=0),
             visible=False,
         )
         
