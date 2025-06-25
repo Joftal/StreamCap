@@ -361,8 +361,6 @@
     "sooplive_get_cookie_success": "Cookie obtained successfully",
     "sooplive_get_cookie_failed": "Failed to obtain cookie",
     "sooplive_login_required": "Please enter your account and password",
-    "bilibili_username": "Bilibili Username",
-    "bilibili_password": "Bilibili Password",
     "bilibili_get_cookie": "Get Cookie",
     "bilibili_get_cookie_success": "Bilibili Cookie obtained successfully",
     "bilibili_get_cookie_failed": "Failed to obtain Bilibili cookie",
@@ -407,7 +405,15 @@
     "update_interval_60s": "60 seconds",
     "update_interval_120s": "120 seconds",
     "update_interval_180s": "180 seconds",
-    "update_interval_300s": "300 seconds"
+    "update_interval_300s": "300 seconds",
+    "verify_cookie": "Verify Cookie",
+    "bilibili_cookie_empty": "Please get Bilibili Cookie first",
+    "bilibili_verify_cookie_failed": "Verify Cookie Failed",
+    "bilibili_cookie_invalid": "Cookie invalid: {message}",
+    "bilibili_cookie_missing_fields": "Missing required cookies: {fields}",
+    "bilibili_cookie_valid": "Cookie valid, current user: {username}",
+    "bilibili_cookie_check_error": "Error checking cookie: {error}",
+    "bilibili_cookie_not_logged_in": "Cookie expired, not logged in"
   },
   "about_page": {
     "about_project": "About This Application",

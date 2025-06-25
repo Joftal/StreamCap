@@ -369,8 +369,6 @@
     "sooplive_get_cookie_success": "Cookie获取成功",
     "sooplive_get_cookie_failed": "Cookie获取失败",
     "sooplive_login_required": "请先输入账号密码",
-    "bilibili_username": "哔哩哔哩账号",
-    "bilibili_password": "哔哩哔哩密码",
     "bilibili_qrcode_login": "哔哩哔哩二维码登录",
     "bilibili_get_cookie": "获取Cookie",
     "bilibili_get_cookie_success": "B站Cookie获取成功",
@@ -420,7 +418,15 @@
     "update_interval_60s": "60秒",
     "update_interval_120s": "120秒",
     "update_interval_180s": "180秒",
-    "update_interval_300s": "300秒"
+    "update_interval_300s": "300秒",
+    "verify_cookie": "验证Cookie",
+    "bilibili_cookie_empty": "请先获取B站Cookie",
+    "bilibili_verify_cookie_failed": "验证Cookie失败",
+    "bilibili_cookie_invalid": "Cookie无效: {message}",
+    "bilibili_cookie_missing_fields": "缺少必填Cookie字段: {fields}",
+    "bilibili_cookie_valid": "Cookie有效, 当前用户: {username}",
+    "bilibili_cookie_check_error": "Cookie检查错误: {error}",
+    "bilibili_cookie_not_logged_in": "Cookie已过期, 未登录"
   },
   "about_page": {
     "about_project": "关于本程序",
