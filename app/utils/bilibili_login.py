@@ -105,7 +105,7 @@ class BilibiliLogin:
             qrcode_data = qrcode_resp.json()
             
             if qrcode_data["code"] != 0:
-                return False, f"bilibili_get_cookie_failed", "", ""
+                return False, "bilibili_get_cookie_failed", "", ""
             
             # 获取二维码链接和密钥
             qrcode_url = qrcode_data["data"]["url"]

@@ -39,7 +39,7 @@ class QRCodeLoginServer:
                 status=404
             )
             
-        with open(html_path, 'r', encoding='utf-8') as f:
+        with open(html_path, encoding='utf-8') as f:
             html_content = f.read()
             
         return aiohttp.web.Response(
@@ -96,7 +96,7 @@ class QRCodeLoginServer:
                 
             return aiohttp.web.json_response({
                 'code': code,
-                'message': f'登录成功！已获取所有必要的Cookie'
+                'message': '登录成功！已获取所有必要的Cookie'
             })
         else:
             # 返回当前状态
