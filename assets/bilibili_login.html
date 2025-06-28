@@ -65,6 +65,20 @@
             background-color: #ccc;
             cursor: not-allowed;
         }
+        .close-btn {
+            background-color: #ff4757;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+            transition: background-color 0.3s;
+        }
+        .close-btn:hover {
+            background-color: #ff3742;
+        }
     </style>
 </head>
 <body>
@@ -76,12 +90,43 @@
         <div id="status" class="status waiting">
             请使用B站APP扫描二维码登录
         </div>
-        <button id="refreshBtn" class="refresh-btn" onclick="refreshQRCode()">刷新二维码</button>
+        <div>
+            <button id="refreshBtn" class="refresh-btn" onclick="refreshQRCode()">刷新二维码</button>
+            <button id="closeBtn" class="close-btn" onclick="closeWindow()">关闭页面</button>
+        </div>
     </div>
 
     <script>
         let qrcodeKey = '';
         let pollTimer = null;
+        let isClosing = false;
+
+        // 页面关闭时通知服务器
+        window.addEventListener('beforeunload', function(e) {
+            if (!isClosing) {
+                // 发送同步请求通知服务器关闭浏览器进程
+                try {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('GET', '/api/close', false); // 同步请求
+                    xhr.send();
+                } catch (error) {
+                    console.log('通知服务器关闭失败:', error);
+                }
+            }
+        });
+
+        // 页面可见性变化时也处理关闭
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'hidden' && !isClosing) {
+                try {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('GET', '/api/close', false);
+                    xhr.send();
+                } catch (error) {
+                    console.log('通知服务器关闭失败:', error);
+                }
+            }
+        });
 
         async function getQRCode() {
             try {
@@ -109,7 +154,38 @@
                     // 登录成功
                     showSuccess('登录成功！页面即将关闭...');
                     stopPolling();
-                    setTimeout(() => window.close(), 2000);
+                    isClosing = true;
+                    
+                    // 立即通知服务器关闭浏览器进程
+                    try {
+                        await fetch('/api/close');
+                        console.log('已通知服务器关闭浏览器');
+                    } catch (error) {
+                        console.log('通知服务器关闭失败:', error);
+                    }
+                    
+                    // 延迟关闭，让用户看到成功消息
+                    setTimeout(() => {
+                        try {
+                            // 尝试多种方式关闭窗口
+                            if (window.opener) {
+                                // 如果是弹窗，关闭当前窗口
+                                window.close();
+                            } else {
+                                // 如果是主窗口，尝试关闭
+                                window.close();
+                                // 如果window.close()失败，尝试其他方法
+                                setTimeout(() => {
+                                    // 尝试通过location.href跳转到空白页面
+                                    window.location.href = 'about:blank';
+                                }, 1000);
+                            }
+                        } catch (error) {
+                            console.log('关闭窗口失败:', error);
+                            // 最后的备选方案：跳转到空白页面
+                            window.location.href = 'about:blank';
+                        }
+                    }, 2000);
                 } else if (data.code === -2) {
                     // 缺少必要cookie
                     showError(data.message);
@@ -170,6 +246,20 @@
             document.getElementById('status').className = 'status waiting';
             document.getElementById('status').innerText = '正在刷新二维码...';
             getQRCode();
+        }
+
+        async function closeWindow() {
+            isClosing = true;
+            stopPolling();
+            
+            try {
+                // 通知服务器关闭浏览器进程
+                await fetch('/api/close');
+            } catch (error) {
+                console.log('通知服务器关闭失败:', error);
+            }
+            
+            window.close();
         }
 
         // 初始化加载

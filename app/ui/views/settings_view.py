@@ -1134,19 +1134,45 @@ class SettingsPage(PageBase):
                             self._["bilibili_buvid3_warning"],
                             bgcolor=ft.Colors.AMBER
                         )
+                
+                # 登录成功后，立即关闭服务器
+                try:
+                    logger.info("登录成功，立即关闭B站登录服务器")
+                    await server.stop()
+                    logger.info("B站登录服务器已关闭")
+                except Exception as e:
+                    logger.info(f"关闭B站登录服务器时出错: {str(e)}")
+                    # 不记录为错误，因为可能是正常的时序问题
             
-            # 启动服务器并获取URL
-            url = await server.start(cookie_callback=save_cookie)
-            
-            # 在浏览器中打开登录页面
-            import webbrowser
-            webbrowser.open(url)
+            # 启动服务器并打开浏览器
+            url = await server.start_with_browser(cookie_callback=save_cookie)
             
             # 显示提示
             await self.app.snack_bar.show_snack_bar(
                 self._["bilibili_qrcode_scan_tip"],
                 bgcolor=ft.Colors.BLUE
             )
+            
+            # 启动后台任务监控服务器状态
+            async def monitor_server():
+                try:
+                    # 等待一段时间，然后检查服务器是否还在运行
+                    await asyncio.sleep(30)  # 30秒后检查
+                    
+                    # 如果服务器还在运行，尝试关闭它
+                    try:
+                        # 检查服务器是否还在运行状态
+                        if hasattr(server, '_is_running') and server._is_running:
+                            logger.info("监控任务：30秒超时，关闭B站登录服务器")
+                            await server.stop()
+                    except Exception as e:
+                        logger.info(f"监控任务关闭B站登录服务器时出错: {str(e)}")
+                        # 不记录为错误，因为可能是正常的时序问题
+                except Exception as e:
+                    logger.info(f"B站登录服务器监控任务出错: {str(e)}")
+            
+            # 启动监控任务
+            asyncio.create_task(monitor_server())
             
         except Exception as e:
             logger.error(f"B站二维码登录失败: {str(e)}")
