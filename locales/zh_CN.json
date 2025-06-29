@@ -218,7 +218,15 @@
     "tip_stop_recording": "停止录制",
     "tip_start_recording": "开始录制",
     "no_stream_source": "未获取到直播源，不可使用",
-    "speed_disabled": "已关闭"
+    "speed_disabled": "已关闭",
+    "thumbnail_switch": "缩略图开关",
+    "thumbnail_switch_on": "开启缩略图",
+    "thumbnail_switch_off": "关闭缩略图",
+    "thumbnail_switch_tip_on": "点击关闭该房间缩略图",
+    "thumbnail_switch_tip_off": "点击开启该房间缩略图",
+    "thumbnail_switch_tip_global": "使用全局缩略图设置",
+    "thumbnail_enabled_for_room": "该房间缩略图已开启",
+    "thumbnail_disabled_for_room": "该房间缩略图已关闭"
   },
   "settings_page": {
     "recording_settings": "录制设置",

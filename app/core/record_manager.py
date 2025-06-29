@@ -131,7 +131,12 @@ class RecordingManager:
             
             # 如果启用了缩略图功能，开始捕获缩略图
             if self.app.settings.user_config.get("show_live_thumbnail", False) and hasattr(self.app, 'thumbnail_manager'):
-                self.app.page.run_task(self.app.thumbnail_manager.start_thumbnail_capture, recording)
+                # 检查单个房间的缩略图设置
+                if recording.is_thumbnail_enabled(self.app.settings.user_config.get("show_live_thumbnail", False)):
+                    logger.info(f"主播开播，启动缩略图捕获任务: {recording.streamer_name}")
+                    self.app.page.run_task(self.app.thumbnail_manager.start_thumbnail_capture, recording)
+                else:
+                    logger.info(f"直播间 {recording.streamer_name} 的缩略图功能已关闭，跳过启动缩略图捕获")
             
             # 确保在当前页面是主页时重新应用筛选条件
             if hasattr(self.app, 'current_page') and hasattr(self.app.current_page, 'apply_filter'):
@@ -349,8 +354,12 @@ class RecordingManager:
                 
                 # 如果缩略图功能已开启，启动缩略图捕获任务
                 if self.app.settings.user_config.get("show_live_thumbnail", False) and hasattr(self.app, 'thumbnail_manager'):
-                    logger.info(f"主播开播，启动缩略图捕获任务: {recording.streamer_name}")
-                    self.app.page.run_task(self.app.thumbnail_manager.start_thumbnail_capture, recording)
+                    # 检查单个房间的缩略图设置
+                    if recording.is_thumbnail_enabled(self.app.settings.user_config.get("show_live_thumbnail", False)):
+                        logger.info(f"主播开播，启动缩略图捕获任务: {recording.streamer_name}")
+                        self.app.page.run_task(self.app.thumbnail_manager.start_thumbnail_capture, recording)
+                    else:
+                        logger.info(f"直播间 {recording.streamer_name} 的缩略图功能已关闭，跳过启动缩略图捕获")
             
             # 如果直播状态从在线变为离线，重置通知状态并更新UI
             if was_live and not recording.is_live:

@@ -210,7 +210,15 @@
     "tip_stop_recording": "Stop Recording",
     "tip_start_recording": "Start Recording",
     "no_stream_source": "No stream source available, cannot use",
-    "speed_disabled": "Disabled"
+    "speed_disabled": "Disabled",
+    "thumbnail_switch": "Thumbnail Switch",
+    "thumbnail_switch_on": "Enable Thumbnail",
+    "thumbnail_switch_off": "Disable Thumbnail",
+    "thumbnail_switch_tip_on": "Click to disable thumbnail for this room",
+    "thumbnail_switch_tip_off": "Click to enable thumbnail for this room",
+    "thumbnail_switch_tip_global": "Use global thumbnail setting",
+    "thumbnail_enabled_for_room": "Thumbnail enabled for this room",
+    "thumbnail_disabled_for_room": "Thumbnail disabled for this room"
   },
   "settings_page": {
     "recording_settings": "Recording Settings",

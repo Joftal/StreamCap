@@ -109,6 +109,13 @@ class RecordingCardManager:
             disabled=not (recording.monitor_status and (recording.is_live or recording.recording)),
         )
 
+        # 创建缩略图开关按钮
+        thumbnail_switch_button = ft.IconButton(
+            icon=ft.Icons.PHOTO_LIBRARY,
+            tooltip=self._["thumbnail_switch_tip_global"],
+            on_click=partial(self.thumbnail_switch_button_on_click, recording=recording),
+        )
+
         display_title = recording.title
         display_title_label = ft.Text(
             display_title, 
@@ -174,8 +181,11 @@ class RecordingCardManager:
         # 获取缩略图设置并设置初始可见状态
         show_live_thumbnail = self.app.settings.user_config.get("show_live_thumbnail", False)
         
+        # 检查单个房间的缩略图设置
+        should_show_thumbnail = recording.is_thumbnail_enabled(show_live_thumbnail)
+        
         # 如果开启了缩略图并且正在直播/录制，初始化为不可见（等待缩略图加载）
-        platform_logo_visible = not (show_live_thumbnail and (recording.is_live or recording.recording))
+        platform_logo_visible = not (should_show_thumbnail and (recording.is_live or recording.recording))
         
         # 创建平台logo图片组件（当不显示缩略图时使用）
         platform_logo = ft.Container(
@@ -250,6 +260,7 @@ class RecordingCardManager:
                     preview_button,
                     get_stream_button,
                     play_button,
+                    thumbnail_switch_button,
                     edit_button,
                     delete_button,
                     monitor_button
@@ -300,6 +311,7 @@ class RecordingCardManager:
             "play_button": play_button,
             "preview_button": preview_button,
             "delete_button": delete_button,
+            "thumbnail_switch_button": thumbnail_switch_button,
             "platform_logo": platform_logo,
             "thumbnail_image": thumbnail_image,
             "overlay_logo": overlay_logo,
@@ -448,8 +460,9 @@ class RecordingCardManager:
                 
                 # 更新平台logo和缩略图状态
                 if recording_card.get("platform_logo") and recording_card.get("thumbnail_image") and recording_card.get("overlay_logo"):
-                    # 检查是否应该显示缩略图
-                    if show_live_thumbnail and (recording.is_live or recording.recording):
+                    # 检查是否应该显示缩略图（考虑单个房间设置）
+                    should_show_thumbnail = recording.is_thumbnail_enabled(show_live_thumbnail)
+                    if should_show_thumbnail and (recording.is_live or recording.recording):
                         # 尝试获取最新的缩略图
                         if hasattr(self.app, 'thumbnail_manager'):
                             thumbnail_path = self.app.thumbnail_manager.get_latest_thumbnail(recording)
@@ -516,6 +529,10 @@ class RecordingCardManager:
                 recording_card["open_folder_button"].tooltip = self._["open_folder"]
             if recording_card.get("recording_info_button"):
                 recording_card["recording_info_button"].tooltip = self._["recording_info"]
+
+            # 更新缩略图开关按钮状态
+            if recording_card.get("thumbnail_switch_button"):
+                await self._update_thumbnail_switch_button(recording, recording.is_thumbnail_enabled(show_live_thumbnail))
 
             if recording_card["card"] and recording_card["card"].content:
                 recording_card["card"].content.bgcolor = self.get_card_background_color(recording)
@@ -1050,6 +1067,9 @@ class RecordingCardManager:
             # 获取缩略图设置
             show_live_thumbnail = self.app.settings.user_config.get("show_live_thumbnail", False)
             
+            # 检查单个房间的缩略图设置
+            should_show_thumbnail = recording.is_thumbnail_enabled(show_live_thumbnail)
+            
             # 获取缩略图和logo组件
             thumbnail_image = card_data.get("thumbnail_image")
             platform_logo = card_data.get("platform_logo")
@@ -1060,7 +1080,7 @@ class RecordingCardManager:
                 return
             
             # 更新UI组件
-            if show_live_thumbnail and (recording.is_live or recording.recording):
+            if should_show_thumbnail and (recording.is_live or recording.recording):
                 # 确保文件存在
                 if not os.path.exists(thumbnail_path):
                     logger.error(f"缩略图文件不存在: {thumbnail_path}")
@@ -1084,3 +1104,87 @@ class RecordingCardManager:
             
         except Exception as e:
             logger.error(f"更新缩略图时发生错误: {e}")
+
+    async def thumbnail_switch_button_on_click(self, _, recording: Recording):
+        """处理缩略图开关按钮点击事件"""
+        try:
+            # 获取全局缩略图设置
+            global_thumbnail_enabled = self.app.settings.user_config.get("show_live_thumbnail", False)
+            
+            # 获取当前房间的缩略图状态
+            current_thumbnail_enabled = recording.is_thumbnail_enabled(global_thumbnail_enabled)
+            
+            # 切换房间的缩略图设置
+            if recording.thumbnail_enabled is None:
+                # 如果当前使用全局设置，则设置为与全局设置相反
+                recording.thumbnail_enabled = not global_thumbnail_enabled
+            else:
+                # 如果当前有独立设置，则切换该设置
+                recording.thumbnail_enabled = not recording.thumbnail_enabled
+            
+            # 获取新的缩略图状态
+            new_thumbnail_enabled = recording.is_thumbnail_enabled(global_thumbnail_enabled)
+            
+            # 更新按钮状态和提示
+            await self._update_thumbnail_switch_button(recording, new_thumbnail_enabled)
+            
+            # 根据新的设置启动或停止缩略图捕获
+            if hasattr(self.app, 'thumbnail_manager'):
+                if new_thumbnail_enabled and (recording.is_live or recording.recording):
+                    # 开启缩略图捕获
+                    self.app.page.run_task(self.app.thumbnail_manager.start_thumbnail_capture, recording)
+                    await self.app.snack_bar.show_snack_bar(self._["thumbnail_enabled_for_room"], ft.Colors.GREEN)
+                else:
+                    # 停止缩略图捕获
+                    self.app.page.run_task(self.app.thumbnail_manager.stop_thumbnail_capture, recording)
+                    await self.app.snack_bar.show_snack_bar(self._["thumbnail_disabled_for_room"], ft.Colors.BLUE)
+            
+            # 更新卡片显示
+            await self.update_card(recording)
+            
+            # 保存录制配置
+            self.app.page.run_task(self.app.record_manager.persist_recordings)
+            
+        except Exception as e:
+            logger.error(f"切换房间缩略图设置时发生错误: {e}")
+            await self.app.snack_bar.show_snack_bar(f"切换缩略图设置失败: {e}", ft.Colors.RED)
+    
+    async def _update_thumbnail_switch_button(self, recording: Recording, thumbnail_enabled: bool):
+        """更新缩略图开关按钮的状态"""
+        try:
+            rec_id = recording.rec_id
+            card_data = self.cards_obj.get(rec_id)
+            
+            if not card_data:
+                return
+            
+            thumbnail_switch_button = card_data.get("thumbnail_switch_button")
+            if not thumbnail_switch_button:
+                return
+            
+            # 获取全局缩略图设置
+            global_thumbnail_enabled = self.app.settings.user_config.get("show_live_thumbnail", False)
+            
+            # 更新按钮图标和提示
+            if recording.thumbnail_enabled is None:
+                # 使用全局设置
+                if global_thumbnail_enabled:
+                    thumbnail_switch_button.icon = ft.Icons.PHOTO_LIBRARY
+                    thumbnail_switch_button.tooltip = self._["thumbnail_switch_tip_on"]
+                else:
+                    thumbnail_switch_button.icon = ft.Icons.PHOTO_LIBRARY_OUTLINED
+                    thumbnail_switch_button.tooltip = self._["thumbnail_switch_tip_off"]
+            else:
+                # 使用独立设置
+                if recording.thumbnail_enabled:
+                    thumbnail_switch_button.icon = ft.Icons.PHOTO_LIBRARY
+                    thumbnail_switch_button.tooltip = self._["thumbnail_switch_tip_on"]
+                else:
+                    thumbnail_switch_button.icon = ft.Icons.PHOTO_LIBRARY_OUTLINED
+                    thumbnail_switch_button.tooltip = self._["thumbnail_switch_tip_off"]
+            
+            # 更新UI
+            thumbnail_switch_button.update()
+            
+        except Exception as e:
+            logger.error(f"更新缩略图开关按钮状态时发生错误: {e}")

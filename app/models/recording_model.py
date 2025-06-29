@@ -21,7 +21,8 @@ class Recording:
         media_type: str = "video",
         record_format: str = None,
         record_mode="auto",
-        remark: str = None  # 新增备注参数
+        remark: str = None,  # 新增备注参数
+        thumbnail_enabled: bool = None  # 新增单个房间缩略图开关
     ):
         """
         Initialize a recording object.
@@ -42,6 +43,7 @@ class Recording:
         :param enabled_message_push: Whether to enable message push.
         :param record_mode: Recording mode, either 'auto' or 'manual'.
         :param remark: Remark for the recording task, limited to 20 Chinese characters.
+        :param thumbnail_enabled: Whether to enable thumbnail for this specific room (None means use global setting).
         """
 
         self.rec_id = rec_id
@@ -85,6 +87,9 @@ class Recording:
         self.media_type = media_type
         self.record_format = record_format
         self.remark = remark if remark and len(remark) <= 20 else None
+        
+        # 单个房间缩略图开关（None表示使用全局设置）
+        self.thumbnail_enabled = thumbnail_enabled
 
     def to_dict(self):
         """Convert the Recording instance to a dictionary for saving."""
@@ -105,6 +110,7 @@ class Recording:
             "enabled_message_push": self.enabled_message_push,
             "record_mode": self.record_mode,
             "remark": self.remark,  # 添加备注到保存数据中
+            "thumbnail_enabled": self.thumbnail_enabled,  # 添加单个房间缩略图开关到保存数据中
         }
 
     @classmethod
@@ -127,6 +133,7 @@ class Recording:
             data.get("record_format"),
             data.get("record_mode", "auto"),
             data.get("remark"),  # 从数据中读取备注
+            data.get("thumbnail_enabled"),  # 从数据中读取单个房间缩略图开关
         )
         recording.title = data.get("title", recording.title)
         recording.display_title = data.get("display_title", recording.title)
@@ -197,3 +204,19 @@ class Recording:
                     self._record_format = AudioFormat.MP3
                 else:
                     self._record_format = value
+
+    def is_thumbnail_enabled(self, global_thumbnail_enabled: bool) -> bool:
+        """
+        判断是否应该显示缩略图
+        
+        Args:
+            global_thumbnail_enabled: 全局缩略图开关状态
+            
+        Returns:
+            bool: 是否应该显示缩略图
+        """
+        # 如果单个房间有明确设置，使用单个房间设置
+        if self.thumbnail_enabled is not None:
+            return self.thumbnail_enabled
+        # 否则使用全局设置
+        return global_thumbnail_enabled
