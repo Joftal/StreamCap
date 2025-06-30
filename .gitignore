@@ -172,3 +172,11 @@ cython_debug/
 #.idea/
 
 backup_config/
+/.idea/inspectionProfiles/profiles_settings.xml
+/.idea/.gitignore
+/.idea/misc.xml
+/.idea/modules.xml
+/.idea/StreamCap.iml
+/.idea/vcs.xml
+/config/web_auth.json
+/config/platform_logo_cache.json
