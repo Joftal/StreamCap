@@ -309,8 +309,8 @@ class RecordingDialog:
                                 schedule_and_monitor_row,
                                 monitor_hours_input,
                                 message_push_dropdown,
-                                translation_switch,  # 新增翻译控制开关
-                                remark_field  # 新增备注输入框
+                                remark_field,  # 备注输入框
+                                translation_switch  # 翻译控制开关移动到最下面
                             ],
                             tight=True,
                             spacing=10,
