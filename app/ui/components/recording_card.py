@@ -184,6 +184,9 @@ class RecordingCardManager:
         # 检查单个房间的缩略图设置
         should_show_thumbnail = recording.is_thumbnail_enabled(show_live_thumbnail)
         
+        # 根据是否有直播标题调整卡片高度
+        card_height = 140 if recording.live_title else 120
+        
         # 如果开启了缩略图并且正在直播/录制，初始化为不可见（等待缩略图加载）
         platform_logo_visible = not (should_show_thumbnail and (recording.is_live or recording.recording))
         
@@ -205,7 +208,7 @@ class RecordingCardManager:
         thumbnail_image = ft.Image(
             src=None,
             width=230,
-            height=120,
+            height=card_height,
             fit=ft.ImageFit.CONTAIN,
             visible=False,
         )
@@ -230,25 +233,45 @@ class RecordingCardManager:
                 overlay_logo,     # 叠加logo（当有缩略图时显示）
             ],
             width=230,
-            height=120,
+            height=card_height,
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,  # 添加剪裁行为，避免溢出
         )
         
         logo_container = ft.Container(
             content=logo_container_content,
             width=230,
-            height=120,
+            height=card_height,
             alignment=ft.alignment.center,
             padding=ft.padding.all(5),
             border_radius=ft.border_radius.all(5),
         )
         
+        # 创建直播标题显示标签
+        live_title_label = None
+        if recording.live_title:
+            live_title_label = ft.Container(
+                content=ft.Text(
+                    f"直播标题：{recording.live_title}",
+                    size=12,
+                    color=ft.colors.WHITE,
+                    max_lines=1,
+                    no_wrap=True,
+                    overflow=ft.TextOverflow.ELLIPSIS,
+                ),
+                bgcolor=ft.colors.BLUE_700,
+                border_radius=5,
+                padding=ft.padding.only(left=8, right=8, top=2, bottom=2),
+                visible=True,
+            )
+
         # 创建右侧内容容器
         content_column_children = [
             title_row,
             duration_text_label,
             speed_text_label,
         ]
+        if live_title_label:
+            content_column_children.append(live_title_label)
         if remark_label:
             content_column_children.append(remark_label)
         content_column_children.append(
@@ -299,6 +322,7 @@ class RecordingCardManager:
         return {
             "card": card,
             "display_title_label": display_title_label,
+            "live_title_label": live_title_label,
             "duration_label": duration_text_label,
             "speed_label": speed_text_label,
             "record_button": record_button,
@@ -416,7 +440,40 @@ class RecordingCardManager:
                 # 获取内容区域的Column
                 content_column = content_container.content
                 
-                # 更新备注显示
+                # 更新直播标题显示
+                live_title_index = 3  # 直播标题在第4个位置（0-based索引为3）
+                if recording.live_title:
+                    new_live_title_container = ft.Container(
+                        content=ft.Text(
+                            f"直播标题：{recording.live_title}",
+                            size=12,
+                            color=ft.colors.WHITE,
+                            max_lines=1,
+                            no_wrap=True,
+                            overflow=ft.TextOverflow.ELLIPSIS,
+                        ),
+                        bgcolor=ft.colors.BLUE_700,
+                        border_radius=5,
+                        padding=ft.padding.only(left=8, right=8, top=2, bottom=2),
+                        visible=True,
+                    )
+                    # 如果已经有直播标题控件，更新它；否则添加新的直播标题控件
+                    if len(content_column.controls) > live_title_index and isinstance(content_column.controls[live_title_index], ft.Container):
+                        content_column.controls[live_title_index] = new_live_title_container
+                    else:
+                        content_column.controls.insert(live_title_index, new_live_title_container)
+                else:
+                    # 如果没有直播标题，移除直播标题控件（如果存在）
+                    if (len(content_column.controls) > live_title_index and 
+                        isinstance(content_column.controls[live_title_index], ft.Container) and
+                        hasattr(content_column.controls[live_title_index], 'content') and
+                        hasattr(content_column.controls[live_title_index].content, 'value') and
+                        content_column.controls[live_title_index].content.value and
+                        content_column.controls[live_title_index].content.value.startswith("直播标题：")):
+                        content_column.controls.pop(live_title_index)
+
+                # 更新备注显示（需要重新计算索引，因为可能插入了直播标题）
+                remark_index = 4 if recording.live_title else 3
                 if recording.remark:
                     remark_container = ft.Container(
                         content=ft.Text(
@@ -433,14 +490,14 @@ class RecordingCardManager:
                         visible=True,
                     )
                     # 如果已经有备注控件，更新它；否则添加新的备注控件
-                    if len(content_column.controls) > 3 and isinstance(content_column.controls[3], ft.Container):
-                        content_column.controls[3] = remark_container
+                    if len(content_column.controls) > remark_index and isinstance(content_column.controls[remark_index], ft.Container):
+                        content_column.controls[remark_index] = remark_container
                     else:
-                        content_column.controls.insert(3, remark_container)
+                        content_column.controls.insert(remark_index, remark_container)
                 else:
                     # 如果没有备注，移除备注控件（如果存在）
-                    if len(content_column.controls) > 3 and isinstance(content_column.controls[3], ft.Container):
-                        content_column.controls.pop(3)
+                    if len(content_column.controls) > remark_index and isinstance(content_column.controls[remark_index], ft.Container):
+                        content_column.controls.pop(remark_index)
                 
                 # 获取标题行（Column的第一个控件）
                 title_row = content_column.controls[0]
