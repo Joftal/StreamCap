@@ -69,7 +69,7 @@ class ThumbnailManager:
         try:
             update_interval = self.user_config.get("thumbnail_update_interval", 60)
             # 确保值是整数，如果无法转换，使用默认值60
-            self.update_interval = int(update_interval) if isinstance(update_interval, (int, str)) else 60
+            self.update_interval = int(update_interval) if isinstance(update_interval, int | str) else 60
             # 确保值在合理范围内
             if self.update_interval < 15:
                 logger.warning(f"缩略图更新间隔过小 ({self.update_interval}秒)，使用最小值15秒")
@@ -193,7 +193,7 @@ class ThumbnailManager:
                 try:
                     update_interval = self.user_config.get("thumbnail_update_interval", 60)
                     # 确保值是整数，如果无法转换，使用默认值60
-                    self.update_interval = int(update_interval) if isinstance(update_interval, (int, str)) else 60
+                    self.update_interval = int(update_interval) if isinstance(update_interval, int | str) else 60
                     # 确保值在合理范围内
                     if self.update_interval < 15:
                         logger.warning(f"缩略图更新间隔过小 ({self.update_interval}秒)，使用最小值15秒")

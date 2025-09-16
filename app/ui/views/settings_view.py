@@ -166,7 +166,7 @@ class SettingsPage(PageBase):
     async def on_change(self, e):
         """Handle changes in any input field and trigger auto-save."""
         key = e.control.data
-        if isinstance(e.control, (ft.Switch, ft.Checkbox)):
+        if isinstance(e.control, ft.Switch | ft.Checkbox):
             self.user_config[key] = e.data.lower() == "true"
         else:
             # 特殊处理vlc_path，替换为Windows风格分隔符

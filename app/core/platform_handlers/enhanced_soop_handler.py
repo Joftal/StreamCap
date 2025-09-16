@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 增强版SOOP平台处理器
 用于改进title字段的解析
@@ -345,7 +344,7 @@ class EnhancedSoopHandler(PlatformHandler):
         # 过滤掉太短、纯数字、或明显不是标题的内容
         return (len(title) >= 2 and 
                 not title.isdigit() and 
-                not title.lower() in ['null', 'none', 'undefined', ''] and
+                title.lower() not in ['null', 'none', 'undefined', ''] and
                 not re.match(r'^[0-9\-_]+$', title) and
                 'sooplive' not in title.lower() and  # 过滤掉网站名称
                 'soop' not in title.lower())
