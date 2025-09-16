@@ -132,10 +132,10 @@ class HomePage(PageBase):
                             key='home_pagination_container',
                             content=self.pagination_controls,
                             alignment=ft.alignment.bottom_center,
-                            left=0,
+                            left=170,  # 从左侧边栏右侧开始
                             right=0,
                             bottom=0,
-                            padding=ft.padding.only(bottom=10, left=60),  # 左侧留出空间避免遮挡按钮
+                            padding=ft.padding.only(bottom=10),  # 只保留底部间距
                         )
                     )
                     logger.debug("语言变更：创建并添加了新的分页控件")
@@ -399,10 +399,10 @@ class HomePage(PageBase):
                         key='home_pagination_container',
                         content=self.pagination_controls,
                         alignment=ft.alignment.bottom_center,
-                        left=0,
+                        left=170,  # 从左侧边栏右侧开始
                         right=0,
                         bottom=0,
-                        padding=ft.padding.only(bottom=10, left=60),  # 左侧留出空间避免遮挡按钮
+                        padding=ft.padding.only(bottom=10),  # 只保留底部间距
                     )
                 )
                 logger.debug("已创建并添加新的分页控件")
