@@ -34,6 +34,7 @@ StreamCap is a multi-platform live stream recording client based on FFmpeg and S
 - **Live Streaming Categories**: Smart classification by live streaming platform and status, supports 2 layout styles
 - **Live Streaming Preview**: Provides thumbnail generation for live rooms, can be controlled individually or globally
 - **Note**: Supports editing note information for cards.
+- **Cookie Login Support**: Supports logging in via Bilibili QR code and Sooplive account/password to obtain Cookies.
 
 ## 📸Main Interface
 
