@@ -498,11 +498,11 @@ class HomePage(PageBase):
             [
                 ft.Text(self._["recording_list"], theme_style=ft.TextThemeStyle.TITLE_MEDIUM),
                 ft.Container(expand=True),
-                ft.IconButton(
-                    icon=ft.Icons.GRID_VIEW if self.is_grid_view else ft.Icons.LIST,
-                    tooltip=self._["toggle_view"],
-                    on_click=self.toggle_view_mode
-                ),
+                # ft.IconButton(
+                #     icon=ft.Icons.GRID_VIEW if self.is_grid_view else ft.Icons.LIST,
+                #     tooltip=self._["toggle_view"],
+                #     on_click=self.toggle_view_mode
+                # ),
                 ft.IconButton(icon=ft.Icons.SEARCH, tooltip=self._["search"], on_click=self.search_on_click),
                 ft.IconButton(icon=ft.Icons.ADD, tooltip=self._["add_record"], on_click=self.add_recording_on_click),
                 ft.IconButton(icon=ft.Icons.REFRESH, tooltip=self._["refresh"], on_click=self.refresh_cards_on_click),
