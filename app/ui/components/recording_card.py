@@ -1455,10 +1455,10 @@ class RecordingCardManager:
                 translated = await translate_live_title(recording.live_title, app_language_code, self.app.config_manager)
                 if translated and translated != recording.live_title:
                     recording.translated_title = translated
-                    logger.info(f"翻译成功: '{recording.live_title}' -> '{translated}' (目标语言: {app_language_code})")
+                    #logger.info(f"翻译成功: '{recording.live_title}' -> '{translated}' (目标语言: {app_language_code})")
                 else:
                     recording.translated_title = None
-                    logger.debug(f"翻译失败或不需要翻译: '{recording.live_title}' (目标语言: {app_language_code})")
+                    #logger.debug(f"翻译失败或不需要翻译: '{recording.live_title}' (目标语言: {app_language_code})")
             else:
                 # 如果不需要翻译，清除翻译标题
                 recording.translated_title = None

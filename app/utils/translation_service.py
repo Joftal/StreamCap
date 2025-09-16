@@ -223,7 +223,7 @@ class TranslationService:
             translated_text = await self._translate_with_google(text, target_language)
         
         if translated_text:
-            logger.debug(f"翻译成功 ({self.provider}): '{text}' -> '{translated_text}' ({source_language} -> {target_language})")
+            #logger.debug(f"翻译成功 ({self.provider}): '{text}' -> '{translated_text}' ({source_language} -> {target_language})")
             return translated_text
         else:
             logger.warning(f"翻译失败 ({self.provider}): '{text}'")
