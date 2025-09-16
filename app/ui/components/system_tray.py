@@ -32,7 +32,7 @@ class SystemTrayManager:
     
     def load(self):
         """加载方法，用于语言管理器通知"""
-        self.load_language()
+        self.on_language_changed()
     
     def on_language_changed(self):
         """语言变更时的回调函数"""
