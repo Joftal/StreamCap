@@ -1452,7 +1452,7 @@ class RecordingCardManager:
                 app_language_code = self.app.settings.language_code
                 
                 # 翻译标题（根据程序语言选择目标语言）
-                translated = await translate_live_title(recording.live_title, app_language_code)
+                translated = await translate_live_title(recording.live_title, app_language_code, self.app.config_manager)
                 if translated and translated != recording.live_title:
                     recording.translated_title = translated
                     logger.info(f"翻译成功: '{recording.live_title}' -> '{translated}' (目标语言: {app_language_code})")

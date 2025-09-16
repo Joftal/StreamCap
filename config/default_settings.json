@@ -66,5 +66,8 @@
     "log_retention_days": 7,
     "auto_clean_logs": false,
     "show_recording_speed": false,
-    "enable_title_translation": false
+    "enable_title_translation": false,
+    "translation_provider": "google",
+    "baidu_translation_app_id": "",
+    "baidu_translation_secret_key": ""
 }

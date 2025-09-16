@@ -1,22 +1,42 @@
 import asyncio
 import httpx
 import re
-from typing import Optional
+import hashlib
+import random
+import time
+from typing import Optional, Dict, Any
 from ..utils.logger import logger
 
 
 class TranslationService:
-    """谷歌翻译服务类"""
+    """翻译服务类，支持多种翻译提供商"""
     
-    def __init__(self):
+    def __init__(self, provider: str = "google", baidu_app_id: str = "", baidu_secret_key: str = ""):
         self.session = None
-        self.base_url = "https://translate.googleapis.com/translate_a/single"
+        self.provider = provider
+        self.baidu_app_id = baidu_app_id
+        self.baidu_secret_key = baidu_secret_key
+        
+        # Google翻译API配置
+        self.google_base_url = "https://translate.googleapis.com/translate_a/single"
+        
+        # 百度翻译API配置
+        self.baidu_base_url = "https://fanyi-api.baidu.com/api/trans/vip/translate"
         
         # 支持的语言映射
         self.language_map = {
             'zh_CN': 'zh',  # 中文
             'en': 'en',     # 英文
             'zh': 'zh',     # 中文（简化）
+            'en_US': 'en',  # 美式英文
+            'en_GB': 'en',  # 英式英文
+        }
+        
+        # 百度翻译语言代码映射
+        self.baidu_language_map = {
+            'zh': 'zh',     # 中文
+            'en': 'en',     # 英文
+            'zh_CN': 'zh',  # 中文
             'en_US': 'en',  # 美式英文
             'en_GB': 'en',  # 英式英文
         }
@@ -65,6 +85,116 @@ class TranslationService:
         """根据程序语言获取翻译目标语言"""
         return self.language_map.get(app_language_code, 'zh')  # 默认翻译为中文
     
+    def _generate_baidu_sign(self, query: str, salt: str) -> str:
+        """生成百度翻译API的签名"""
+        sign_str = self.baidu_app_id + query + salt + self.baidu_secret_key
+        return hashlib.md5(sign_str.encode('utf-8')).hexdigest()
+    
+    async def _translate_with_google(self, text: str, target_language: str) -> Optional[str]:
+        """使用Google翻译API进行翻译"""
+        try:
+            if not self.session:
+                self.session = httpx.AsyncClient(timeout=10.0)
+            
+            # 构建请求参数
+            params = {
+                'client': 'gtx',
+                'sl': 'auto',  # 自动检测源语言
+                'tl': target_language,  # 目标语言
+                'dt': 't',
+                'q': text
+            }
+            
+            # 发送请求
+            response = await self.session.get(self.google_base_url, params=params)
+            response.raise_for_status()
+            
+            # 解析响应
+            result = response.json()
+            if result and len(result) > 0 and result[0]:
+                # 提取翻译结果
+                translated_parts = []
+                for item in result[0]:
+                    if item and len(item) > 0:
+                        translated_parts.append(item[0])
+                
+                translated_text = ''.join(translated_parts)
+                
+                # 验证翻译结果
+                if translated_text and translated_text.strip():
+                    return translated_text.strip()
+                else:
+                    logger.warning(f"Google翻译结果为空: '{text}'")
+                    return None
+            else:
+                logger.warning(f"Google翻译API返回空结果: '{text}'")
+                return None
+                
+        except httpx.TimeoutException:
+            logger.error(f"Google翻译请求超时: '{text}'")
+            return None
+        except httpx.HTTPStatusError as e:
+            logger.error(f"Google翻译请求HTTP错误: {e.status_code} - '{text}'")
+            return None
+        except Exception as e:
+            logger.error(f"Google翻译请求异常: {e} - '{text}'")
+            return None
+    
+    async def _translate_with_baidu(self, text: str, target_language: str) -> Optional[str]:
+        """使用百度翻译API进行翻译"""
+        try:
+            if not self.baidu_app_id or not self.baidu_secret_key:
+                logger.error("百度翻译API配置不完整，缺少App ID或Secret Key")
+                return None
+                
+            if not self.session:
+                self.session = httpx.AsyncClient(timeout=10.0)
+            
+            # 生成随机数和签名
+            salt = str(int(time.time() * 1000))
+            sign = self._generate_baidu_sign(text, salt)
+            
+            # 构建请求参数
+            params = {
+                'q': text,
+                'from': 'auto',  # 自动检测源语言
+                'to': self.baidu_language_map.get(target_language, target_language),
+                'appid': self.baidu_app_id,
+                'salt': salt,
+                'sign': sign
+            }
+            
+            # 发送请求
+            response = await self.session.get(self.baidu_base_url, params=params)
+            response.raise_for_status()
+            
+            # 解析响应
+            result = response.json()
+            if result.get('error_code'):
+                logger.error(f"百度翻译API错误: {result.get('error_msg', '未知错误')}")
+                return None
+                
+            if result.get('trans_result'):
+                translated_text = result['trans_result'][0]['dst']
+                if translated_text and translated_text.strip():
+                    return translated_text.strip()
+                else:
+                    logger.warning(f"百度翻译结果为空: '{text}'")
+                    return None
+            else:
+                logger.warning(f"百度翻译API返回空结果: '{text}'")
+                return None
+                
+        except httpx.TimeoutException:
+            logger.error(f"百度翻译请求超时: '{text}'")
+            return None
+        except httpx.HTTPStatusError as e:
+            logger.error(f"百度翻译请求HTTP错误: {e.status_code} - '{text}'")
+            return None
+        except Exception as e:
+            logger.error(f"百度翻译请求异常: {e} - '{text}'")
+            return None
+
     async def translate_text(self, text: str, target_language: str) -> Optional[str]:
         """
         将文本翻译为指定语言
@@ -86,53 +216,17 @@ class TranslationService:
         if source_language == target_language:
             return text
             
-        try:
-            if not self.session:
-                self.session = httpx.AsyncClient(timeout=10.0)
-            
-            # 构建请求参数
-            params = {
-                'client': 'gtx',
-                'sl': 'auto',  # 自动检测源语言
-                'tl': target_language,  # 目标语言
-                'dt': 't',
-                'q': text
-            }
-            
-            # 发送请求
-            response = await self.session.get(self.base_url, params=params)
-            response.raise_for_status()
-            
-            # 解析响应
-            result = response.json()
-            if result and len(result) > 0 and result[0]:
-                # 提取翻译结果
-                translated_parts = []
-                for item in result[0]:
-                    if item and len(item) > 0:
-                        translated_parts.append(item[0])
-                
-                translated_text = ''.join(translated_parts)
-                
-                # 验证翻译结果
-                if translated_text and translated_text.strip():
-                    logger.debug(f"翻译成功: '{text}' -> '{translated_text}' ({source_language} -> {target_language})")
-                    return translated_text.strip()
-                else:
-                    logger.warning(f"翻译结果为空: '{text}'")
-                    return None
-            else:
-                logger.warning(f"翻译API返回空结果: '{text}'")
-                return None
-                
-        except httpx.TimeoutException:
-            logger.error(f"翻译请求超时: '{text}'")
-            return None
-        except httpx.HTTPStatusError as e:
-            logger.error(f"翻译请求HTTP错误: {e.status_code} - '{text}'")
-            return None
-        except Exception as e:
-            logger.error(f"翻译请求异常: {e} - '{text}'")
+        # 根据配置的翻译提供商进行翻译
+        if self.provider == "baidu":
+            translated_text = await self._translate_with_baidu(text, target_language)
+        else:  # 默认使用Google翻译
+            translated_text = await self._translate_with_google(text, target_language)
+        
+        if translated_text:
+            logger.debug(f"翻译成功 ({self.provider}): '{text}' -> '{translated_text}' ({source_language} -> {target_language})")
+            return translated_text
+        else:
+            logger.warning(f"翻译失败 ({self.provider}): '{text}'")
             return None
     
     async def translate_to_chinese(self, text: str) -> Optional[str]:
@@ -180,21 +274,43 @@ class TranslationService:
 _translation_service = None
 
 
-async def get_translation_service() -> TranslationService:
+async def get_translation_service(config_manager=None) -> TranslationService:
     """获取翻译服务实例"""
     global _translation_service
-    if _translation_service is None:
+    
+    if config_manager:
+        # 从配置中获取翻译设置
+        user_config = config_manager.load_user_config()
+        provider = user_config.get("translation_provider", "google")
+        baidu_app_id = user_config.get("baidu_translation_app_id", "")
+        baidu_secret_key = user_config.get("baidu_translation_secret_key", "")
+        
+        # 检查是否需要重新创建实例
+        if (_translation_service is None or 
+            _translation_service.provider != provider or
+            _translation_service.baidu_app_id != baidu_app_id or
+            _translation_service.baidu_secret_key != baidu_secret_key):
+            
+            _translation_service = TranslationService(
+                provider=provider,
+                baidu_app_id=baidu_app_id,
+                baidu_secret_key=baidu_secret_key
+            )
+    elif _translation_service is None:
+        # 默认使用Google翻译
         _translation_service = TranslationService()
+    
     return _translation_service
 
 
-async def translate_live_title(live_title: str, app_language_code: str = 'zh_CN') -> str:
+async def translate_live_title(live_title: str, app_language_code: str = 'zh_CN', config_manager=None) -> str:
     """
     翻译直播标题的便捷函数（支持国际化）
     
     Args:
         live_title: 直播标题
         app_language_code: 程序语言代码
+        config_manager: 配置管理器，用于获取翻译设置
         
     Returns:
         翻译后的标题
@@ -203,9 +319,10 @@ async def translate_live_title(live_title: str, app_language_code: str = 'zh_CN'
         return live_title
         
     try:
-        async with TranslationService() as service:
-            result = await service.translate_live_title(live_title, app_language_code)
-            return result if result else live_title
+        # 获取翻译服务实例
+        service = await get_translation_service(config_manager)
+        result = await service.translate_live_title(live_title, app_language_code)
+        return result if result else live_title
     except Exception as e:
         logger.error(f"翻译直播标题失败: {e}")
         return live_title
