@@ -218,7 +218,13 @@
     "thumbnail_switch_tip_off": "Click to enable thumbnail for this room",
     "thumbnail_switch_tip_global": "Use global thumbnail setting",
     "thumbnail_enabled_for_room": "Thumbnail enabled for this room",
-    "thumbnail_disabled_for_room": "Thumbnail disabled for this room"
+    "thumbnail_disabled_for_room": "Thumbnail disabled for this room",
+    "translated_title": "Translated Title",
+    "translation_switch_tip_global": "Translation Switch (Global)",
+    "translation_switch_tip_on": "Translation Enabled",
+    "translation_switch_tip_off": "Translation Disabled",
+    "translation_enabled_for_room": "Translation enabled for this room",
+    "translation_disabled_for_room": "Translation disabled for this room"
   },
   "settings_page": {
     "recording_settings": "Recording Settings",
@@ -414,6 +420,8 @@
     "update_interval_120s": "120 seconds",
     "update_interval_180s": "180 seconds",
     "update_interval_300s": "300 seconds",
+    "enable_title_translation": "Enable Live Title Translation",
+    "enable_title_translation_tip": "Automatically translate live titles based on app language: Chinese titles in Chinese environment, English titles in English environment",
     "verify_cookie": "Verify Cookie",
     "bilibili_cookie_empty": "Please get Bilibili Cookie first",
     "bilibili_verify_cookie_failed": "Verify Cookie Failed",

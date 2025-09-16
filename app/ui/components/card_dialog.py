@@ -28,6 +28,7 @@ class CardDialog(ft.AlertDialog):
         anchor_name = recording.streamer_name
         live_link = recording.url
         live_title = recording.live_title or self._["none"]
+        translated_title = recording.translated_title or self._["none"]
         record_format = recording.record_format
         quality_info = self._[recording.quality]
         use_proxy = self._["yes"] if recording.use_proxy else self._["no"]
@@ -60,6 +61,7 @@ class CardDialog(ft.AlertDialog):
                 ft.Text(f"{self._['anchor_name']}: {anchor_name}", size=14, selectable=True),
                 ft.Text(f"{self._['live_link']}: {live_link}", size=14, selectable=True),
                 ft.Text(f"{self._['live_title']}: {live_title}", size=14, selectable=True),
+                ft.Text(f"{self._['translated_title']}: {translated_title}", size=14, selectable=True),
                 ft.Text(f"{self._['record_format']}: {record_format}", size=14),
                 ft.Text(f"{self._['record_quality']}: {quality_info}", size=14),
                 ft.Text(f"{self._['use_proxy']}: {use_proxy}", size=14),

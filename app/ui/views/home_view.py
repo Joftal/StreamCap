@@ -1020,7 +1020,8 @@ class HomePage(PageBase):
                     recording_dir=recording_info["recording_dir"],
                     enabled_message_push=recording_info["enabled_message_push"],
                     record_mode=recording_info.get("record_mode", "auto"),
-                    remark=recording_info.get("remark")
+                    remark=recording_info.get("remark"),
+                    translation_enabled=recording_info.get("translation_enabled")
                 )
             else:
                 recording = Recording(
@@ -1038,7 +1039,8 @@ class HomePage(PageBase):
                     recording_dir=None,
                     enabled_message_push=True,
                     record_mode=recording_info.get("record_mode", user_config.get("record_mode", "auto")),
-                    remark=recording_info.get("remark")
+                    remark=recording_info.get("remark"),
+                    translation_enabled=recording_info.get("translation_enabled")
                 )
             recording.live_title = live_title
             if title:
@@ -1046,6 +1048,11 @@ class HomePage(PageBase):
             if display_title:
                 recording.display_title = display_title
             recording.loop_time_seconds = int(user_config.get("loop_time_seconds", 300))
+            
+            # 处理翻译逻辑
+            if live_title:
+                await self.app.record_manager._handle_title_translation(recording)
+            
             await self.app.record_manager.add_recording(recording)
             new_recordings.append(recording)
 

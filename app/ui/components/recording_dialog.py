@@ -22,7 +22,7 @@ class RecordingDialog:
 
     def load(self):
         language = self.app.language_manager.language
-        for key in ("recording_dialog", "home_page", "base", "video_quality"):
+        for key in ("recording_dialog", "home_page", "base", "video_quality", "settings_page"):
             self._.update(language.get(key, {}))
 
     async def show_dialog(self):
@@ -266,6 +266,16 @@ class RecordingDialog:
             hint_text=hint_text_dict.get(self.app.language_code, hint_text_dict["zh_CN"]),
         )
 
+        # 翻译控制开关
+        global_translation_enabled = user_config.get("enable_title_translation", False)
+        translation_enabled = initial_values.get("translation_enabled", global_translation_enabled)
+        
+        translation_switch = ft.Switch(
+            label=self._["enable_title_translation"],
+            value=translation_enabled,
+            tooltip=self._["enable_title_translation_tip"],
+        )
+
         # 备注输入框
         remark_field = ft.TextField(
             label=self._["remark"],
@@ -299,6 +309,7 @@ class RecordingDialog:
                                 schedule_and_monitor_row,
                                 monitor_hours_input,
                                 message_push_dropdown,
+                                translation_switch,  # 新增翻译控制开关
                                 remark_field  # 新增备注输入框
                             ],
                             tight=True,
@@ -454,6 +465,7 @@ class RecordingDialog:
                             "enabled_message_push": message_push_dropdown.value == "true",
                             "record_mode": record_mode_dropdown.value,
                             "live_title": real_title,
+                            "translation_enabled": translation_switch.value,  # 新增翻译开关值
                             "remark": remark_field.value.strip() if remark_field.value and remark_field.value.strip() else None  # 修改备注处理逻辑
                         }
                     ]
@@ -537,7 +549,8 @@ class RecordingDialog:
                                 "quality_info": self._[VideoQuality.OD],
                                 "title": title,
                                 "display_title": display_title,
-                                "record_mode": self.app.settings.user_config.get("record_mode", "auto")
+                                "record_mode": self.app.settings.user_config.get("record_mode", "auto"),
+                                "translation_enabled": False  # 批量新增默认不启用翻译
                             }
                             recordings_info.append(recording_info)
 

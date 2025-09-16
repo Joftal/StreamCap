@@ -447,6 +447,15 @@ class SettingsPage(PageBase):
                             ),
                         ),
                         thumbnail_interval_row,
+                        self.create_setting_row(
+                            self._["enable_title_translation"],
+                            ft.Switch(
+                                value=self.get_config_value("enable_title_translation", False),
+                                on_change=self.on_change,
+                                data="enable_title_translation",
+                                tooltip=self._["enable_title_translation_tip"],
+                            ),
+                        ),
                     ],
                 ),
                 self.create_setting_group(

@@ -65,5 +65,6 @@
     "window_height": null,
     "log_retention_days": 7,
     "auto_clean_logs": false,
-    "show_recording_speed": false
+    "show_recording_speed": false,
+    "enable_title_translation": false
 }

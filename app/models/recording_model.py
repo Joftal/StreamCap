@@ -22,7 +22,8 @@ class Recording:
         record_format: str = None,
         record_mode="auto",
         remark: str = None,  # 新增备注参数
-        thumbnail_enabled: bool = None  # 新增单个房间缩略图开关
+        thumbnail_enabled: bool = None,  # 新增单个房间缩略图开关
+        translation_enabled: bool = None  # 新增单个房间翻译开关
     ):
         """
         Initialize a recording object.
@@ -44,6 +45,7 @@ class Recording:
         :param record_mode: Recording mode, either 'auto' or 'manual'.
         :param remark: Remark for the recording task, limited to 20 Chinese characters.
         :param thumbnail_enabled: Whether to enable thumbnail for this specific room (None means use global setting).
+        :param translation_enabled: Whether to enable translation for this specific room (None means use global setting).
         """
 
         self.rec_id = rec_id
@@ -76,6 +78,7 @@ class Recording:
         self.is_checking = False
         self.status_info = None
         self.live_title = None
+        self.translated_title = None  # 翻译后的标题
         self.detection_time = None
         self.loop_time_seconds = None
         self.use_proxy = None
@@ -90,6 +93,9 @@ class Recording:
         
         # 单个房间缩略图开关（None表示使用全局设置）
         self.thumbnail_enabled = thumbnail_enabled
+        
+        # 单个房间翻译开关（None表示使用全局设置）
+        self.translation_enabled = translation_enabled
 
     def to_dict(self):
         """Convert the Recording instance to a dictionary for saving."""
@@ -111,6 +117,7 @@ class Recording:
             "record_mode": self.record_mode,
             "remark": self.remark,  # 添加备注到保存数据中
             "thumbnail_enabled": self.thumbnail_enabled,  # 添加单个房间缩略图开关到保存数据中
+            "translation_enabled": self.translation_enabled,  # 添加单个房间翻译开关到保存数据中
         }
 
     @classmethod
@@ -134,6 +141,7 @@ class Recording:
             data.get("record_mode", "auto"),
             data.get("remark"),  # 从数据中读取备注
             data.get("thumbnail_enabled"),  # 从数据中读取单个房间缩略图开关
+            data.get("translation_enabled"),  # 从数据中读取单个房间翻译开关
         )
         recording.title = data.get("title", recording.title)
         recording.display_title = data.get("display_title", recording.title)
@@ -220,3 +228,19 @@ class Recording:
             return self.thumbnail_enabled
         # 否则使用全局设置
         return global_thumbnail_enabled
+    
+    def is_translation_enabled(self, global_translation_enabled: bool) -> bool:
+        """
+        判断是否应该启用翻译
+        
+        Args:
+            global_translation_enabled: 全局翻译开关状态
+            
+        Returns:
+            bool: 是否应该启用翻译
+        """
+        # 如果单个房间有明确设置，使用单个房间设置
+        if self.translation_enabled is not None:
+            return self.translation_enabled
+        # 否则使用全局设置
+        return global_translation_enabled

@@ -226,7 +226,13 @@
     "thumbnail_switch_tip_off": "点击开启该房间缩略图",
     "thumbnail_switch_tip_global": "使用全局缩略图设置",
     "thumbnail_enabled_for_room": "该房间缩略图已开启",
-    "thumbnail_disabled_for_room": "该房间缩略图已关闭"
+    "thumbnail_disabled_for_room": "该房间缩略图已关闭",
+    "translated_title": "翻译标题",
+    "translation_switch_tip_global": "翻译开关（全局）",
+    "translation_switch_tip_on": "翻译已开启",
+    "translation_switch_tip_off": "翻译已关闭",
+    "translation_enabled_for_room": "该房间翻译已开启",
+    "translation_disabled_for_room": "该房间翻译已关闭"
   },
   "settings_page": {
     "recording_settings": "录制设置",
@@ -427,6 +433,8 @@
     "update_interval_120s": "120秒",
     "update_interval_180s": "180秒",
     "update_interval_300s": "300秒",
+    "enable_title_translation": "启用直播标题翻译",
+    "enable_title_translation_tip": "根据程序语言自动翻译直播标题：中文环境翻译为中文，英文环境翻译为英文",
     "verify_cookie": "验证Cookie",
     "bilibili_cookie_empty": "请先获取B站Cookie",
     "bilibili_verify_cookie_failed": "验证Cookie失败",

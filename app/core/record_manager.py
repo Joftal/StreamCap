@@ -450,6 +450,9 @@ class RecordingManager:
                     recording.streamer_name = stream_info.anchor_name
                 recording.title = f"{recording.streamer_name} - {self._[recording.quality]}"
                 recording.display_title = f"[{self._['is_live']}] {recording.title}"
+                
+                # 处理翻译逻辑
+                await self._handle_title_translation(recording)
 
                 if getattr(recording, "record_mode", "auto") == "auto":
                     recording.status_info = RecordingStatus.PREPARING_RECORDING
@@ -820,6 +823,41 @@ class RecordingManager:
             
         except Exception as e:
             logger.error(f"发送磁盘空间不足通知时出错: {e}", exc_info=True)
+
+    async def _handle_title_translation(self, recording: Recording):
+        """处理直播标题翻译（支持国际化）"""
+        try:
+            if not recording.live_title:
+                return
+                
+            # 获取全局翻译设置
+            global_translation_enabled = self.settings.user_config.get("enable_title_translation", False)
+            
+            # 检查是否应该翻译
+            should_translate = recording.is_translation_enabled(global_translation_enabled)
+            
+            if should_translate:
+                # 导入翻译服务
+                from ..utils.translation_service import translate_live_title
+                
+                # 获取当前程序语言代码
+                app_language_code = self.settings.language_code
+                
+                # 翻译标题（根据程序语言选择目标语言）
+                translated = await translate_live_title(recording.live_title, app_language_code)
+                if translated and translated != recording.live_title:
+                    recording.translated_title = translated
+                    logger.info(f"翻译成功: '{recording.live_title}' -> '{translated}' (目标语言: {app_language_code})")
+                else:
+                    recording.translated_title = None
+                    logger.debug(f"翻译失败或不需要翻译: '{recording.live_title}' (目标语言: {app_language_code})")
+            else:
+                # 如果不需要翻译，清除翻译标题
+                recording.translated_title = None
+                
+        except Exception as e:
+            logger.error(f"处理直播标题翻译时发生错误: {e}")
+            recording.translated_title = None
 
     @staticmethod
     async def get_scheduled_time_range(scheduled_start_time, monitor_hours) -> str | None:

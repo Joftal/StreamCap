@@ -116,6 +116,17 @@ class RecordingCardManager:
             on_click=partial(self.thumbnail_switch_button_on_click, recording=recording),
         )
 
+        # 创建翻译开关按钮
+        translation_switch_button = ft.IconButton(
+            icon=ft.Icons.TRANSLATE_OUTLINED,
+            tooltip=self._["translation_switch_tip_global"],
+            on_click=partial(self.translation_switch_button_on_click, recording=recording),
+            style=ft.ButtonStyle(
+                color=ft.Colors.GREY_600,
+                overlay_color=ft.Colors.TRANSPARENT,
+            ),
+        )
+
         display_title = recording.title
         display_title_label = ft.Text(
             display_title, 
@@ -248,6 +259,8 @@ class RecordingCardManager:
         
         # 创建直播标题显示标签
         live_title_label = None
+        translated_title_label = None
+        
         if recording.live_title:
             live_title_label = ft.Container(
                 content=ft.Text(
@@ -263,6 +276,26 @@ class RecordingCardManager:
                 padding=ft.padding.only(left=8, right=8, top=2, bottom=2),
                 visible=True,
             )
+            
+            # 检查是否需要显示翻译标题
+            global_translation_enabled = self.app.settings.user_config.get("enable_title_translation", False)
+            should_show_translation = recording.is_translation_enabled(global_translation_enabled)
+            
+            if should_show_translation and recording.translated_title:
+                translated_title_label = ft.Container(
+                    content=ft.Text(
+                        f"翻译标题：{recording.translated_title}",
+                        size=12,
+                        color=ft.colors.WHITE,
+                        max_lines=1,
+                        no_wrap=True,
+                        overflow=ft.TextOverflow.ELLIPSIS,
+                    ),
+                    bgcolor=ft.colors.GREEN_700,
+                    border_radius=5,
+                    padding=ft.padding.only(left=8, right=8, top=2, bottom=2),
+                    visible=True,
+                )
 
         # 创建右侧内容容器
         content_column_children = [
@@ -272,6 +305,8 @@ class RecordingCardManager:
         ]
         if live_title_label:
             content_column_children.append(live_title_label)
+        if translated_title_label:
+            content_column_children.append(translated_title_label)
         if remark_label:
             content_column_children.append(remark_label)
         content_column_children.append(
@@ -284,6 +319,7 @@ class RecordingCardManager:
                     get_stream_button,
                     play_button,
                     thumbnail_switch_button,
+                    translation_switch_button,
                     edit_button,
                     delete_button,
                     monitor_button
@@ -323,6 +359,7 @@ class RecordingCardManager:
             "card": card,
             "display_title_label": display_title_label,
             "live_title_label": live_title_label,
+            "translated_title_label": translated_title_label,
             "duration_label": duration_text_label,
             "speed_label": speed_text_label,
             "record_button": record_button,
@@ -336,6 +373,7 @@ class RecordingCardManager:
             "preview_button": preview_button,
             "delete_button": delete_button,
             "thumbnail_switch_button": thumbnail_switch_button,
+            "translation_switch_button": translation_switch_button,
             "platform_logo": platform_logo,
             "thumbnail_image": thumbnail_image,
             "overlay_logo": overlay_logo,
@@ -472,8 +510,45 @@ class RecordingCardManager:
                         content_column.controls[live_title_index].content.value.startswith("直播标题：")):
                         content_column.controls.pop(live_title_index)
 
-                # 更新备注显示（需要重新计算索引，因为可能插入了直播标题）
+                # 更新翻译标题显示
+                translated_title_index = 4 if recording.live_title else 3
+                global_translation_enabled = self.app.settings.user_config.get("enable_title_translation", False)
+                should_show_translation = recording.is_translation_enabled(global_translation_enabled)
+                
+                if should_show_translation and recording.translated_title:
+                    new_translated_title_container = ft.Container(
+                        content=ft.Text(
+                            f"翻译标题：{recording.translated_title}",
+                            size=12,
+                            color=ft.colors.WHITE,
+                            max_lines=1,
+                            no_wrap=True,
+                            overflow=ft.TextOverflow.ELLIPSIS,
+                        ),
+                        bgcolor=ft.colors.GREEN_700,
+                        border_radius=5,
+                        padding=ft.padding.only(left=8, right=8, top=2, bottom=2),
+                        visible=True,
+                    )
+                    # 如果已经有翻译标题控件，更新它；否则添加新的翻译标题控件
+                    if len(content_column.controls) > translated_title_index and isinstance(content_column.controls[translated_title_index], ft.Container):
+                        content_column.controls[translated_title_index] = new_translated_title_container
+                    else:
+                        content_column.controls.insert(translated_title_index, new_translated_title_container)
+                else:
+                    # 如果不显示翻译标题，移除翻译标题控件（如果存在）
+                    if (len(content_column.controls) > translated_title_index and 
+                        isinstance(content_column.controls[translated_title_index], ft.Container) and
+                        hasattr(content_column.controls[translated_title_index], 'content') and
+                        hasattr(content_column.controls[translated_title_index].content, 'value') and
+                        content_column.controls[translated_title_index].content.value and
+                        content_column.controls[translated_title_index].content.value.startswith("翻译标题：")):
+                        content_column.controls.pop(translated_title_index)
+
+                # 更新备注显示（需要重新计算索引，因为可能插入了直播标题和翻译标题）
                 remark_index = 4 if recording.live_title else 3
+                if recording.live_title and should_show_translation and recording.translated_title:
+                    remark_index = 5
                 if recording.remark:
                     remark_container = ft.Container(
                         content=ft.Text(
@@ -590,6 +665,11 @@ class RecordingCardManager:
             # 更新缩略图开关按钮状态
             if recording_card.get("thumbnail_switch_button"):
                 await self._update_thumbnail_switch_button(recording, recording.is_thumbnail_enabled(show_live_thumbnail))
+
+            # 更新翻译开关按钮状态
+            if recording_card.get("translation_switch_button"):
+                global_translation_enabled = self.app.settings.user_config.get("enable_title_translation", False)
+                await self._update_translation_switch_button(recording, recording.is_translation_enabled(global_translation_enabled))
 
             if recording_card["card"] and recording_card["card"].content:
                 recording_card["card"].content.bgcolor = self.get_card_background_color(recording)
@@ -727,6 +807,9 @@ class RecordingCardManager:
                     recording.streamer_name = getattr(stream_info, "anchor_name", recording.streamer_name)
                     recording.title = f"{recording.streamer_name} - {self._[recording.quality]}"
                     recording.display_title = f"[{self._['is_live']}] {recording.title}"
+                    
+                    # 处理翻译逻辑
+                    await self._translate_live_title(recording)
                     
                     # 修复手动录制模式下的消息推送逻辑
                     if recording.record_mode == "manual":
@@ -1245,3 +1328,141 @@ class RecordingCardManager:
             
         except Exception as e:
             logger.error(f"更新缩略图开关按钮状态时发生错误: {e}")
+
+    async def translation_switch_button_on_click(self, _, recording: Recording):
+        """处理翻译开关按钮点击事件"""
+        try:
+            # 获取全局翻译设置
+            global_translation_enabled = self.app.settings.user_config.get("enable_title_translation", False)
+            
+            # 获取当前房间的翻译状态
+            current_translation_enabled = recording.is_translation_enabled(global_translation_enabled)
+            
+            # 切换房间的翻译设置
+            if recording.translation_enabled is None:
+                # 如果当前使用全局设置，则设置为与全局设置相反
+                recording.translation_enabled = not global_translation_enabled
+            else:
+                # 如果当前有独立设置，则切换该设置
+                recording.translation_enabled = not recording.translation_enabled
+            
+            # 获取新的翻译状态
+            new_translation_enabled = recording.is_translation_enabled(global_translation_enabled)
+            
+            # 更新按钮状态和提示
+            await self._update_translation_switch_button(recording, new_translation_enabled)
+            
+            # 根据新的设置处理翻译
+            if new_translation_enabled and recording.live_title:
+                # 如果开启翻译且有直播标题，尝试翻译
+                await self._translate_live_title(recording)
+            else:
+                # 关闭翻译时，清除翻译标题
+                recording.translated_title = None
+            
+            # 更新卡片显示
+            await self.update_card(recording)
+            
+            # 保存录制配置
+            self.app.page.run_task(self.app.record_manager.persist_recordings)
+            
+            # 显示提示信息
+            if new_translation_enabled:
+                await self.app.snack_bar.show_snack_bar(self._["translation_enabled_for_room"], ft.Colors.GREEN)
+            else:
+                await self.app.snack_bar.show_snack_bar(self._["translation_disabled_for_room"], ft.Colors.BLUE)
+            
+        except Exception as e:
+            logger.error(f"切换房间翻译设置时发生错误: {e}")
+            await self.app.snack_bar.show_snack_bar(f"切换翻译设置失败: {e}", ft.Colors.RED)
+    
+    async def _update_translation_switch_button(self, recording: Recording, translation_enabled: bool):
+        """更新翻译开关按钮的状态"""
+        try:
+            rec_id = recording.rec_id
+            card_data = self.cards_obj.get(rec_id)
+            
+            if not card_data:
+                return
+            
+            translation_switch_button = card_data.get("translation_switch_button")
+            if not translation_switch_button:
+                return
+            
+            # 获取全局翻译设置
+            global_translation_enabled = self.app.settings.user_config.get("enable_title_translation", False)
+            
+            # 更新按钮图标、颜色和提示
+            if recording.translation_enabled is None:
+                # 使用全局设置
+                if global_translation_enabled:
+                    translation_switch_button.icon = ft.Icons.TRANSLATE
+                    translation_switch_button.tooltip = self._["translation_switch_tip_on"]
+                    translation_switch_button.style = ft.ButtonStyle(
+                        color=ft.Colors.GREEN_600,
+                        overlay_color=ft.Colors.GREEN_50,
+                    )
+                else:
+                    translation_switch_button.icon = ft.Icons.TRANSLATE_OUTLINED
+                    translation_switch_button.tooltip = self._["translation_switch_tip_off"]
+                    translation_switch_button.style = ft.ButtonStyle(
+                        color=ft.Colors.GREY_600,
+                        overlay_color=ft.Colors.TRANSPARENT,
+                    )
+            else:
+                # 使用独立设置
+                if recording.translation_enabled:
+                    translation_switch_button.icon = ft.Icons.TRANSLATE
+                    translation_switch_button.tooltip = self._["translation_switch_tip_on"]
+                    translation_switch_button.style = ft.ButtonStyle(
+                        color=ft.Colors.GREEN_600,
+                        overlay_color=ft.Colors.GREEN_50,
+                    )
+                else:
+                    translation_switch_button.icon = ft.Icons.TRANSLATE_OUTLINED
+                    translation_switch_button.tooltip = self._["translation_switch_tip_off"]
+                    translation_switch_button.style = ft.ButtonStyle(
+                        color=ft.Colors.GREY_600,
+                        overlay_color=ft.Colors.TRANSPARENT,
+                    )
+            
+            # 更新UI
+            translation_switch_button.update()
+            
+        except Exception as e:
+            logger.error(f"更新翻译开关按钮状态时发生错误: {e}")
+
+    async def _translate_live_title(self, recording: Recording):
+        """翻译直播标题（支持国际化）"""
+        try:
+            if not recording.live_title:
+                return
+                
+            # 获取全局翻译设置
+            global_translation_enabled = self.app.settings.user_config.get("enable_title_translation", False)
+            
+            # 检查是否应该翻译
+            should_translate = recording.is_translation_enabled(global_translation_enabled)
+            
+            if should_translate:
+                # 导入翻译服务
+                from ...utils.translation_service import translate_live_title
+                
+                # 获取当前程序语言代码
+                app_language_code = self.app.settings.language_code
+                
+                # 翻译标题（根据程序语言选择目标语言）
+                translated = await translate_live_title(recording.live_title, app_language_code)
+                if translated and translated != recording.live_title:
+                    recording.translated_title = translated
+                    logger.info(f"翻译成功: '{recording.live_title}' -> '{translated}' (目标语言: {app_language_code})")
+                else:
+                    recording.translated_title = None
+                    logger.debug(f"翻译失败或不需要翻译: '{recording.live_title}' (目标语言: {app_language_code})")
+            else:
+                # 如果不需要翻译，清除翻译标题
+                recording.translated_title = None
+                
+        except Exception as e:
+            logger.error(f"翻译直播标题时发生错误: {e}")
+            recording.translated_title = None
