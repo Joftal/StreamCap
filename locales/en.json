@@ -550,7 +550,12 @@
   "app_close_handler": {
     "saving_recordings": "Saving {active_recordings_count} recordings, please wait...",
     "confirm_exit": "Confirm Exit",
-    "confirm_exit_content": "Are you sure you want to exit the program?"
+    "confirm_exit_content": "Are you sure you want to exit the program?",
+    "minimize_to_tray": "Minimize to Tray"
+  },
+  "system_tray": {
+    "show_window": "Show Window",
+    "exit": "Exit"
   },
   "login_page": {
     "login_title": "StreamCap Login",

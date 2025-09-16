@@ -17,6 +17,7 @@ from .core.update_checker import UpdateChecker
 from .process_manager import AsyncProcessManager
 from .ui.components.recording_card import RecordingCardManager
 from .ui.components.show_snackbar import ShowSnackBar
+from .ui.components.system_tray import SystemTrayManager
 from .ui.navigation.sidebar import LeftNavigationMenu, NavigationSidebar
 from .ui.views.about_view import AboutPage
 from .ui.views.home_view import HomePage
@@ -94,6 +95,9 @@ class App:
         # 初始化平台logo缓存管理器
         self.platform_logo_cache = PlatformLogoCache()
         
+        # 初始化系统托盘管理器（仅在非web模式下）
+        self.tray_manager = None
+        
         # 初始化缩略图管理器
         self.thumbnail_manager = ThumbnailManager(self)
         
@@ -115,6 +119,13 @@ class App:
         # 只有在非web模式下才启动内存清理任务
         if not self.is_web_mode:
             self.page.run_task(self._setup_periodic_cleanup)
+            
+            # 初始化系统托盘管理器（仅在非web模式下）
+            try:
+                self.tray_manager = SystemTrayManager(self)
+            except Exception as e:
+                logger.warning(f"系统托盘管理器初始化失败: {e}")
+                self.tray_manager = None
             
         self.page.run_task(self._validate_configs)
         self._pending_page_request = None  # 添加这行，用于存储待处理的页面请求
@@ -289,6 +300,10 @@ class App:
             if hasattr(self, 'platform_logo_cache'):
                 logger.info("保存平台logo缓存...")
                 self.platform_logo_cache.save_cache()
+            
+            # 清理系统托盘
+            if hasattr(self, 'tray_manager') and self.tray_manager:
+                self.tray_manager.cleanup()
                 
             await self.process_manager.cleanup()
             # 执行更完整的清理
