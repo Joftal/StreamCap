@@ -1090,6 +1090,8 @@ class HomePage(PageBase):
             if self.visible_cards:
                 self.current_page = self.total_pages
                 await self.update_page_display()
+                # 隐藏空结果提示
+                await self.hide_empty_results_tip()
             else:
                 self.recording_card_area.update()
 
@@ -1271,6 +1273,9 @@ class HomePage(PageBase):
             pagination_row.controls[3].disabled = True  # 下一页按钮
             pagination_row.controls[4].disabled = True  # 末页按钮
             self.pagination_controls.update()
+        
+        # 显示空结果提示
+        await self.handle_empty_results()
         
         self.content_area.controls[1] = self.create_filter_area()
         self.content_area.update()
