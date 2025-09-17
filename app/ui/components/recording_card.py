@@ -277,7 +277,7 @@ class RecordingCardManager:
                 height=30,
                 fit=ft.ImageFit.CONTAIN,
             ),
-            top=7,  # 距离顶部5px
+            top=8,  # 距离顶部5px
             left=0,  # 直接贴左边
             visible=False,
         )
