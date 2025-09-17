@@ -79,6 +79,7 @@ class Recording:
         self.status_info = None
         self.live_title = None
         self.translated_title = None  # 翻译后的标题
+        self.last_live_title = None  # 上次的直播标题，用于检测标题变化
         self.detection_time = None
         self.loop_time_seconds = None
         self.use_proxy = None
@@ -118,6 +119,9 @@ class Recording:
             "remark": self.remark,  # 添加备注到保存数据中
             "thumbnail_enabled": self.thumbnail_enabled,  # 添加单个房间缩略图开关到保存数据中
             "translation_enabled": self.translation_enabled,  # 添加单个房间翻译开关到保存数据中
+            "live_title": self.live_title,  # 添加直播标题到保存数据中
+            "translated_title": self.translated_title,  # 添加翻译标题到保存数据中
+            "last_live_title": self.last_live_title,  # 添加上次直播标题缓存到保存数据中
         }
 
     @classmethod
@@ -148,6 +152,12 @@ class Recording:
         recording.last_duration_str = data.get("last_duration")
         if recording.last_duration_str is not None:
             recording.last_duration = timedelta(seconds=float(recording.last_duration_str))
+        
+        # 从保存的数据中恢复标题相关字段
+        recording.live_title = data.get("live_title")
+        recording.translated_title = data.get("translated_title")
+        recording.last_live_title = data.get("last_live_title")
+        
         return recording
 
     def update_title(self, quality_info, prefix=None):

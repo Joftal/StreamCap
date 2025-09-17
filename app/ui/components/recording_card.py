@@ -110,17 +110,25 @@ class RecordingCardManager:
         )
 
         # 创建缩略图开关按钮
+        # 不在直播状态时禁用缩略图按钮
+        is_thumbnail_button_disabled = not (recording.monitor_status and (recording.is_live or recording.recording))
+        thumbnail_tooltip = self._["thumbnail_switch_tip_disabled"] if is_thumbnail_button_disabled else self._["thumbnail_switch_tip_global"]
         thumbnail_switch_button = ft.IconButton(
             icon=ft.Icons.PHOTO_LIBRARY,
-            tooltip=self._["thumbnail_switch_tip_global"],
+            tooltip=thumbnail_tooltip,
             on_click=partial(self.thumbnail_switch_button_on_click, recording=recording),
+            disabled=is_thumbnail_button_disabled,
         )
 
         # 创建翻译开关按钮
+        # 不在直播状态时禁用翻译按钮
+        is_translation_button_disabled = not (recording.monitor_status and (recording.is_live or recording.recording))
+        translation_tooltip = self._["translation_switch_tip_disabled"] if is_translation_button_disabled else self._["translation_switch_tip_global"]
         translation_switch_button = ft.IconButton(
             icon=ft.Icons.TRANSLATE_OUTLINED,
-            tooltip=self._["translation_switch_tip_global"],
+            tooltip=translation_tooltip,
             on_click=partial(self.translation_switch_button_on_click, recording=recording),
+            disabled=is_translation_button_disabled,
             style=ft.ButtonStyle(
                 color=ft.Colors.GREY_600,
                 overlay_color=ft.Colors.TRANSPARENT,
@@ -1248,6 +1256,10 @@ class RecordingCardManager:
     async def thumbnail_switch_button_on_click(self, _, recording: Recording):
         """处理缩略图开关按钮点击事件"""
         try:
+            # 检查是否在直播状态，如果不在直播状态则直接返回
+            if not (recording.monitor_status and (recording.is_live or recording.recording)):
+                return
+            
             # 获取全局缩略图设置
             global_thumbnail_enabled = self.app.settings.user_config.get("show_live_thumbnail", False)
             
@@ -1305,8 +1317,15 @@ class RecordingCardManager:
             # 获取全局缩略图设置
             global_thumbnail_enabled = self.app.settings.user_config.get("show_live_thumbnail", False)
             
+            # 设置按钮禁用状态：不在直播状态时禁用
+            is_thumbnail_button_disabled = not (recording.monitor_status and (recording.is_live or recording.recording))
+            thumbnail_switch_button.disabled = is_thumbnail_button_disabled
+            
             # 更新按钮图标和提示
-            if recording.thumbnail_enabled is None:
+            if is_thumbnail_button_disabled:
+                # 按钮被禁用时，显示禁用提示
+                thumbnail_switch_button.tooltip = self._["thumbnail_switch_tip_disabled"]
+            elif recording.thumbnail_enabled is None:
                 # 使用全局设置
                 if global_thumbnail_enabled:
                     thumbnail_switch_button.icon = ft.Icons.PHOTO_LIBRARY
@@ -1332,6 +1351,10 @@ class RecordingCardManager:
     async def translation_switch_button_on_click(self, _, recording: Recording):
         """处理翻译开关按钮点击事件"""
         try:
+            # 检查是否在直播状态，如果不在直播状态则直接返回
+            if not (recording.monitor_status and (recording.is_live or recording.recording)):
+                return
+            
             # 获取全局翻译设置
             global_translation_enabled = self.app.settings.user_config.get("enable_title_translation", False)
             
@@ -1392,8 +1415,15 @@ class RecordingCardManager:
             # 获取全局翻译设置
             global_translation_enabled = self.app.settings.user_config.get("enable_title_translation", False)
             
+            # 设置按钮禁用状态：不在直播状态时禁用
+            is_translation_button_disabled = not (recording.monitor_status and (recording.is_live or recording.recording))
+            translation_switch_button.disabled = is_translation_button_disabled
+            
             # 更新按钮图标、颜色和提示
-            if recording.translation_enabled is None:
+            if is_translation_button_disabled:
+                # 按钮被禁用时，显示禁用提示
+                translation_switch_button.tooltip = self._["translation_switch_tip_disabled"]
+            elif recording.translation_enabled is None:
                 # 使用全局设置
                 if global_translation_enabled:
                     translation_switch_button.icon = ft.Icons.TRANSLATE
@@ -1437,6 +1467,11 @@ class RecordingCardManager:
         try:
             if not recording.live_title:
                 return
+            
+            # 检查标题是否有变化，如果没有变化则不需要重新翻译
+            if recording.live_title == recording.last_live_title:
+                # 标题没有变化，不需要重新翻译
+                return
                 
             # 获取全局翻译设置
             global_translation_enabled = self.app.settings.user_config.get("enable_title_translation", False)
@@ -1462,6 +1497,9 @@ class RecordingCardManager:
             else:
                 # 如果不需要翻译，清除翻译标题
                 recording.translated_title = None
+            
+            # 更新上次的直播标题缓存
+            recording.last_live_title = recording.live_title
                 
         except Exception as e:
             logger.error(f"翻译直播标题时发生错误: {e}")

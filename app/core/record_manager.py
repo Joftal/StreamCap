@@ -350,6 +350,8 @@ class RecordingManager:
             # 如果直播状态从离线变为在线，重置end_notification_sent标志
             if not was_live and recording.is_live:
                 recording.end_notification_sent = False
+                # 重置直播标题缓存，确保新开播时能重新翻译
+                recording.last_live_title = None
                 logger.info(f"主播开播，重置关播通知状态: {recording.streamer_name}")
                 
                 # 如果缩略图功能已开启，启动缩略图捕获任务
@@ -364,6 +366,8 @@ class RecordingManager:
             # 如果直播状态从在线变为离线，重置通知状态并更新UI
             if was_live and not recording.is_live:
                 recording.notification_sent = False
+                # 重置直播标题缓存，确保下次开播时能重新翻译
+                recording.last_live_title = None
                 logger.info(f"直播已结束，重置通知状态: {recording.streamer_name}")
                 
                 # 如果启用了缩略图功能，停止缩略图捕获任务
@@ -829,6 +833,11 @@ class RecordingManager:
         try:
             if not recording.live_title:
                 return
+            
+            # 检查标题是否有变化，如果没有变化则不需要重新翻译
+            if recording.live_title == recording.last_live_title:
+                # 标题没有变化，不需要重新翻译
+                return
                 
             # 获取全局翻译设置
             global_translation_enabled = self.settings.user_config.get("enable_title_translation", False)
@@ -854,6 +863,9 @@ class RecordingManager:
             else:
                 # 如果不需要翻译，清除翻译标题
                 recording.translated_title = None
+            
+            # 更新上次的直播标题缓存
+            recording.last_live_title = recording.live_title
                 
         except Exception as e:
             logger.error(f"处理直播标题翻译时发生错误: {e}")
