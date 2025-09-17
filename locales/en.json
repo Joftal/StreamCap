@@ -226,7 +226,9 @@
     "translation_switch_tip_off": "Translation Disabled",
     "translation_switch_tip_disabled": "Not live, cannot use translation",
     "translation_enabled_for_room": "Translation enabled for this room",
-    "translation_disabled_for_room": "Translation disabled for this room"
+    "translation_disabled_for_room": "Translation disabled for this room",
+    "live_title_label": "Live Title: ",
+    "translated_title_label": "Translated Title: "
   },
   "settings_page": {
     "recording_settings": "Recording Settings",

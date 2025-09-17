@@ -197,6 +197,24 @@ class SettingsPage(PageBase):
 
         if key == "loop_time_seconds":
             self.app.record_manager.initialize_dynamic_state()
+            
+        # 处理全局翻译设置变化
+        if key == "enable_title_translation":
+            # 当全局翻译设置改变时，检查所有录制项的翻译状态
+            for recording in self.app.record_manager.recordings:
+                if recording.live_title:
+                    # 如果当前应该翻译，检查是否有缓存的翻译结果
+                    if recording.is_translation_enabled(self.user_config[key]):
+                        if recording.cached_translated_title and recording.live_title == recording.last_live_title:
+                            # 如果有缓存且标题没有变化，直接使用缓存的翻译结果
+                            recording.translated_title = recording.cached_translated_title
+                        else:
+                            # 如果没有缓存或标题有变化，进行新的翻译
+                            self.page.run_task(self.app.record_manager._handle_title_translation, recording)
+                    else:
+                        # 如果不需要翻译，清除翻译标题但保留缓存
+                        recording.translated_title = None
+            
         self.page.run_task(self.delay_handler.start_task_timer, self.save_user_config_after_delay, None)
         self.has_unsaved_changes['user_config'] = True
 

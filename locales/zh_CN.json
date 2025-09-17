@@ -234,7 +234,9 @@
     "translation_switch_tip_off": "翻译已关闭",
     "translation_switch_tip_disabled": "未开播，无法使用翻译",
     "translation_enabled_for_room": "该房间翻译已开启",
-    "translation_disabled_for_room": "该房间翻译已关闭"
+    "translation_disabled_for_room": "该房间翻译已关闭",
+    "live_title_label": "直播标题：",
+    "translated_title_label": "翻译标题："
   },
   "settings_page": {
     "recording_settings": "录制设置",

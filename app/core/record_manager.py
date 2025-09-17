@@ -856,6 +856,7 @@ class RecordingManager:
                 translated = await translate_live_title(recording.live_title, app_language_code, self.app.config_manager)
                 if translated and translated != recording.live_title:
                     recording.translated_title = translated
+                    recording.cached_translated_title = translated  # 保存到缓存
                     #logger.info(f"翻译成功: '{recording.live_title}' -> '{translated}' (目标语言: {app_language_code})")
                 else:
                     recording.translated_title = None

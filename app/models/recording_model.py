@@ -80,6 +80,7 @@ class Recording:
         self.live_title = None
         self.translated_title = None  # 翻译后的标题
         self.last_live_title = None  # 上次的直播标题，用于检测标题变化
+        self.cached_translated_title = None  # 缓存的翻译标题，用于翻译开关重启时恢复
         self.detection_time = None
         self.loop_time_seconds = None
         self.use_proxy = None
@@ -122,6 +123,7 @@ class Recording:
             "live_title": self.live_title,  # 添加直播标题到保存数据中
             "translated_title": self.translated_title,  # 添加翻译标题到保存数据中
             "last_live_title": self.last_live_title,  # 添加上次直播标题缓存到保存数据中
+            "cached_translated_title": self.cached_translated_title,  # 添加缓存的翻译标题到保存数据中
         }
 
     @classmethod
@@ -157,6 +159,7 @@ class Recording:
         recording.live_title = data.get("live_title")
         recording.translated_title = data.get("translated_title")
         recording.last_live_title = data.get("last_live_title")
+        recording.cached_translated_title = data.get("cached_translated_title")
         
         return recording
 

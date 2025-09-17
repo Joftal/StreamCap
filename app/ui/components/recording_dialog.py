@@ -272,6 +272,7 @@ class RecordingDialog:
 
         # 翻译控制开关
         global_translation_enabled = user_config.get("enable_title_translation", False)
+        # 编辑现有房间时，使用房间的独立设置；新增房间时，使用全局设置
         translation_enabled = initial_values.get("translation_enabled", global_translation_enabled)
         
         translation_switch = ft.Switch(

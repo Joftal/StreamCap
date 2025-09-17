@@ -112,9 +112,23 @@ class RecordingCardManager:
         # 创建缩略图开关按钮
         # 不在直播状态时禁用缩略图按钮
         is_thumbnail_button_disabled = not (recording.monitor_status and (recording.is_live or recording.recording))
-        thumbnail_tooltip = self._["thumbnail_switch_tip_disabled"] if is_thumbnail_button_disabled else self._["thumbnail_switch_tip_global"]
+        global_thumbnail_enabled = self.app.settings.user_config.get("show_live_thumbnail", False)
+        
+        # 根据全局设置和房间设置确定初始状态
+        if is_thumbnail_button_disabled:
+            thumbnail_tooltip = self._["thumbnail_switch_tip_disabled"]
+            thumbnail_icon = ft.Icons.PHOTO_LIBRARY_OUTLINED
+        else:
+            thumbnail_enabled = recording.is_thumbnail_enabled(global_thumbnail_enabled)
+            if thumbnail_enabled:
+                thumbnail_tooltip = self._["thumbnail_switch_tip_on"]
+                thumbnail_icon = ft.Icons.PHOTO_LIBRARY
+            else:
+                thumbnail_tooltip = self._["thumbnail_switch_tip_off"]
+                thumbnail_icon = ft.Icons.PHOTO_LIBRARY_OUTLINED
+        
         thumbnail_switch_button = ft.IconButton(
-            icon=ft.Icons.PHOTO_LIBRARY,
+            icon=thumbnail_icon,
             tooltip=thumbnail_tooltip,
             on_click=partial(self.thumbnail_switch_button_on_click, recording=recording),
             disabled=is_thumbnail_button_disabled,
@@ -123,16 +137,39 @@ class RecordingCardManager:
         # 创建翻译开关按钮
         # 不在直播状态时禁用翻译按钮
         is_translation_button_disabled = not (recording.monitor_status and (recording.is_live or recording.recording))
-        translation_tooltip = self._["translation_switch_tip_disabled"] if is_translation_button_disabled else self._["translation_switch_tip_global"]
+        global_translation_enabled = self.app.settings.user_config.get("enable_title_translation", False)
+        
+        # 根据全局设置和房间设置确定初始状态
+        if is_translation_button_disabled:
+            translation_tooltip = self._["translation_switch_tip_disabled"]
+            translation_icon = ft.Icons.TRANSLATE_OUTLINED
+            translation_style = ft.ButtonStyle(
+                color=ft.Colors.GREY_600,
+                overlay_color=ft.Colors.TRANSPARENT,
+            )
+        else:
+            translation_enabled = recording.is_translation_enabled(global_translation_enabled)
+            if translation_enabled:
+                translation_tooltip = self._["translation_switch_tip_on"]
+                translation_icon = ft.Icons.TRANSLATE
+                translation_style = ft.ButtonStyle(
+                    color=ft.Colors.GREEN_600,
+                    overlay_color=ft.Colors.GREEN_50,
+                )
+            else:
+                translation_tooltip = self._["translation_switch_tip_off"]
+                translation_icon = ft.Icons.TRANSLATE_OUTLINED
+                translation_style = ft.ButtonStyle(
+                    color=ft.Colors.GREY_600,
+                    overlay_color=ft.Colors.TRANSPARENT,
+                )
+        
         translation_switch_button = ft.IconButton(
-            icon=ft.Icons.TRANSLATE_OUTLINED,
+            icon=translation_icon,
             tooltip=translation_tooltip,
             on_click=partial(self.translation_switch_button_on_click, recording=recording),
             disabled=is_translation_button_disabled,
-            style=ft.ButtonStyle(
-                color=ft.Colors.GREY_600,
-                overlay_color=ft.Colors.TRANSPARENT,
-            ),
+            style=translation_style,
         )
 
         display_title = recording.title
@@ -203,8 +240,8 @@ class RecordingCardManager:
         # 检查单个房间的缩略图设置
         should_show_thumbnail = recording.is_thumbnail_enabled(show_live_thumbnail)
         
-        # 根据是否有直播标题调整卡片高度
-        card_height = 140 if recording.live_title else 120
+        # 固定缩略图容器高度，避免动态调整导致logo位置问题
+        thumbnail_container_height = 140  # 固定高度
         
         # 如果开启了缩略图并且正在直播/录制，初始化为不可见（等待缩略图加载）
         platform_logo_visible = not (should_show_thumbnail and (recording.is_live or recording.recording))
@@ -227,7 +264,7 @@ class RecordingCardManager:
         thumbnail_image = ft.Image(
             src=None,
             width=230,
-            height=card_height,
+            height=thumbnail_container_height,
             fit=ft.ImageFit.CONTAIN,
             visible=False,
         )
@@ -240,7 +277,8 @@ class RecordingCardManager:
                 height=30,
                 fit=ft.ImageFit.CONTAIN,
             ),
-            margin=ft.margin.only(left=5, top=0),
+            top=7,  # 距离顶部5px
+            left=0,  # 直接贴左边
             visible=False,
         )
         
@@ -252,14 +290,14 @@ class RecordingCardManager:
                 overlay_logo,     # 叠加logo（当有缩略图时显示）
             ],
             width=230,
-            height=card_height,
+            height=thumbnail_container_height,
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,  # 添加剪裁行为，避免溢出
         )
         
         logo_container = ft.Container(
             content=logo_container_content,
             width=230,
-            height=card_height,
+            height=thumbnail_container_height,
             alignment=ft.alignment.center,
             padding=ft.padding.all(5),
             border_radius=ft.border_radius.all(5),
@@ -272,7 +310,7 @@ class RecordingCardManager:
         if recording.live_title:
             live_title_label = ft.Container(
                 content=ft.Text(
-                    f"直播标题：{recording.live_title}",
+                    f"{self._['live_title_label']}{recording.live_title}",
                     size=12,
                     color=ft.colors.WHITE,
                     max_lines=1,
@@ -292,7 +330,7 @@ class RecordingCardManager:
             if should_show_translation and recording.translated_title:
                 translated_title_label = ft.Container(
                     content=ft.Text(
-                        f"翻译标题：{recording.translated_title}",
+                        f"{self._['translated_title_label']}{recording.translated_title}",
                         size=12,
                         color=ft.colors.WHITE,
                         max_lines=1,
@@ -491,7 +529,7 @@ class RecordingCardManager:
                 if recording.live_title:
                     new_live_title_container = ft.Container(
                         content=ft.Text(
-                            f"直播标题：{recording.live_title}",
+                            f"{self._['live_title_label']}{recording.live_title}",
                             size=12,
                             color=ft.colors.WHITE,
                             max_lines=1,
@@ -515,7 +553,7 @@ class RecordingCardManager:
                         hasattr(content_column.controls[live_title_index], 'content') and
                         hasattr(content_column.controls[live_title_index].content, 'value') and
                         content_column.controls[live_title_index].content.value and
-                        content_column.controls[live_title_index].content.value.startswith("直播标题：")):
+                        content_column.controls[live_title_index].content.value.startswith(self._['live_title_label'])):
                         content_column.controls.pop(live_title_index)
 
                 # 更新翻译标题显示
@@ -526,7 +564,7 @@ class RecordingCardManager:
                 if should_show_translation and recording.translated_title:
                     new_translated_title_container = ft.Container(
                         content=ft.Text(
-                            f"翻译标题：{recording.translated_title}",
+                            f"{self._['translated_title_label']}{recording.translated_title}",
                             size=12,
                             color=ft.colors.WHITE,
                             max_lines=1,
@@ -550,7 +588,7 @@ class RecordingCardManager:
                         hasattr(content_column.controls[translated_title_index], 'content') and
                         hasattr(content_column.controls[translated_title_index].content, 'value') and
                         content_column.controls[translated_title_index].content.value and
-                        content_column.controls[translated_title_index].content.value.startswith("翻译标题：")):
+                        content_column.controls[translated_title_index].content.value.startswith(self._['translated_title_label'])):
                         content_column.controls.pop(translated_title_index)
 
                 # 更新备注显示（需要重新计算索引，因为可能插入了直播标题和翻译标题）
@@ -1363,8 +1401,8 @@ class RecordingCardManager:
             
             # 切换房间的翻译设置
             if recording.translation_enabled is None:
-                # 如果当前使用全局设置，则设置为与全局设置相反
-                recording.translation_enabled = not global_translation_enabled
+                # 如果当前使用全局设置，则设置为与当前状态相反
+                recording.translation_enabled = not current_translation_enabled
             else:
                 # 如果当前有独立设置，则切换该设置
                 recording.translation_enabled = not recording.translation_enabled
@@ -1377,10 +1415,15 @@ class RecordingCardManager:
             
             # 根据新的设置处理翻译
             if new_translation_enabled and recording.live_title:
-                # 如果开启翻译且有直播标题，尝试翻译
-                await self._translate_live_title(recording)
+                # 如果开启翻译且有直播标题，检查是否有缓存的翻译结果
+                if recording.cached_translated_title and recording.live_title == recording.last_live_title:
+                    # 如果有缓存且标题没有变化，直接使用缓存的翻译结果
+                    recording.translated_title = recording.cached_translated_title
+                else:
+                    # 如果没有缓存或标题有变化，进行新的翻译
+                    await self._translate_live_title(recording, force_translate=True)
             else:
-                # 关闭翻译时，清除翻译标题
+                # 关闭翻译时，清除翻译标题但保留缓存
                 recording.translated_title = None
             
             # 更新卡片显示
@@ -1462,14 +1505,14 @@ class RecordingCardManager:
         except Exception as e:
             logger.error(f"更新翻译开关按钮状态时发生错误: {e}")
 
-    async def _translate_live_title(self, recording: Recording):
+    async def _translate_live_title(self, recording: Recording, force_translate: bool = False):
         """翻译直播标题（支持国际化）"""
         try:
             if not recording.live_title:
                 return
             
-            # 检查标题是否有变化，如果没有变化则不需要重新翻译
-            if recording.live_title == recording.last_live_title:
+            # 检查标题是否有变化，如果没有变化则不需要重新翻译（除非强制翻译）
+            if not force_translate and recording.live_title == recording.last_live_title:
                 # 标题没有变化，不需要重新翻译
                 return
                 
@@ -1490,6 +1533,7 @@ class RecordingCardManager:
                 translated = await translate_live_title(recording.live_title, app_language_code, self.app.config_manager)
                 if translated and translated != recording.live_title:
                     recording.translated_title = translated
+                    recording.cached_translated_title = translated  # 保存到缓存
                     #logger.info(f"翻译成功: '{recording.live_title}' -> '{translated}' (目标语言: {app_language_code})")
                 else:
                     recording.translated_title = None
