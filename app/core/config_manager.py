@@ -30,6 +30,8 @@ class ConfigManager:
         self.init_accounts_config()
         self.init_recordings_config()
         self.init_web_auth_config()
+        # 修复缺失或新增的JSON配置项
+        self.fix_missing_config_keys()
 
     @staticmethod
     def _init_config(config_path, default_config=None):
@@ -167,3 +169,129 @@ class ConfigManager:
         user_config = self.load_user_config()
         default_config = self.load_default_config()
         return user_config.get(key, default_config.get(key, default))
+
+    def fix_missing_config_keys(self):
+        """修复缺失或新增的JSON配置项，保持原有顺序，新增项排在后面"""
+        try:
+            # 修复user_settings.json
+            self._fix_user_settings_config()
+            # 修复recordings.json
+            self._fix_recordings_config()
+            logger.info("配置项修复完成")
+        except Exception as e:
+            logger.error(f"修复配置项时发生错误: {e}")
+
+    def _fix_user_settings_config(self):
+        """修复user_settings.json中缺失的配置项"""
+        try:
+            default_config = self.load_default_config()
+            user_config = self.load_user_config()
+            
+            if not default_config or not isinstance(default_config, dict):
+                logger.warning("默认配置为空或格式错误，跳过user_settings修复")
+                return
+            
+            if not user_config or not isinstance(user_config, dict):
+                logger.warning("用户配置为空或格式错误，跳过user_settings修复")
+                return
+            
+            # 检查是否有缺失的配置项
+            missing_keys = []
+            for key in default_config.keys():
+                if key not in user_config:
+                    missing_keys.append(key)
+            
+            if missing_keys:
+                logger.info(f"发现user_settings.json中缺失的配置项: {missing_keys}")
+                
+                # 保持原有顺序，将缺失的配置项添加到末尾
+                for key in missing_keys:
+                    user_config[key] = default_config[key]
+                
+                # 保存修复后的配置
+                with open(self.user_config_path, "w", encoding="utf-8") as file:
+                    json.dump(user_config, file, ensure_ascii=False, indent=4)
+                
+                logger.info(f"已修复user_settings.json中{len(missing_keys)}个缺失的配置项")
+            else:
+                logger.debug("user_settings.json配置项完整，无需修复")
+                
+        except Exception as e:
+            logger.error(f"修复user_settings.json时发生错误: {e}")
+
+    def _fix_recordings_config(self):
+        """修复recordings.json中缺失的配置项"""
+        try:
+            recordings_config = self.load_recordings_config()
+            
+            if not isinstance(recordings_config, list):
+                logger.warning("recordings.json格式错误，跳过修复")
+                return
+            
+            # 定义recordings.json中每个录制项应该包含的字段
+            required_fields = [
+                "rec_id", "media_type", "url", "streamer_name", "record_format", 
+                "quality", "segment_record", "segment_time", "monitor_status", 
+                "scheduled_recording", "scheduled_start_time", "monitor_hours", 
+                "recording_dir", "enabled_message_push", "record_mode", "remark",
+                "thumbnail_enabled", "translation_enabled", "live_title", 
+                "translated_title", "last_live_title", "cached_translated_title"
+            ]
+            
+            # 定义默认值
+            default_values = {
+                "rec_id": "",
+                "media_type": "video",
+                "url": "",
+                "streamer_name": "",
+                "record_format": "MP4",
+                "quality": "OD",
+                "segment_record": True,
+                "segment_time": "1800",
+                "monitor_status": False,
+                "scheduled_recording": False,
+                "scheduled_start_time": "",
+                "monitor_hours": 5,
+                "recording_dir": "",
+                "enabled_message_push": False,
+                "record_mode": "manual",
+                "remark": "",
+                "thumbnail_enabled": None,
+                "translation_enabled": False,
+                "live_title": "",
+                "translated_title": None,
+                "last_live_title": "",
+                "cached_translated_title": ""
+            }
+            
+            fixed_count = 0
+            for recording in recordings_config:
+                if not isinstance(recording, dict):
+                    continue
+                    
+                # 检查缺失的字段
+                missing_fields = []
+                for field in required_fields:
+                    if field not in recording:
+                        missing_fields.append(field)
+                
+                if missing_fields:
+                    logger.info(f"发现录制项中缺失的字段: {missing_fields}")
+                    
+                    # 添加缺失的字段，保持原有顺序
+                    for field in missing_fields:
+                        recording[field] = default_values[field]
+                    
+                    fixed_count += len(missing_fields)
+            
+            if fixed_count > 0:
+                # 保存修复后的配置
+                with open(self.recordings_config_path, "w", encoding="utf-8") as file:
+                    json.dump(recordings_config, file, ensure_ascii=False, indent=4)
+                
+                logger.info(f"已修复recordings.json中{fixed_count}个缺失的字段")
+            else:
+                logger.debug("recordings.json字段完整，无需修复")
+                
+        except Exception as e:
+            logger.error(f"修复recordings.json时发生错误: {e}")
