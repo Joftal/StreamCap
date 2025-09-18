@@ -415,6 +415,7 @@
     "platform_filter_style_dropdown": "Dropdown (Aggregated)",
     "platform_filter_style_tip": "Set the display style of the platform filter on the main page. Tile is a button group, Dropdown is a dropdown box.",
     "notification_both_required": "Sending notifications requires both global settings and individual live room message push switches to be enabled",
+    "restore_defaults_tip": "The following settings will be preserved when restoring defaults: language, VLC path, recording mode, Baidu translation API, proxy address",
     "auto_clean_logs": "Auto Clean Expired Logs",
     "log_retention_days": "Log Retention Days",
     "thumbnail_update_interval": "Thumbnail Update Interval",

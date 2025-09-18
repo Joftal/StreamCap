@@ -127,6 +127,12 @@ class SettingsPage(PageBase):
             ui_language = self.user_config["language"]
             vlc_path = self.user_config.get("vlc_path", "")
             record_mode = self.user_config.get("record_mode", "auto")
+            # 保留百度翻译API设置
+            baidu_app_id = self.user_config.get("baidu_translation_app_id", "")
+            baidu_secret_key = self.user_config.get("baidu_translation_secret_key", "")
+            # 保留代理地址设置
+            proxy_address = self.user_config.get("proxy_address", "")
+            
             self.user_config = self.default_config.copy()
             self.user_config["language"] = ui_language
             self.user_config["enable_proxy"] = False
@@ -135,8 +141,14 @@ class SettingsPage(PageBase):
                 self.user_config["vlc_path"] = vlc_path
             # 保留录制模式设置
             self.user_config["record_mode"] = record_mode
-            # 恢复默认平台筛选风格为平铺
-            self.user_config["platform_filter_style"] = "tile"
+            # 保留百度翻译API设置
+            if baidu_app_id:
+                self.user_config["baidu_translation_app_id"] = baidu_app_id
+            if baidu_secret_key:
+                self.user_config["baidu_translation_secret_key"] = baidu_secret_key
+            # 保留代理地址设置
+            if proxy_address:
+                self.user_config["proxy_address"] = proxy_address
             self.app.language_manager.notify_observers()
             self.page.run_task(self.load)
             await self.config_manager.save_user_config(self.user_config)
@@ -370,6 +382,18 @@ class SettingsPage(PageBase):
                                 tooltip=self._["restore_defaults"],
                                 on_click=self.restore_default_config,
                             ),
+                        ),
+                        ft.Container(
+                            content=ft.Text(
+                                self._["restore_defaults_tip"],
+                                size=14,
+                                color=ft.colors.AMBER_700,
+                                italic=True,
+                            ),
+                            margin=ft.margin.only(bottom=10),
+                            padding=10,
+                            border_radius=5,
+                            bgcolor=ft.colors.AMBER_50,
                         ),
                         self.create_setting_row(
                             self._["program_language"],

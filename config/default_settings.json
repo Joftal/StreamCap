@@ -69,5 +69,7 @@
     "enable_title_translation": false,
     "translation_provider": "google",
     "baidu_translation_app_id": "",
-    "baidu_translation_secret_key": ""
+    "baidu_translation_secret_key": "",
+    "show_live_thumbnail": false,
+    "platform_filter_style": "tile"
 }

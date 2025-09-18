@@ -426,6 +426,7 @@
     "platform_filter_style_dropdown": "聚合（下拉框）",
     "platform_filter_style_tip": "设置主界面直播平台筛选的展示风格。平铺为按钮组，聚合为下拉框。",
     "notification_both_required": "发送通知需同时满足全局设置和单独直播间的消息推送开关",
+    "restore_defaults_tip": "恢复默认设置时将保留以下内容：语言设置、VLC路径、录制模式、百度翻译API、代理地址",
     "auto_clean_logs": "自动清理日志",
     "log_retention_days": "日志保留天数",
     "show_live_thumbnail": "显示直播缩略图",

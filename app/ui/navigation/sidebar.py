@@ -34,15 +34,31 @@ class NavigationColumn(ft.Column):
         self.spacing = 0
         self.scroll = ft.ScrollMode.ALWAYS
         self.sidebar = sidebar
-        self.selected_index = 0
         self.page = page
         self.app = app
         self.controls = self.get_navigation_items()
+        
+        # 根据当前页面设置正确的选中状态
+        self.selected_index = self.get_current_page_index()
 
     def get_navigation_items(self):
         return [
             NavigationItem(destination, item_clicked=self.item_clicked) for destination in self.sidebar.control_groups
         ]
+    
+    def get_current_page_index(self):
+        """根据当前页面获取对应的导航索引"""
+        # 检查current_page属性是否存在
+        if not hasattr(self.app, 'current_page') or not self.app.current_page:
+            return 0  # 应用初始化时默认返回主界面索引
+        
+        current_page = self.app.current_page
+        current_page_name = getattr(current_page, 'page_name', None)
+        if current_page_name:
+            for control_group in self.sidebar.control_groups:
+                if control_group.name == current_page_name:
+                    return control_group.index
+        return 0  # 默认返回主界面索引
 
     def item_clicked(self, e):
         # 获取目标页面名称
