@@ -64,8 +64,8 @@ class ConfigManager:
         self._init_config(self.accounts_config_path, cookies_config)
 
     def init_recordings_config(self):
-        cookies_config = {}
-        self._init_config(self.recordings_config_path, cookies_config)
+        recordings_config = []
+        self._init_config(self.recordings_config_path, recordings_config)
 
     def init_web_auth_config(self):
         cookies_config = {}
@@ -225,12 +225,13 @@ class ConfigManager:
             recordings_config = self.load_recordings_config()
             
             # 如果配置为空或不是列表，初始化为空列表
-            if not isinstance(recordings_config, list) and (recordings_config == {} or recordings_config == []):
-                logger.debug("recordings.json为空，初始化为空列表")
-                recordings_config = []
-            elif not isinstance(recordings_config, list):
-                logger.warning("recordings.json格式错误，跳过修复")
-                return
+            if not isinstance(recordings_config, list):
+                if recordings_config in ({}, []):
+                    logger.debug("recordings.json为空，初始化为空列表")
+                    recordings_config = []
+                else:
+                    logger.warning("recordings.json格式错误，跳过修复")
+                    return
             
             # 定义recordings.json中每个录制项应该包含的字段
             required_fields = [
