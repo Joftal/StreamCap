@@ -18,6 +18,7 @@ from .process_manager import AsyncProcessManager
 from .ui.components.recording_card import RecordingCardManager
 from .ui.components.show_snackbar import ShowSnackBar
 from .ui.components.system_tray import SystemTrayManager
+from .ui.components.disk_space_display import DiskSpaceDisplay
 from .ui.navigation.sidebar import LeftNavigationMenu, NavigationSidebar
 from .ui.views.about_view import AboutPage
 from .ui.views.home_view import HomePage
@@ -79,12 +80,26 @@ class App:
 
         self.page.snack_bar_area = ft.Container()
         self.dialog_area = ft.Container()
+        
+        # 创建磁盘空间显示组件
+        self.disk_space_display = DiskSpaceDisplay(self)
+        
+        # 创建主内容区域，包含磁盘空间显示和内容区域
+        self.main_content_area = ft.Column(
+            controls=[
+                self.disk_space_display,
+                self.content_area
+            ],
+            expand=True,
+            spacing=0
+        )
+        
         self.complete_page = ft.Row(
             expand=True,
             controls=[
                 self.left_navigation_menu,
                 ft.VerticalDivider(width=1),
-                self.content_area,
+                self.main_content_area,
                 self.dialog_area,
                 self.page.snack_bar_area,
             ]
@@ -168,6 +183,12 @@ class App:
             # 如果是从设置页面切换，检查是否有更改
             if isinstance(previous_page, SettingsPage):
                 await previous_page.is_changed()
+                # 刷新磁盘空间显示，因为可能修改了录制保存路径
+                if hasattr(self, 'disk_space_display'):
+                    logger.debug("从设置页面切换，刷新磁盘空间显示")
+                    # 延迟一点时间确保设置已保存
+                    await asyncio.sleep(0.1)
+                    self.disk_space_display.update_disk_space()
             
             # 根据录制直播间的数量动态调整延迟时间
             # 基础延迟为0.1秒，每10个直播间增加0.05秒，最大不超过0.5秒
@@ -626,3 +647,7 @@ class App:
         language = self.language_manager.language
         # 直接加载整个语言配置
         self._ = language
+        
+        # 更新磁盘空间显示组件的语言
+        if hasattr(self, 'disk_space_display'):
+            self.disk_space_display.on_language_changed()
