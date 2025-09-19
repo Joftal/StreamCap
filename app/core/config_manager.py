@@ -64,8 +64,8 @@ class ConfigManager:
         self._init_config(self.accounts_config_path, cookies_config)
 
     def init_recordings_config(self):
-        cookies_config = {}
-        self._init_config(self.recordings_config_path, cookies_config)
+        recordings_config = []
+        self._init_config(self.recordings_config_path, recordings_config)
 
     def init_web_auth_config(self):
         cookies_config = {}
