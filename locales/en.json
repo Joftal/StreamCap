@@ -476,6 +476,14 @@
     "disabled": "Disabled",
     "creating": "Creating..."
   },
+  "disk_space_display": {
+    "disk_label": "Recording Disk",
+    "free_of": "free of",
+    "used_label": "Used",
+    "refresh_tooltip": "Manually refresh recording disk space information (no auto-update)",
+    "unknown": "Unknown",
+    "recording_disabled": "Recording Disabled"
+  },
   "video_quality": {
     "OD": "Original",
     "UHD": "Ultra HD",

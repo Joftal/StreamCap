@@ -736,9 +736,18 @@ class RecordingManager:
             # 发送磁盘空间不足的消息推送和显示对话框
             await self.send_disk_space_notification(disk_space_limit, free_space)
             
+            # 更新磁盘显示组件的录制状态
+            if hasattr(self.app, 'disk_space_display'):
+                self.app.disk_space_display.update_recording_status()
+            
             return False
         else:
             self.app.recording_enabled = True
+            
+            # 更新磁盘显示组件的录制状态
+            if hasattr(self.app, 'disk_space_display'):
+                self.app.disk_space_display.update_recording_status()
+            
             return True
 
     async def send_disk_space_notification(self, threshold: float, free_space: float):

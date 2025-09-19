@@ -489,6 +489,14 @@
     "disabled": "禁用",
     "creating": "创建中..."
   },
+  "disk_space_display": {
+    "disk_label": "录制磁盘",
+    "free_of": "可用，共",
+    "used_label": "已用",
+    "refresh_tooltip": "手动刷新录制磁盘空间信息（不会自动更新）",
+    "unknown": "未知",
+    "recording_disabled": "录制已禁用"
+  },
   "video_quality": {
     "OD": "原画",
     "UHD": "超清",
