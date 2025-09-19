@@ -224,9 +224,14 @@ class ConfigManager:
         try:
             recordings_config = self.load_recordings_config()
             
+            # 如果配置为空或不是列表，初始化为空列表
             if not isinstance(recordings_config, list):
-                logger.warning("recordings.json格式错误，跳过修复")
-                return
+                if recordings_config == {} or recordings_config == []:
+                    logger.debug("recordings.json为空，初始化为空列表")
+                    recordings_config = []
+                else:
+                    logger.warning("recordings.json格式错误，跳过修复")
+                    return
             
             # 定义recordings.json中每个录制项应该包含的字段
             required_fields = [
@@ -284,11 +289,16 @@ class ConfigManager:
                     
                     fixed_count += len(missing_fields)
             
-            if fixed_count > 0:
+            # 如果配置被初始化为空列表，或者有修复的字段，则保存
+            if recordings_config == [] and fixed_count == 0:
+                # 保存空列表格式
+                with open(self.recordings_config_path, "w", encoding="utf-8") as file:
+                    json.dump(recordings_config, file, ensure_ascii=False, indent=4)
+                logger.debug("recordings.json已初始化为空列表格式")
+            elif fixed_count > 0:
                 # 保存修复后的配置
                 with open(self.recordings_config_path, "w", encoding="utf-8") as file:
                     json.dump(recordings_config, file, ensure_ascii=False, indent=4)
-                
                 logger.info(f"已修复recordings.json中{fixed_count}个缺失的字段")
             else:
                 logger.debug("recordings.json字段完整，无需修复")
