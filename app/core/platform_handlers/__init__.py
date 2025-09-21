@@ -140,6 +140,8 @@ __all__ = [
     "DouyinHandler",
     "DouyuHandler",
     "FaceitHandler",
+    "get_platform_handler",
+    "get_platform_info",
     "HaixiuHandler",
     "HuajiaoHandler",
     "HuamaoHandler",
@@ -178,6 +180,4 @@ __all__ = [
     "YoutubeHandler",
     "YYHandler",
     "ZhihuHandler",
-    "get_platform_handler",
-    "get_platform_info",
 ]
