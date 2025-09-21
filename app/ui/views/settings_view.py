@@ -434,11 +434,11 @@ class SettingsPage(PageBase):
                             ),
                         ),
                         self.create_folder_setting_row(self._["name_rules"]),
-                        self.create_setting_row(
+                        self.pick_vlc_folder(
                             self._["vlc_path"],
                             ft.TextField(
                                 value=self.get_config_value("vlc_path", ""),
-                                width=380,
+                                width=300,
                                 on_change=self.on_change,
                                 data="vlc_path",
                                 hint_text=self._["vlc_path_hint"],
@@ -1561,6 +1561,41 @@ class SettingsPage(PageBase):
         )
         return ft.Row(
             [ft.Text(label, width=200, text_align=ft.TextAlign.RIGHT), control, btn_pick_folder],
+            alignment=ft.MainAxisAlignment.START,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        )
+
+    def pick_vlc_folder(self, label, control):
+        def picked_vlc_folder(e: ft.FilePickerResultEvent):
+            path = e.path
+            if path:
+                # 检查选择的目录中是否包含vlc.exe
+                vlc_exe_path = os.path.join(path, "vlc.exe")
+                if os.path.exists(vlc_exe_path):
+                    # 如果找到vlc.exe，直接使用完整路径
+                    control.value = vlc_exe_path
+                else:
+                    # 如果没找到vlc.exe，只保存目录路径
+                    control.value = path
+                control.update()
+                e.control.data = control.data
+                e.data = control.value
+                self.page.run_task(self.on_change, e)
+
+        async def pick_vlc_folder(_):
+            if self.app.page.web:
+                await self.app.snack_bar.show_snack_bar(self._["unsupported_select_path"])
+            vlc_folder_picker.get_directory_path()
+
+        vlc_folder_picker = ft.FilePicker(on_result=picked_vlc_folder)
+        self.page.overlay.append(vlc_folder_picker)
+        self.page.update()
+
+        btn_pick_vlc_folder = ft.ElevatedButton(
+            text=self._["select_vlc_folder"], icon=ft.Icons.FOLDER_OPEN, on_click=pick_vlc_folder, tooltip=self._["select_vlc_folder_tip"]
+        )
+        return ft.Row(
+            [ft.Text(label, width=200, text_align=ft.TextAlign.RIGHT), control, btn_pick_vlc_folder],
             alignment=ft.MainAxisAlignment.START,
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )

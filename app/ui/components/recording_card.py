@@ -1226,9 +1226,22 @@ class RecordingCardManager:
             await self.app.snack_bar.show_snack_bar(self._["please_start_monitor"], bgcolor=ft.Colors.RED)
             return
         vlc_path = self.app.settings.user_config.get("vlc_path")
-        if not vlc_path or not os.path.exists(vlc_path):
+        if not vlc_path:
             await self.app.snack_bar.show_snack_bar(self._["vlc_not_set"], bgcolor=ft.Colors.RED)
             return
+        
+        # 处理VLC路径：如果是目录路径，自动拼接vlc.exe
+        if os.path.isdir(vlc_path):
+            vlc_exe_path = os.path.join(vlc_path, "vlc.exe")
+            if os.path.exists(vlc_exe_path):
+                vlc_path = vlc_exe_path
+            else:
+                await self.app.snack_bar.show_snack_bar(self._["vlc_not_set"], bgcolor=ft.Colors.RED)
+                return
+        elif not os.path.exists(vlc_path):
+            await self.app.snack_bar.show_snack_bar(self._["vlc_not_set"], bgcolor=ft.Colors.RED)
+            return
+            
         stream_url, err = await self.app.record_manager.get_stream_url(recording)
         if stream_url:
             import subprocess
