@@ -170,7 +170,7 @@ docker build -t streamcap .
 Douyin, Kuaishou, Huya, Douyu, Bilibili, RedNote, YY, Inke, Acfun, Blued, JD, Taobao, ...
 
 **International Platforms (10+)**:  
-TikTok, Twitch, PandTV, Soop, Twitcasting, CHZZK, Shopee, YouTube, LiveMe, Flextv, Popkontv, Bigo, ...
+TikTok, Twitch, PandTV, Soop, Twitcasting, CHZZK, Shopee, YouTube, LiveMe, TtingLive, Popkontv, Bigo, ...
 
 **Example URLs**:  
 
@@ -233,8 +233,8 @@ https://look.163.com/live?id=65108820&position=3
 WinkTV:
 https://www.winktv.co.kr/live/play/anjer1004
 
-FlexTV:
-https://www.flextv.co.kr/channels/593127/live
+TtingLive:
+https://www.ttinglive.com/channels/52406/live
 
 PopkonTV:
 https://www.popkontv.com/live/view?castId=wjfal007&partnerCode=P-00117

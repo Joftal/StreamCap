@@ -175,7 +175,7 @@ docker build -t streamcap .
 
 **海外平台（10+）**：
 
-TikTok、Twitch、PandTV、Soop、Twitcasting、CHZZK、Shopee、Youtube、LiveMe、Flextv、Popkontv、Bigo...
+TikTok、Twitch、PandTV、Soop、Twitcasting、CHZZK、Shopee、Youtube、LiveMe、TtingLive、Popkontv、Bigo...
 
 **示例地址：**
 
@@ -237,8 +237,8 @@ https://look.163.com/live?id=65108820&position=3
 WinkTV:
 https://www.winktv.co.kr/live/play/anjer1004
 
-FlexTV:
-https://www.flextv.co.kr/channels/593127/live
+TtingLive:
+https://www.ttinglive.com/channels/52406/live
 
 PopkonTV:
 https://www.popkontv.com/live/view?castId=wjfal007&partnerCode=P-00117

@@ -23,7 +23,7 @@
     "generate_time_subtitle_file": false,
     "execute_custom_script": false,
     "custom_script_command": "",
-    "default_platform_with_proxy": "tiktok,soop,pandalive,winktv,flextv,popkontv,twitch,liveme,showroom,chzzk,shopee,youtube,lang",
+    "default_platform_with_proxy": "tiktok,soop,pandalive,winktv,ttinglive,popkontv,twitch,liveme,showroom,chzzk,shopee,youtube,lang",
     "stream_start_notification_enabled": false,
     "stream_end_notification_enabled": false,
     "only_notify_no_record": false,

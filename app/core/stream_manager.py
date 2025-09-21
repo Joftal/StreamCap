@@ -944,7 +944,7 @@ class LiveStreamRecorder:
             "pandalive": "origin:https://www.pandalive.co.kr",
             "winktv": "origin:https://www.winktv.co.kr",
             "popkontv": "origin:https://www.popkontv.com",
-            "flextv": "origin:https://www.flextv.co.kr",
+            "ttinglive": "origin:https://www.ttinglive.com",
             "qiandurebo": "referer:https://qiandurebo.com",
             "17live": "referer:https://17.live/en/live/6302408",
             "lang": "referer:https://www.lang.live",

@@ -151,8 +151,8 @@ async def test_extract_room_id():
         # WinkTV
         ("https://www.winktv.co.kr/live/play/anjer1004", "anjer1004"),
         
-        # FlexTV
-        ("https://www.flextv.co.kr/channels/593127/live", "593127"),
+        # TtingLive
+        ("https://www.ttinglive.com/channels/52406/live", "52406"),
         
         # PopkonTV
         ("https://www.popkontv.com/live/view?castId=wjfal007", "wjfal007"),
@@ -1004,9 +1004,9 @@ async def test_extract_room_id_comprehensive():
         ("https://www.winktv.co.kr/live/play/anjer1004", "anjer1004"),
         ("https://www.winktv.co.kr/live/play/anjer1004?param=value", "anjer1004"),
         
-        # FlexTV - 各种格式
-        ("https://www.flextv.co.kr/channels/593127/live", "593127"),
-        ("https://www.flextv.co.kr/channels/593127/live?param=value", "593127"),
+        # TtingLive - 各种格式
+        ("https://www.ttinglive.com/channels/52406/live", "52406"),
+        ("https://www.ttinglive.com/channels/52406/live?param=value", "52406"),
         
         # PopkonTV - 各种格式
         ("https://www.popkontv.com/live/view?castId=wjfal007&partnerCode=P-00117", "wjfal007"),

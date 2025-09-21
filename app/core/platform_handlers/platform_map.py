@@ -17,7 +17,7 @@ platform_map = {
     "pandalive": {"zh": "PandaTV", "en": "PandaTV"},
     "maoerfm": {"zh": "猫耳FM直播", "en": "MaoerFM"},
     "winktv": {"zh": "WinkTV", "en": "WinkTV"},
-    "flextv": {"zh": "FlexTV", "en": "FlexTV"},
+    "ttinglive": {"zh": "TtingLive", "en": "TtingLive"},
     "look": {"zh": "Look直播", "en": "Look Live"},
     "popkontv": {"zh": "PopkonTV", "en": "PopkonTV"},
     "twitcasting": {"zh": "TwitCasting", "en": "TwitCasting"},

@@ -1078,7 +1078,7 @@ class SettingsPage(PageBase):
             "pandalive",
             "maoerfm",
             "winktv",
-            "flextv",
+            "ttinglive",
             "look",
             "popkontv",
             "twitcasting",
@@ -1361,20 +1361,20 @@ class SettingsPage(PageBase):
                         ),
                         # 其他账号设置
                         self.create_setting_row(
-                            self._["flextv_username"],
+                            self._["ttinglive_username"],
                             ft.TextField(
-                                value=self.get_accounts_value("flextv_username"),
+                                value=self.get_accounts_value("ttinglive_username"),
                                 width=500,
-                                data="flextv_username",
+                                data="ttinglive_username",
                                 on_change=self.on_accounts_change,
                             ),
                         ),
                         self.create_setting_row(
-                            self._["flextv_password"],
+                            self._["ttinglive_password"],
                             ft.TextField(
-                                value=self.get_accounts_value("flextv_password"),
+                                value=self.get_accounts_value("ttinglive_password"),
                                 width=500,
-                                data="flextv_password",
+                                data="ttinglive_password",
                                 on_change=self.on_accounts_change,
                             ),
                         ),
