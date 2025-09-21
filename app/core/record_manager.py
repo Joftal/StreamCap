@@ -454,7 +454,7 @@ class RecordingManager:
                     recording.streamer_name = stream_info.anchor_name
                 
                 # 然后获取直播标题
-                recording.live_title = stream_info.title
+                recording.live_title = getattr(stream_info, "title", None)
                 
                 # 最后更新标题和显示标题
                 recording.title = f"{recording.streamer_name} - {self._[recording.quality]}"
