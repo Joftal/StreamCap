@@ -203,6 +203,7 @@
     "no_monitor": "Not Monitored",
     "play_stream": "Play",
     "vlc_not_set": "VLC path not set, cannot play",
+    "potplayer_not_set": "PotPlayer path not set, cannot play",
     "play_failed": "Play failed, no stream or VLC path",
     "live_monitoring_not_recording": "Live (Not Recording)",
     "auto_mode_monitor_required": "Please enable monitoring in auto mode",
@@ -413,6 +414,14 @@
     "vlc_path_hint": "e.g. C:\\Program Files\\VideoLAN\\VLC\\vlc.exe or C:\\Program Files\\VideoLAN\\VLC",
     "select_vlc_folder": "Select VLC Folder",
     "select_vlc_folder_tip": "Select VLC installation directory, program will automatically find vlc.exe",
+    "potplayer_path": "PotPlayer Path",
+    "potplayer_path_hint": "e.g. C:\\Program Files\\DAUM\\PotPlayer\\PotPlayerMini64.exe or C:\\Program Files\\DAUM\\PotPlayer",
+    "select_potplayer_folder": "Select PotPlayer Folder",
+    "select_potplayer_folder_tip": "Select PotPlayer installation directory, program will automatically find PotPlayerMini64.exe",
+    "default_player": "Default Player",
+    "default_player_hint": "Choose the default player for streaming",
+    "player_vlc": "VLC Player",
+    "player_potplayer": "PotPlayer",
     "platform_filter_style": "Platform Filter Style",
     "platform_filter_style_tile": "Tile",
     "platform_filter_style_dropdown": "Dropdown (Aggregated)",
@@ -606,7 +615,6 @@
   },
   "vlc_path": "VLC Player Path",
   "vlc_path_hint": "e.g. C:\\Program Files\\VideoLAN\\VLC\\vlc.exe",
-  "vlc_not_set": "VLC path not set, cannot play",
   "play_stream": "Play",
-  "play_failed": "Play failed, no stream or VLC path"
+  "play_failed": "Play failed, no stream or player path"
 }

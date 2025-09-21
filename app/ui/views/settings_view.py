@@ -126,6 +126,8 @@ class SettingsPage(PageBase):
         async def confirm_dlg(_):
             ui_language = self.user_config["language"]
             vlc_path = self.user_config.get("vlc_path", "")
+            potplayer_path = self.user_config.get("potplayer_path", "")
+            default_player = self.user_config.get("default_player", "potplayer")
             record_mode = self.user_config.get("record_mode", "auto")
             # 保留百度翻译API设置
             baidu_app_id = self.user_config.get("baidu_translation_app_id", "")
@@ -136,9 +138,13 @@ class SettingsPage(PageBase):
             self.user_config = self.default_config.copy()
             self.user_config["language"] = ui_language
             self.user_config["enable_proxy"] = False
-            # 保留VLC路径设置
+            # 保留播放器路径设置
             if vlc_path:
                 self.user_config["vlc_path"] = vlc_path
+            if potplayer_path:
+                self.user_config["potplayer_path"] = potplayer_path
+            # 保留播放器选择设置
+            self.user_config["default_player"] = default_player
             # 保留录制模式设置
             self.user_config["record_mode"] = record_mode
             # 保留百度翻译API设置
@@ -181,8 +187,8 @@ class SettingsPage(PageBase):
         if isinstance(e.control, ft.Switch | ft.Checkbox):
             self.user_config[key] = e.data.lower() == "true"
         else:
-            # 特殊处理vlc_path，替换为Windows风格分隔符
-            if key == "vlc_path":
+            # 特殊处理播放器路径，替换为Windows风格分隔符
+            if key in ["vlc_path", "potplayer_path"]:
                 self.user_config[key] = e.data.replace("/", "\\")
             else:
                 self.user_config[key] = e.data
@@ -442,6 +448,30 @@ class SettingsPage(PageBase):
                                 on_change=self.on_change,
                                 data="vlc_path",
                                 hint_text=self._["vlc_path_hint"],
+                            ),
+                        ),
+                        self.pick_potplayer_folder(
+                            self._["potplayer_path"],
+                            ft.TextField(
+                                value=self.get_config_value("potplayer_path", ""),
+                                width=300,
+                                on_change=self.on_change,
+                                data="potplayer_path",
+                                hint_text=self._["potplayer_path_hint"],
+                            ),
+                        ),
+                        self.create_setting_row(
+                            self._["default_player"],
+                            ft.Dropdown(
+                                value=self.get_config_value("default_player", "potplayer"),
+                                width=200,
+                                on_change=self.on_change,
+                                data="default_player",
+                                hint_text=self._["default_player_hint"],
+                                options=[
+                                    ft.dropdown.Option("vlc", self._["player_vlc"]),
+                                    ft.dropdown.Option("potplayer", self._["player_potplayer"]),
+                                ],
                             ),
                         ),
                         self.create_setting_row(
@@ -1596,6 +1626,41 @@ class SettingsPage(PageBase):
         )
         return ft.Row(
             [ft.Text(label, width=200, text_align=ft.TextAlign.RIGHT), control, btn_pick_vlc_folder],
+            alignment=ft.MainAxisAlignment.START,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        )
+
+    def pick_potplayer_folder(self, label, control):
+        def picked_potplayer_folder(e: ft.FilePickerResultEvent):
+            path = e.path
+            if path:
+                # 检查选择的目录中是否包含PotPlayerMini64.exe
+                potplayer_exe_path = os.path.join(path, "PotPlayerMini64.exe")
+                if os.path.exists(potplayer_exe_path):
+                    # 如果找到PotPlayerMini64.exe，直接使用完整路径
+                    control.value = potplayer_exe_path
+                else:
+                    # 如果没找到PotPlayerMini64.exe，只保存目录路径
+                    control.value = path
+                control.update()
+                e.control.data = control.data
+                e.data = control.value
+                self.page.run_task(self.on_change, e)
+
+        async def pick_potplayer_folder(_):
+            if self.app.page.web:
+                await self.app.snack_bar.show_snack_bar(self._["unsupported_select_path"])
+            potplayer_folder_picker.get_directory_path()
+
+        potplayer_folder_picker = ft.FilePicker(on_result=picked_potplayer_folder)
+        self.page.overlay.append(potplayer_folder_picker)
+        self.page.update()
+
+        btn_pick_potplayer_folder = ft.ElevatedButton(
+            text=self._["select_potplayer_folder"], icon=ft.Icons.FOLDER_OPEN, on_click=pick_potplayer_folder, tooltip=self._["select_potplayer_folder_tip"]
+        )
+        return ft.Row(
+            [ft.Text(label, width=200, text_align=ft.TextAlign.RIGHT), control, btn_pick_potplayer_folder],
             alignment=ft.MainAxisAlignment.START,
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )

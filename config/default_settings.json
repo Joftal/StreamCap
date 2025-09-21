@@ -61,6 +61,8 @@
     "is_grid_view": false,
     "theme_mode": "light",
     "vlc_path": "",
+    "potplayer_path": "",
+    "default_player": "potplayer",
     "window_width": null,
     "window_height": null,
     "log_retention_days": 7,

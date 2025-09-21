@@ -1225,28 +1225,41 @@ class RecordingCardManager:
         if not recording.monitor_status:
             await self.app.snack_bar.show_snack_bar(self._["please_start_monitor"], bgcolor=ft.Colors.RED)
             return
-        vlc_path = self.app.settings.user_config.get("vlc_path")
-        if not vlc_path:
-            await self.app.snack_bar.show_snack_bar(self._["vlc_not_set"], bgcolor=ft.Colors.RED)
+        
+        # 获取用户选择的默认播放器
+        default_player = self.app.settings.user_config.get("default_player", "potplayer")
+        
+        # 根据选择的播放器获取相应的路径和可执行文件名
+        if default_player == "vlc":
+            player_path = self.app.settings.user_config.get("vlc_path")
+            exe_name = "vlc.exe"
+            not_set_message = self._["vlc_not_set"]
+        else:  # potplayer
+            player_path = self.app.settings.user_config.get("potplayer_path")
+            exe_name = "PotPlayerMini64.exe"
+            not_set_message = self._["potplayer_not_set"]
+        
+        if not player_path:
+            await self.app.snack_bar.show_snack_bar(not_set_message, bgcolor=ft.Colors.RED)
             return
         
-        # 处理VLC路径：如果是目录路径，自动拼接vlc.exe
-        if os.path.isdir(vlc_path):
-            vlc_exe_path = os.path.join(vlc_path, "vlc.exe")
-            if os.path.exists(vlc_exe_path):
-                vlc_path = vlc_exe_path
+        # 处理播放器路径：如果是目录路径，自动拼接可执行文件名
+        if os.path.isdir(player_path):
+            player_exe_path = os.path.join(player_path, exe_name)
+            if os.path.exists(player_exe_path):
+                player_path = player_exe_path
             else:
-                await self.app.snack_bar.show_snack_bar(self._["vlc_not_set"], bgcolor=ft.Colors.RED)
+                await self.app.snack_bar.show_snack_bar(not_set_message, bgcolor=ft.Colors.RED)
                 return
-        elif not os.path.exists(vlc_path):
-            await self.app.snack_bar.show_snack_bar(self._["vlc_not_set"], bgcolor=ft.Colors.RED)
+        elif not os.path.exists(player_path):
+            await self.app.snack_bar.show_snack_bar(not_set_message, bgcolor=ft.Colors.RED)
             return
             
         stream_url, err = await self.app.record_manager.get_stream_url(recording)
         if stream_url:
             import subprocess
             try:
-                subprocess.Popen([vlc_path, stream_url])
+                subprocess.Popen([player_path, stream_url])
                 await self.app.snack_bar.show_snack_bar(self._["play_stream"] + "...", bgcolor=ft.Colors.GREEN)
             except Exception as e:
                 await self.app.snack_bar.show_snack_bar(self._["play_failed"] + f"\n{e}", bgcolor=ft.Colors.RED)
