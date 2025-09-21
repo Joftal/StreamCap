@@ -849,8 +849,13 @@ class RecordingCardManager:
                 recording.is_live = getattr(stream_info, "is_live", False)
                 if stream_info and getattr(stream_info, "record_url", None) and recording.is_live:
                     # 新增：手动模式下也赋值主播id、标题等
-                    recording.live_title = getattr(stream_info, "title", None)
+                    # 先获取主播信息，确保主播名称是最新的
                     recording.streamer_name = getattr(stream_info, "anchor_name", recording.streamer_name)
+                    
+                    # 然后获取直播标题
+                    recording.live_title = getattr(stream_info, "title", None)
+                    
+                    # 最后更新标题和显示标题
                     recording.title = f"{recording.streamer_name} - {self._[recording.quality]}"
                     recording.display_title = f"[{self._['is_live']}] {recording.title}"
                     

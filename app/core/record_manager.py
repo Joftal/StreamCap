@@ -449,9 +449,14 @@ class RecordingManager:
 
             is_record = True
             if recording.is_live and not recording.recording:
-                recording.live_title = stream_info.title
+                # 先获取主播信息，确保主播名称是最新的
                 if not recording.streamer_name or recording.streamer_name.strip() == self._["live_room"]:
                     recording.streamer_name = stream_info.anchor_name
+                
+                # 然后获取直播标题
+                recording.live_title = stream_info.title
+                
+                # 最后更新标题和显示标题
                 recording.title = f"{recording.streamer_name} - {self._[recording.quality]}"
                 recording.display_title = f"[{self._['is_live']}] {recording.title}"
                 
