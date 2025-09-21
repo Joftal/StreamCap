@@ -268,6 +268,42 @@ class TranslationService:
         # 翻译为目标语言
         translated = await self.translate_text(live_title, target_language)
         return translated if translated else live_title
+    
+    async def translate_live_title_to_multiple_languages(self, live_title: str, target_languages: list) -> dict:
+        """
+        将直播标题翻译为多种语言
+        
+        Args:
+            live_title: 直播标题
+            target_languages: 目标语言列表，如 ['zh', 'en']
+            
+        Returns:
+            dict: 语言代码到翻译结果的映射，如 {'zh': '中文标题', 'en': 'English Title'}
+        """
+        if not live_title:
+            return {}
+            
+        results = {}
+        
+        # 检测源语言
+        source_language = self.detect_language(live_title)
+        
+        # 为每种目标语言进行翻译
+        for target_lang in target_languages:
+            # 如果源语言与目标语言相同，不需要翻译
+            if source_language == target_lang:
+                results[target_lang] = live_title
+                continue
+                
+            # 翻译为目标语言
+            translated = await self.translate_text(live_title, target_lang)
+            if translated and translated != live_title:
+                results[target_lang] = translated
+            else:
+                # 翻译失败，使用原标题
+                results[target_lang] = live_title
+                
+        return results
 
 
 # 全局翻译服务实例
@@ -326,3 +362,28 @@ async def translate_live_title(live_title: str, app_language_code: str = 'zh_CN'
     except Exception as e:
         logger.error(f"翻译直播标题失败: {e}")
         return live_title
+
+
+async def translate_live_title_to_multiple_languages(live_title: str, target_languages: list, config_manager=None) -> dict:
+    """
+    将直播标题翻译为多种语言的便捷函数
+    
+    Args:
+        live_title: 直播标题
+        target_languages: 目标语言列表，如 ['zh', 'en']
+        config_manager: 配置管理器，用于获取翻译设置
+        
+    Returns:
+        dict: 语言代码到翻译结果的映射
+    """
+    if not live_title or not target_languages:
+        return {}
+        
+    try:
+        # 获取翻译服务实例
+        service = await get_translation_service(config_manager)
+        result = await service.translate_live_title_to_multiple_languages(live_title, target_languages)
+        return result
+    except Exception as e:
+        logger.error(f"多语言翻译直播标题失败: {e}")
+        return {}

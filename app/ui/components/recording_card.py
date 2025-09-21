@@ -1532,14 +1532,15 @@ class RecordingCardManager:
             logger.error(f"更新翻译开关按钮状态时发生错误: {e}")
 
     async def _translate_live_title(self, recording: Recording, force_translate: bool = False):
-        """翻译直播标题（支持国际化）"""
+        """翻译直播标题（支持多语言缓存）"""
         try:
             if not recording.live_title:
                 return
             
-            # 检查标题是否有变化，如果没有变化则不需要重新翻译（除非强制翻译）
+            # 检查标题是否有变化，如果没有变化且不强制翻译则不需要重新翻译
             if not force_translate and recording.live_title == recording.last_live_title:
-                # 标题没有变化，不需要重新翻译
+                # 标题没有变化，但需要更新当前语言的翻译标题
+                self.app.record_manager._update_current_language_title(recording)
                 return
                 
             # 获取全局翻译设置
@@ -1550,23 +1551,27 @@ class RecordingCardManager:
             
             if should_translate:
                 # 导入翻译服务
-                from ...utils.translation_service import translate_live_title
+                from ...utils.translation_service import translate_live_title_to_multiple_languages
                 
-                # 获取当前程序语言代码
-                app_language_code = self.app.settings.language_code
+                # 定义需要翻译的目标语言
+                target_languages = ['zh', 'en']  # 中文和英文
                 
-                # 翻译标题（根据程序语言选择目标语言）
-                translated = await translate_live_title(recording.live_title, app_language_code, self.app.config_manager)
-                if translated and translated != recording.live_title:
-                    recording.translated_title = translated
-                    recording.cached_translated_title = translated  # 保存到缓存
-                    #logger.info(f"翻译成功: '{recording.live_title}' -> '{translated}' (目标语言: {app_language_code})")
-                else:
-                    recording.translated_title = None
-                    #logger.debug(f"翻译失败或不需要翻译: '{recording.live_title}' (目标语言: {app_language_code})")
+                # 翻译标题为多种语言
+                multi_lang_results = await translate_live_title_to_multiple_languages(
+                    recording.live_title, target_languages, self.app.config_manager
+                )
+                
+                # 保存多语言翻译结果
+                for lang_code, translated_title in multi_lang_results.items():
+                    recording.set_translated_title_for_language(lang_code, translated_title)
+                
+                # 更新当前语言的翻译标题
+                self.app.record_manager._update_current_language_title(recording)
+                
+                #logger.info(f"多语言翻译成功: '{recording.live_title}' -> {multi_lang_results}")
             else:
-                # 如果不需要翻译，清除翻译标题
-                recording.translated_title = None
+                # 如果不需要翻译，清除所有翻译标题
+                recording.clear_translated_titles()
             
             # 更新上次的直播标题缓存
             recording.last_live_title = recording.live_title

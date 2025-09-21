@@ -205,13 +205,16 @@ class SettingsPage(PageBase):
             self.app.language_manager.load()
             self.app.language_manager.notify_observers()
             
+            # 更新所有录制项的多语言标题显示
+            self.page.run_task(self._update_all_recordings_language_titles)
+            
             # 重新加载当前页面
             self.page.run_task(self.load)
             
             # 国际化提示
             is_zh = getattr(self.app, "language_code", "zh_CN").startswith("zh")
-            tip = "请点击主界面的刷新按钮来刷新监控卡片信息" if is_zh else "Please click the refresh button on the main page to refresh the monitor cards"
-            self.page.run_task(self.app.snack_bar.show_snack_bar, tip, ft.Colors.AMBER)
+            tip = "语言已切换，房间卡片已更新" if is_zh else "Language switched, room card has been updated, "
+            self.page.run_task(self.app.snack_bar.show_snack_bar, tip, ft.Colors.GREEN)
 
         if key == "loop_time_seconds":
             self.app.record_manager.initialize_dynamic_state()
@@ -235,6 +238,20 @@ class SettingsPage(PageBase):
             
         self.page.run_task(self.delay_handler.start_task_timer, self.save_user_config_after_delay, None)
         self.has_unsaved_changes['user_config'] = True
+    
+    async def _update_all_recordings_language_titles(self):
+        """更新所有录制项的语言标题显示"""
+        try:
+            for recording in self.app.record_manager.recordings:
+                if recording.live_title:
+                    # 更新当前语言的翻译标题
+                    self.app.record_manager._update_current_language_title(recording)
+            
+            # 保存录制项数据
+            await self.app.record_manager.persist_recordings()
+            
+        except Exception as e:
+            logger.error(f"更新录制项语言标题时发生错误: {e}")
 
     def on_cookies_change(self, e):
         """Handle changes in any input field and trigger auto-save."""

@@ -78,9 +78,10 @@ class Recording:
         self.is_checking = False
         self.status_info = None
         self.live_title = None
-        self.translated_title = None  # 翻译后的标题
+        self.translated_title = None  # 翻译后的标题（当前语言）
         self.last_live_title = None  # 上次的直播标题，用于检测标题变化
         self.cached_translated_title = None  # 缓存的翻译标题，用于翻译开关重启时恢复
+        self.multi_language_titles = {}  # 多语言标题缓存，格式：{"zh": "中文标题", "en": "English Title"}
         self.detection_time = None
         self.loop_time_seconds = None
         self.use_proxy = None
@@ -124,6 +125,7 @@ class Recording:
             "translated_title": self.translated_title,  # 添加翻译标题到保存数据中
             "last_live_title": self.last_live_title,  # 添加上次直播标题缓存到保存数据中
             "cached_translated_title": self.cached_translated_title,  # 添加缓存的翻译标题到保存数据中
+            "multi_language_titles": self.multi_language_titles,  # 添加多语言标题缓存到保存数据中
         }
 
     @classmethod
@@ -160,6 +162,7 @@ class Recording:
         recording.translated_title = data.get("translated_title")
         recording.last_live_title = data.get("last_live_title")
         recording.cached_translated_title = data.get("cached_translated_title")
+        recording.multi_language_titles = data.get("multi_language_titles", {})
         
         return recording
 
@@ -257,3 +260,32 @@ class Recording:
             return self.translation_enabled
         # 否则使用全局设置
         return global_translation_enabled
+    
+    def get_translated_title_for_language(self, language_code: str) -> str:
+        """
+        获取指定语言的翻译标题
+        
+        Args:
+            language_code: 语言代码，如 'zh', 'en'
+            
+        Returns:
+            str: 指定语言的翻译标题，如果没有则返回None
+        """
+        return self.multi_language_titles.get(language_code)
+    
+    def set_translated_title_for_language(self, language_code: str, translated_title: str):
+        """
+        设置指定语言的翻译标题
+        
+        Args:
+            language_code: 语言代码，如 'zh', 'en'
+            translated_title: 翻译后的标题
+        """
+        if translated_title and translated_title.strip():
+            self.multi_language_titles[language_code] = translated_title.strip()
+    
+    def clear_translated_titles(self):
+        """清除所有翻译标题缓存"""
+        self.multi_language_titles.clear()
+        self.translated_title = None
+        self.cached_translated_title = None
