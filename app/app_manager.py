@@ -642,6 +642,25 @@ class App:
         self.dialog_area.content = error_dialog
         self.dialog_area.update()
 
+    async def show_suggestion_message(self, title: str, message: str):
+        """显示建议消息对话框"""
+        async def close_dialog(_):
+            suggestion_dialog.open = False
+            self.dialog_area.update()
+
+        suggestion_dialog = ft.AlertDialog(
+            title=ft.Text(title, color=ft.Colors.BLUE),
+            content=ft.Text(message),
+            actions=[
+                ft.TextButton(text=self._["base"]["sure"], on_click=close_dialog),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+            modal=True,
+        )
+        suggestion_dialog.open = True
+        self.dialog_area.content = suggestion_dialog
+        self.dialog_area.update()
+
     def load(self):
         """加载语言配置"""
         language = self.language_manager.language
