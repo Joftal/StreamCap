@@ -6,6 +6,7 @@
 
 import json
 import re
+import html
 from typing import Optional
 import streamget
 import httpx
@@ -61,12 +62,15 @@ class EnhancedSoopHandler(PlatformHandler):
                 enhanced_title = await self._extract_title_from_webpage(live_url)
             
             if enhanced_title:
+                # 解码HTML实体编码
+                decoded_title = self._decode_html_entities(enhanced_title)
+                
                 # 创建新的StreamData对象，包含解析出的title
                 enhanced_stream_data = StreamData(
                     platform=stream_data.platform,
                     anchor_name=stream_data.anchor_name,
                     is_live=stream_data.is_live,
-                    title=enhanced_title,  # 使用解析出的title
+                    title=decoded_title,  # 使用解码后的title
                     quality=stream_data.quality,
                     m3u8_url=stream_data.m3u8_url,
                     flv_url=stream_data.flv_url,
@@ -75,7 +79,7 @@ class EnhancedSoopHandler(PlatformHandler):
                     new_token=stream_data.new_token,
                     extra=stream_data.extra
                 )
-                logger.info(f"SOOP平台成功解析title: '{enhanced_title}'")
+                logger.info(f"SOOP平台成功解析title: '{decoded_title}'")
                 return enhanced_stream_data
             else:
                 logger.info(f"SOOP平台无法从数据中解析title: {live_url}")
@@ -213,8 +217,10 @@ class EnhancedSoopHandler(PlatformHandler):
                     
                     if filtered_candidates:
                         best_candidate = filtered_candidates[0]
-                        logger.debug(f"从网页提取到title: '{best_candidate['title']}' (方法: {best_candidate['method']})")
-                        return best_candidate['title']
+                        # 解码HTML实体编码
+                        decoded_title = self._decode_html_entities(best_candidate['title'])
+                        logger.debug(f"从网页提取到title: '{decoded_title}' (方法: {best_candidate['method']})")
+                        return decoded_title
                 
                 logger.debug(f"未能从网页中提取到有效的title: {live_url}")
                 return None
@@ -348,3 +354,21 @@ class EnhancedSoopHandler(PlatformHandler):
                 not re.match(r'^[0-9\-_]+$', title) and
                 'sooplive' not in title.lower() and  # 过滤掉网站名称
                 'soop' not in title.lower())
+
+    def _decode_html_entities(self, text: str) -> str:
+        """解码HTML实体编码"""
+        if not text or not isinstance(text, str):
+            return text
+        
+        try:
+            # 使用Python内置的html.unescape解码HTML实体
+            decoded_text = html.unescape(text)
+            
+            # 记录解码前后的变化（仅在调试模式下）
+            if decoded_text != text:
+                logger.debug(f"HTML实体解码: '{text}' -> '{decoded_text}'")
+            
+            return decoded_text
+        except Exception as e:
+            logger.warning(f"HTML实体解码失败: {e}, 返回原始文本")
+            return text
