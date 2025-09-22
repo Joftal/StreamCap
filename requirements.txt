@@ -13,4 +13,5 @@ win10toast>=0.9
 winotify>=1.1.0
 pystray>=0.19.4
 pillow>=10.0.0
-aiohttp>=3.9.0
+aiohttp>=3.9.3
+qrcode>=7.4.2

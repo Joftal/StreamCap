@@ -282,35 +282,8 @@ class BluedHandler(PlatformHandler):
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
-class SoopHandler(PlatformHandler):
-    platform = "soop"
-
-    def __init__(
-        self,
-        proxy: str | None = None,
-        cookies: str | None = None,
-        record_quality: str | None = None,
-        platform: str | None = None,
-        username: str | None = None,
-        password: str | None = None,
-    ) -> None:
-        super().__init__(proxy, cookies, record_quality, platform, username, password)
-        self.live_stream: streamget.SoopLiveStream | None = None
-
-    @trace_error_decorator
-    async def get_stream_info(self, live_url: str) -> StreamData:
-        if not self.live_stream:
-            self.live_stream = streamget.SoopLiveStream(
-                proxy_addr=self.proxy, cookies=self.cookies, username=self.username, password=self.password
-            )
-        json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
-        
-        # 使用基类的统一方法处理json_data为None的情况
-        offline_result = self._handle_json_data_none(json_data, live_url)
-        if offline_result is not None:
-            return offline_result
-        
-        return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
+# 导入增强版SOOP处理器
+from .enhanced_soop_handler import EnhancedSoopHandler as SoopHandler
 
 
 class NeteaseHandler(PlatformHandler):
@@ -475,8 +448,8 @@ class WinkTVHandler(PlatformHandler):
         return await self.live_stream.fetch_stream_url(json_data, self.record_quality)
 
 
-class FlexTVHandler(PlatformHandler):
-    platform = "flextv"
+class TtingLiveHandler(PlatformHandler):
+    platform = "ttinglive"
 
     def __init__(
         self,
@@ -488,12 +461,12 @@ class FlexTVHandler(PlatformHandler):
         password: str | None = None,
     ) -> None:
         super().__init__(proxy, cookies, record_quality, platform, username, password)
-        self.live_stream: streamget.FlexTVLiveStream | None = None
+        self.live_stream: streamget.TtingLiveLiveStream | None = None
 
     @trace_error_decorator
     async def get_stream_info(self, live_url: str) -> StreamData:
         if not self.live_stream:
-            self.live_stream = streamget.FlexTVLiveStream(
+            self.live_stream = streamget.TtingLiveLiveStream(
                 proxy_addr=self.proxy, cookies=self.cookies, username=self.username, password=self.password
             )
         json_data = await self.live_stream.fetch_web_stream_data(url=live_url)
@@ -1260,7 +1233,7 @@ PamdaTVHandler.register(r".*\.pandalive.co.kr/")
 MaoerFMHandler.register(r"fm.missevan.com/")
 LookHandler.register(r"look.163.com/")
 WinkTVHandler.register(r"www.winktv.co.kr/")
-FlexTVHandler.register(r"www\.flextv\.co\.kr/")
+TtingLiveHandler.register(r"www\.ttinglive\.com/")
 PopkonTVHandler.register(r"www\.popkontv\.com/")
 TwitcastingHandler.register(r"twitcasting\.tv")
 BaiduHandler.register(r".*\.baidu\.com")

@@ -69,7 +69,7 @@ class ThumbnailManager:
         try:
             update_interval = self.user_config.get("thumbnail_update_interval", 60)
             # 确保值是整数，如果无法转换，使用默认值60
-            self.update_interval = int(update_interval) if isinstance(update_interval, (int, str)) else 60
+            self.update_interval = int(update_interval) if isinstance(update_interval, int | str) else 60
             # 确保值在合理范围内
             if self.update_interval < 15:
                 logger.warning(f"缩略图更新间隔过小 ({self.update_interval}秒)，使用最小值15秒")
@@ -128,6 +128,12 @@ class ThumbnailManager:
         """开始为指定直播间捕获缩略图"""
         rec_id = recording.rec_id
         
+        # 检查是否应该为这个房间捕获缩略图
+        global_thumbnail_enabled = self.user_config.get("show_live_thumbnail", False)
+        if not recording.is_thumbnail_enabled(global_thumbnail_enabled):
+            logger.info(f"直播间 {recording.streamer_name} (ID: {rec_id}) 的缩略图功能已关闭，跳过启动缩略图捕获")
+            return
+        
         # 如果已经有任务在运行，先停止它
         if rec_id in self.thumbnail_tasks and not self.thumbnail_tasks[rec_id].done():
             self.thumbnail_tasks[rec_id].cancel()
@@ -172,8 +178,9 @@ class ThumbnailManager:
         while True:
             try:
                 # 检查是否应该继续捕获缩略图
-                if not self.user_config.get("show_live_thumbnail", False):
-                    logger.info(f"缩略图功能已关闭，停止为直播间 {recording.streamer_name} 捕获缩略图")
+                global_thumbnail_enabled = self.user_config.get("show_live_thumbnail", False)
+                if not recording.is_thumbnail_enabled(global_thumbnail_enabled):
+                    logger.info(f"缩略图功能已关闭（全局: {global_thumbnail_enabled}, 房间设置: {recording.thumbnail_enabled}），停止为直播间 {recording.streamer_name} 捕获缩略图")
                     break
                 
                 # 检查录制状态
@@ -186,7 +193,7 @@ class ThumbnailManager:
                 try:
                     update_interval = self.user_config.get("thumbnail_update_interval", 60)
                     # 确保值是整数，如果无法转换，使用默认值60
-                    self.update_interval = int(update_interval) if isinstance(update_interval, (int, str)) else 60
+                    self.update_interval = int(update_interval) if isinstance(update_interval, int | str) else 60
                     # 确保值在合理范围内
                     if self.update_interval < 15:
                         logger.warning(f"缩略图更新间隔过小 ({self.update_interval}秒)，使用最小值15秒")

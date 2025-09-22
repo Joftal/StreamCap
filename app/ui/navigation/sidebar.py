@@ -34,15 +34,31 @@ class NavigationColumn(ft.Column):
         self.spacing = 0
         self.scroll = ft.ScrollMode.ALWAYS
         self.sidebar = sidebar
-        self.selected_index = 0
         self.page = page
         self.app = app
         self.controls = self.get_navigation_items()
+        
+        # 根据当前页面设置正确的选中状态
+        self.selected_index = self.get_current_page_index()
 
     def get_navigation_items(self):
         return [
             NavigationItem(destination, item_clicked=self.item_clicked) for destination in self.sidebar.control_groups
         ]
+    
+    def get_current_page_index(self):
+        """根据当前页面获取对应的导航索引"""
+        # 检查current_page属性是否存在
+        if not hasattr(self.app, 'current_page') or not self.app.current_page:
+            return 0  # 应用初始化时默认返回主界面索引
+        
+        current_page = self.app.current_page
+        current_page_name = getattr(current_page, 'page_name', None)
+        if current_page_name:
+            for control_group in self.sidebar.control_groups:
+                if control_group.name == current_page_name:
+                    return control_group.index
+        return 0  # 默认返回主界面索引
 
     def item_clicked(self, e):
         # 获取目标页面名称
@@ -352,7 +368,7 @@ class LeftNavigationMenu(ft.Column):
             # 添加开启缩略图的提示，使用国际化文本
             self.app.page.run_task(self.app.snack_bar.show_snack_bar, self._["thumbnail_enabled"], ft.Colors.GREEN)
             
-            # 为所有正在直播或录制的项目启动缩略图捕获任务
+            # 为所有正在直播或录制的项目启动缩略图捕获任务（考虑单个房间设置）
             if hasattr(self.app, 'record_manager') and hasattr(self.app, 'thumbnail_manager'):
                 logger.info("开启缩略图功能，为所有直播中或录制中的直播间启动缩略图捕获任务")
                 active_recordings = [r for r in self.app.record_manager.recordings 
@@ -361,8 +377,12 @@ class LeftNavigationMenu(ft.Column):
                 if active_recordings:
                     logger.info(f"找到 {len(active_recordings)} 个直播中或录制中的直播间，开始启动缩略图捕获")
                     for recording in active_recordings:
-                        logger.info(f"为直播间 {recording.streamer_name} (ID: {recording.rec_id}) 启动缩略图捕获")
-                        self.app.page.run_task(self.app.thumbnail_manager.start_thumbnail_capture, recording)
+                        # 检查单个房间的缩略图设置
+                        if recording.is_thumbnail_enabled(show_live_thumbnail):
+                            logger.info(f"为直播间 {recording.streamer_name} (ID: {recording.rec_id}) 启动缩略图捕获")
+                            self.app.page.run_task(self.app.thumbnail_manager.start_thumbnail_capture, recording)
+                        else:
+                            logger.info(f"直播间 {recording.streamer_name} (ID: {recording.rec_id}) 的缩略图功能已关闭，跳过启动")
                 else:
                     logger.info("未找到直播中或录制中的直播间，无需启动缩略图捕获任务")
         else:
@@ -372,10 +392,13 @@ class LeftNavigationMenu(ft.Column):
             # 添加关闭缩略图的提示，使用国际化文本
             self.app.page.run_task(self.app.snack_bar.show_snack_bar, self._["thumbnail_disabled"], ft.Colors.BLUE)
             
-            # 停止所有缩略图捕获任务
-            if hasattr(self.app, 'thumbnail_manager'):
-                logger.info("关闭缩略图功能，停止所有缩略图捕获任务")
-                self.app.page.run_task(self.app.thumbnail_manager.stop_all_thumbnail_captures)
+            # 停止所有缩略图捕获任务（只停止使用全局设置的房间）
+            if hasattr(self.app, 'thumbnail_manager') and hasattr(self.app, 'record_manager'):
+                logger.info("关闭缩略图功能，停止所有使用全局设置的直播间缩略图捕获任务")
+                for recording in self.app.record_manager.recordings:
+                    # 只停止那些使用全局设置（thumbnail_enabled为None）的房间
+                    if recording.thumbnail_enabled is None:
+                        self.app.page.run_task(self.app.thumbnail_manager.stop_thumbnail_capture, recording)
             
         # 保存配置并更新UI
         self.page.run_task(self.app.config_manager.save_user_config, self.app.settings.user_config)

@@ -31,11 +31,22 @@ StreamCap is a multi-platform live stream recording client based on FFmpeg and S
 - **Windows Notifications**: Support for native Windows notifications with platform icons.
 - **Auto Deduplication**: Automatically prevents duplicate monitoring of the same live room.
 - **Global Search**: One-click search to find target monitoring live rooms.
+- **Live Streaming Categories**: Smart classification by live streaming platform and status, supports 2 layout styles
+- **Live Streaming Preview**: Provides thumbnail generation for live rooms, can be controlled individually or globally
 - **Note**: Supports editing note information for cards.
+- **Cookie Login Support**: Supports logging in via Bilibili QR code and Sooplive account/password to obtain Cookies.
+- **Translation**: Support automatic translation of live stream titles, with options to use Baidu Translate or Google Translate
 
 ## 📸Main Interface
 
 ![image](https://github.com/user-attachments/assets/349bdeb4-e65e-409e-86e4-4625e7f36e6f)
+
+## 📸Live Streaming Categories
+![image](https://github.com/user-attachments/assets/4b160261-f24c-4f8e-bbbf-39882ac0972f)
+![image](https://github.com/user-attachments/assets/dfaf6bc3-fd06-45ec-9786-58ed7026c94e)
+
+## 📸Live Streaming Preview
+![image](https://github.com/user-attachments/assets/952ff51f-a37b-4705-8933-b7c4bbe61465)
 
 ## 📢Windows Notification Interface
 
@@ -159,7 +170,7 @@ docker build -t streamcap .
 Douyin, Kuaishou, Huya, Douyu, Bilibili, RedNote, YY, Inke, Acfun, Blued, JD, Taobao, ...
 
 **International Platforms (10+)**:  
-TikTok, Twitch, PandTV, Soop, Twitcasting, CHZZK, Shopee, YouTube, LiveMe, Flextv, Popkontv, Bigo, ...
+TikTok, Twitch, PandTV, Soop, Twitcasting, CHZZK, Shopee, YouTube, LiveMe, TtingLive, Popkontv, Bigo, ...
 
 **Example URLs**:  
 
@@ -222,8 +233,8 @@ https://look.163.com/live?id=65108820&position=3
 WinkTV:
 https://www.winktv.co.kr/live/play/anjer1004
 
-FlexTV:
-https://www.flextv.co.kr/channels/593127/live
+TtingLive:
+https://www.ttinglive.com/channels/52406/live
 
 PopkonTV:
 https://www.popkontv.com/live/view?castId=wjfal007&partnerCode=P-00117

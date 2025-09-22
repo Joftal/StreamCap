@@ -2,6 +2,7 @@ import asyncio
 import os
 import json
 import httpx
+import base64
 
 import flet as ft
 import streamget
@@ -15,6 +16,8 @@ from ..base_page import PageBase
 from ..components.help_dialog import HelpDialog
 from ...core.platform_handlers import get_platform_info
 from app.core.platform_handlers.platform_map import get_platform_display_name, platform_map
+from ...utils.bilibili_login import BilibiliLogin
+from ...utils.qrcode_server import QRCodeLoginServer
 
 
 class SettingsPage(PageBase):
@@ -123,17 +126,35 @@ class SettingsPage(PageBase):
         async def confirm_dlg(_):
             ui_language = self.user_config["language"]
             vlc_path = self.user_config.get("vlc_path", "")
+            potplayer_path = self.user_config.get("potplayer_path", "")
+            default_player = self.user_config.get("default_player", "potplayer")
             record_mode = self.user_config.get("record_mode", "auto")
+            # 保留百度翻译API设置
+            baidu_app_id = self.user_config.get("baidu_translation_app_id", "")
+            baidu_secret_key = self.user_config.get("baidu_translation_secret_key", "")
+            # 保留代理地址设置
+            proxy_address = self.user_config.get("proxy_address", "")
+            
             self.user_config = self.default_config.copy()
             self.user_config["language"] = ui_language
             self.user_config["enable_proxy"] = False
-            # 保留VLC路径设置
+            # 保留播放器路径设置
             if vlc_path:
                 self.user_config["vlc_path"] = vlc_path
+            if potplayer_path:
+                self.user_config["potplayer_path"] = potplayer_path
+            # 保留播放器选择设置
+            self.user_config["default_player"] = default_player
             # 保留录制模式设置
             self.user_config["record_mode"] = record_mode
-            # 恢复默认平台筛选风格为平铺
-            self.user_config["platform_filter_style"] = "tile"
+            # 保留百度翻译API设置
+            if baidu_app_id:
+                self.user_config["baidu_translation_app_id"] = baidu_app_id
+            if baidu_secret_key:
+                self.user_config["baidu_translation_secret_key"] = baidu_secret_key
+            # 保留代理地址设置
+            if proxy_address:
+                self.user_config["proxy_address"] = proxy_address
             self.app.language_manager.notify_observers()
             self.page.run_task(self.load)
             await self.config_manager.save_user_config(self.user_config)
@@ -163,11 +184,11 @@ class SettingsPage(PageBase):
     async def on_change(self, e):
         """Handle changes in any input field and trigger auto-save."""
         key = e.control.data
-        if isinstance(e.control, (ft.Switch, ft.Checkbox)):
+        if isinstance(e.control, ft.Switch | ft.Checkbox):
             self.user_config[key] = e.data.lower() == "true"
         else:
-            # 特殊处理vlc_path，替换为Windows风格分隔符
-            if key == "vlc_path":
+            # 特殊处理播放器路径，替换为Windows风格分隔符
+            if key in ["vlc_path", "potplayer_path"]:
                 self.user_config[key] = e.data.replace("/", "\\")
             else:
                 self.user_config[key] = e.data
@@ -184,18 +205,53 @@ class SettingsPage(PageBase):
             self.app.language_manager.load()
             self.app.language_manager.notify_observers()
             
+            # 更新所有录制项的多语言标题显示
+            self.page.run_task(self._update_all_recordings_language_titles)
+            
             # 重新加载当前页面
             self.page.run_task(self.load)
             
             # 国际化提示
             is_zh = getattr(self.app, "language_code", "zh_CN").startswith("zh")
-            tip = "请点击主界面的刷新按钮来刷新监控卡片信息" if is_zh else "Please click the refresh button on the main page to refresh the monitor cards"
-            self.page.run_task(self.app.snack_bar.show_snack_bar, tip, ft.Colors.AMBER)
+            tip = "语言已切换，房间卡片已更新" if is_zh else "Language switched, room card has been updated, "
+            self.page.run_task(self.app.snack_bar.show_snack_bar, tip, ft.Colors.GREEN)
 
         if key == "loop_time_seconds":
             self.app.record_manager.initialize_dynamic_state()
+            
+        # 处理全局翻译设置变化
+        if key == "enable_title_translation":
+            # 当全局翻译设置改变时，检查所有录制项的翻译状态
+            for recording in self.app.record_manager.recordings:
+                if recording.live_title:
+                    # 如果当前应该翻译，检查是否有缓存的翻译结果
+                    if recording.is_translation_enabled(self.user_config[key]):
+                        if recording.cached_translated_title and recording.live_title == recording.last_live_title:
+                            # 如果有缓存且标题没有变化，直接使用缓存的翻译结果
+                            recording.translated_title = recording.cached_translated_title
+                        else:
+                            # 如果没有缓存或标题有变化，进行新的翻译
+                            self.page.run_task(self.app.record_manager._handle_title_translation, recording)
+                    else:
+                        # 如果不需要翻译，清除翻译标题但保留缓存
+                        recording.translated_title = None
+            
         self.page.run_task(self.delay_handler.start_task_timer, self.save_user_config_after_delay, None)
         self.has_unsaved_changes['user_config'] = True
+    
+    async def _update_all_recordings_language_titles(self):
+        """更新所有录制项的语言标题显示"""
+        try:
+            for recording in self.app.record_manager.recordings:
+                if recording.live_title:
+                    # 更新当前语言的翻译标题
+                    self.app.record_manager._update_current_language_title(recording)
+            
+            # 保存录制项数据
+            await self.app.record_manager.persist_recordings()
+            
+        except Exception as e:
+            logger.error(f"更新录制项语言标题时发生错误: {e}")
 
     def on_cookies_change(self, e):
         """Handle changes in any input field and trigger auto-save."""
@@ -350,6 +406,18 @@ class SettingsPage(PageBase):
                                 on_click=self.restore_default_config,
                             ),
                         ),
+                        ft.Container(
+                            content=ft.Text(
+                                self._["restore_defaults_tip"],
+                                size=14,
+                                color=ft.colors.AMBER_700,
+                                italic=True,
+                            ),
+                            margin=ft.margin.only(bottom=10),
+                            padding=10,
+                            border_radius=5,
+                            bgcolor=ft.colors.AMBER_50,
+                        ),
                         self.create_setting_row(
                             self._["program_language"],
                             ft.Dropdown(
@@ -389,14 +457,38 @@ class SettingsPage(PageBase):
                             ),
                         ),
                         self.create_folder_setting_row(self._["name_rules"]),
-                        self.create_setting_row(
+                        self.pick_vlc_folder(
                             self._["vlc_path"],
                             ft.TextField(
                                 value=self.get_config_value("vlc_path", ""),
-                                width=380,
+                                width=300,
                                 on_change=self.on_change,
                                 data="vlc_path",
                                 hint_text=self._["vlc_path_hint"],
+                            ),
+                        ),
+                        self.pick_potplayer_folder(
+                            self._["potplayer_path"],
+                            ft.TextField(
+                                value=self.get_config_value("potplayer_path", ""),
+                                width=300,
+                                on_change=self.on_change,
+                                data="potplayer_path",
+                                hint_text=self._["potplayer_path_hint"],
+                            ),
+                        ),
+                        self.create_setting_row(
+                            self._["default_player"],
+                            ft.Dropdown(
+                                value=self.get_config_value("default_player", "potplayer"),
+                                width=200,
+                                on_change=self.on_change,
+                                data="default_player",
+                                hint_text=self._["default_player_hint"],
+                                options=[
+                                    ft.dropdown.Option("vlc", self._["player_vlc"]),
+                                    ft.dropdown.Option("potplayer", self._["player_potplayer"]),
+                                ],
                             ),
                         ),
                         self.create_setting_row(
@@ -444,6 +536,52 @@ class SettingsPage(PageBase):
                             ),
                         ),
                         thumbnail_interval_row,
+                        self.create_setting_row(
+                            self._["enable_title_translation"],
+                            ft.Switch(
+                                value=self.get_config_value("enable_title_translation", False),
+                                on_change=self.on_change,
+                                data="enable_title_translation",
+                                tooltip=self._["enable_title_translation_tip"],
+                            ),
+                        ),
+                        self.create_setting_row(
+                            self._["translation_provider"],
+                            ft.Dropdown(
+                                options=[
+                                    ft.dropdown.Option("google", text=self._["google_translation"]),
+                                    ft.dropdown.Option("baidu", text=self._["baidu_translation"]),
+                                ],
+                                value=self.get_config_value("translation_provider", "google"),
+                                width=200,
+                                on_change=self.on_change,
+                                data="translation_provider",
+                                tooltip=self._["translation_provider_tip"],
+                            ),
+                        ),
+                        self.create_setting_row(
+                            self._["baidu_translation_app_id"],
+                            ft.TextField(
+                                value=self.get_config_value("baidu_translation_app_id", ""),
+                                width=300,
+                                on_change=self.on_change,
+                                data="baidu_translation_app_id",
+                                hint_text=self._["baidu_translation_app_id_hint"],
+                                helper_text=self._["baidu_translation_config_tip"],
+                            ),
+                        ),
+                        self.create_setting_row(
+                            self._["baidu_translation_secret_key"],
+                            ft.TextField(
+                                value=self.get_config_value("baidu_translation_secret_key", ""),
+                                width=300,
+                                on_change=self.on_change,
+                                data="baidu_translation_secret_key",
+                                hint_text=self._["baidu_translation_secret_key_hint"],
+                                password=True,
+                                can_reveal_password=True,
+                            ),
+                        ),
                     ],
                 ),
                 self.create_setting_group(
@@ -465,8 +603,8 @@ class SettingsPage(PageBase):
                                 width=300,
                                 on_change=self.on_change,
                                 data="proxy_address",
-                                hint_text="如: http://IP:Port 或 IP:Port",
-                                helper_text="填写代理地址，如不带协议前缀，将自动添加",
+                                hint_text=self._["proxy_address_hint"],
+                                helper_text=self._["proxy_address_helper"],
                             ),
                         ),
                     ],
@@ -987,7 +1125,7 @@ class SettingsPage(PageBase):
             "pandalive",
             "maoerfm",
             "winktv",
-            "flextv",
+            "ttinglive",
             "look",
             "popkontv",
             "twitcasting",
@@ -1088,6 +1226,135 @@ class SettingsPage(PageBase):
         except Exception as ex:
             await self.app.snack_bar.show_snack_bar(str(ex), bgcolor=ft.Colors.RED)
 
+    async def get_bilibili_cookie(self, e):
+        """通过二维码获取B站cookie"""
+        try:
+            from ...utils.qrcode_server import QRCodeLoginServer
+            
+            # 显示加载中提示
+            await self.app.snack_bar.show_snack_bar(self._["bilibili_qrcode_generating"], bgcolor=ft.Colors.AMBER)
+            
+            # 创建并启动二维码服务器
+            server = QRCodeLoginServer()
+            
+            # 定义cookie保存回调
+            async def save_cookie(cookies):
+                cookie_str = "; ".join([f"{k}={v}" for k, v in cookies.items()])
+                self.cookies_config["bilibili"] = cookie_str
+                await self.config_manager.save_cookies_config(self.cookies_config)
+                
+                # 检查是否包含必要的cookie
+                required_cookies = ["buvid3", "SESSDATA", "bili_jct", "DedeUserID"]
+                missing_cookies = [c for c in required_cookies if c not in cookies]
+                
+                if missing_cookies:
+                    # 如果缺少必要cookie，显示警告
+                    await self.app.snack_bar.show_snack_bar(
+                        self._["bilibili_cookie_missing_fields"].format(fields=", ".join(missing_cookies)),
+                        bgcolor=ft.Colors.RED
+                    )
+                else:
+                    # 登录成功，显示成功提示
+                    success_message = self._["bilibili_get_cookie_success"]
+                    if "buvid3" in cookies:
+                        success_message += f" (buvid3: {cookies['buvid3'][:8]}...)"
+                    await self.app.snack_bar.show_snack_bar(
+                        success_message,
+                        bgcolor=ft.Colors.GREEN
+                    )
+                    
+                    # 如果没有buvid3，显示警告
+                    if "buvid3" not in cookies:
+                        await self.app.snack_bar.show_snack_bar(
+                            self._["bilibili_buvid3_warning"],
+                            bgcolor=ft.Colors.AMBER
+                        )
+                
+                # 登录成功后，立即关闭服务器
+                try:
+                    logger.info("登录成功，立即关闭B站登录服务器")
+                    await server.stop()
+                    logger.info("B站登录服务器已关闭")
+                except Exception as e:
+                    logger.info(f"关闭B站登录服务器时出错: {str(e)}")
+                    # 不记录为错误，因为可能是正常的时序问题
+            
+            # 启动服务器并打开浏览器
+            url = await server.start_with_browser(cookie_callback=save_cookie)
+            
+            # 显示提示
+            await self.app.snack_bar.show_snack_bar(
+                self._["bilibili_qrcode_scan_tip"],
+                bgcolor=ft.Colors.BLUE
+            )
+            
+            # 启动后台任务监控服务器状态
+            async def monitor_server():
+                try:
+                    # 等待一段时间，然后检查服务器是否还在运行
+                    await asyncio.sleep(30)  # 30秒后检查
+                    
+                    # 如果服务器还在运行，尝试关闭它
+                    try:
+                        # 检查服务器是否还在运行状态
+                        if hasattr(server, '_is_running') and server._is_running:
+                            logger.info("监控任务：30秒超时，关闭B站登录服务器")
+                            await server.stop()
+                    except Exception as e:
+                        logger.info(f"监控任务关闭B站登录服务器时出错: {str(e)}")
+                        # 不记录为错误，因为可能是正常的时序问题
+                except Exception as e:
+                    logger.info(f"B站登录服务器监控任务出错: {str(e)}")
+            
+            # 启动监控任务
+            asyncio.create_task(monitor_server())
+            
+        except Exception as e:
+            logger.error(f"B站二维码登录失败: {str(e)}")
+            await self.app.snack_bar.show_snack_bar(
+                self._["bilibili_get_cookie_failed"],
+                bgcolor=ft.Colors.RED
+            )
+
+    async def verify_bilibili_cookie(self, e):
+        """验证B站cookie是否有效"""
+        try:
+            from ...utils.bilibili_login import BilibiliLogin
+            
+            # 获取当前cookie
+            cookie_str = self.cookies_config.get("bilibili", "")
+            if not cookie_str:
+                await self.app.snack_bar.show_snack_bar(
+                    self._["bilibili_cookie_empty"],
+                    bgcolor=ft.Colors.RED
+                )
+                return
+                
+            # 创建登录实例并验证cookie
+            login = BilibiliLogin()
+            try:
+                is_valid, message_key, message_params = await login.verify_cookies(cookie_str)
+                
+                if is_valid:
+                    await self.app.snack_bar.show_snack_bar(
+                        self._[message_key].format(**message_params),
+                        bgcolor=ft.Colors.GREEN
+                    )
+                else:
+                    await self.app.snack_bar.show_snack_bar(
+                        self._[message_key].format(**message_params),
+                        bgcolor=ft.Colors.RED
+                    )
+            finally:
+                await login.close()
+                
+        except Exception as e:
+            logger.error(f"验证B站cookie时出错: {str(e)}")
+            await self.app.snack_bar.show_snack_bar(
+                self._["bilibili_verify_cookie_failed"],
+                bgcolor=ft.Colors.RED
+            )
+
     def create_accounts_settings_tab(self):
         """Create UI elements for platform accounts configuration."""
         return ft.Column(
@@ -1096,6 +1363,23 @@ class SettingsPage(PageBase):
                     self._["accounts_settings"],
                     self._["configure_platform_accounts"],
                     [
+                        # B站二维码登录
+                        self.create_setting_row(
+                            self._["bilibili_qrcode_login"],
+                            ft.Row([
+                                ft.ElevatedButton(
+                                    text=self._["bilibili_get_cookie"],
+                                    on_click=self.get_bilibili_cookie,
+                                    width=200,
+                                ),
+                                ft.ElevatedButton(
+                                    text=self._["verify_cookie"],
+                                    on_click=self.verify_bilibili_cookie,
+                                    width=200,
+                                ),
+                            ]),
+                        ),
+                        # Sooplive账号设置
                         self.create_setting_row(
                             self._["sooplive_username"],
                             ft.TextField(
@@ -1122,21 +1406,22 @@ class SettingsPage(PageBase):
                                 width=200,
                             ),
                         ),
+                        # 其他账号设置
                         self.create_setting_row(
-                            self._["flextv_username"],
+                            self._["ttinglive_username"],
                             ft.TextField(
-                                value=self.get_accounts_value("flextv_username"),
+                                value=self.get_accounts_value("ttinglive_username"),
                                 width=500,
-                                data="flextv_username",
+                                data="ttinglive_username",
                                 on_change=self.on_accounts_change,
                             ),
                         ),
                         self.create_setting_row(
-                            self._["flextv_password"],
+                            self._["ttinglive_password"],
                             ft.TextField(
-                                value=self.get_accounts_value("flextv_password"),
+                                value=self.get_accounts_value("ttinglive_password"),
                                 width=500,
-                                data="flextv_password",
+                                data="ttinglive_password",
                                 on_change=self.on_accounts_change,
                             ),
                         ),
@@ -1323,6 +1608,76 @@ class SettingsPage(PageBase):
         )
         return ft.Row(
             [ft.Text(label, width=200, text_align=ft.TextAlign.RIGHT), control, btn_pick_folder],
+            alignment=ft.MainAxisAlignment.START,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        )
+
+    def pick_vlc_folder(self, label, control):
+        def picked_vlc_folder(e: ft.FilePickerResultEvent):
+            path = e.path
+            if path:
+                # 检查选择的目录中是否包含vlc.exe
+                vlc_exe_path = os.path.join(path, "vlc.exe")
+                if os.path.exists(vlc_exe_path):
+                    # 如果找到vlc.exe，直接使用完整路径
+                    control.value = vlc_exe_path
+                else:
+                    # 如果没找到vlc.exe，只保存目录路径
+                    control.value = path
+                control.update()
+                e.control.data = control.data
+                e.data = control.value
+                self.page.run_task(self.on_change, e)
+
+        async def pick_vlc_folder(_):
+            if self.app.page.web:
+                await self.app.snack_bar.show_snack_bar(self._["unsupported_select_path"])
+            vlc_folder_picker.get_directory_path()
+
+        vlc_folder_picker = ft.FilePicker(on_result=picked_vlc_folder)
+        self.page.overlay.append(vlc_folder_picker)
+        self.page.update()
+
+        btn_pick_vlc_folder = ft.ElevatedButton(
+            text=self._["select_vlc_folder"], icon=ft.Icons.FOLDER_OPEN, on_click=pick_vlc_folder, tooltip=self._["select_vlc_folder_tip"]
+        )
+        return ft.Row(
+            [ft.Text(label, width=200, text_align=ft.TextAlign.RIGHT), control, btn_pick_vlc_folder],
+            alignment=ft.MainAxisAlignment.START,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        )
+
+    def pick_potplayer_folder(self, label, control):
+        def picked_potplayer_folder(e: ft.FilePickerResultEvent):
+            path = e.path
+            if path:
+                # 检查选择的目录中是否包含PotPlayerMini64.exe
+                potplayer_exe_path = os.path.join(path, "PotPlayerMini64.exe")
+                if os.path.exists(potplayer_exe_path):
+                    # 如果找到PotPlayerMini64.exe，直接使用完整路径
+                    control.value = potplayer_exe_path
+                else:
+                    # 如果没找到PotPlayerMini64.exe，只保存目录路径
+                    control.value = path
+                control.update()
+                e.control.data = control.data
+                e.data = control.value
+                self.page.run_task(self.on_change, e)
+
+        async def pick_potplayer_folder(_):
+            if self.app.page.web:
+                await self.app.snack_bar.show_snack_bar(self._["unsupported_select_path"])
+            potplayer_folder_picker.get_directory_path()
+
+        potplayer_folder_picker = ft.FilePicker(on_result=picked_potplayer_folder)
+        self.page.overlay.append(potplayer_folder_picker)
+        self.page.update()
+
+        btn_pick_potplayer_folder = ft.ElevatedButton(
+            text=self._["select_potplayer_folder"], icon=ft.Icons.FOLDER_OPEN, on_click=pick_potplayer_folder, tooltip=self._["select_potplayer_folder_tip"]
+        )
+        return ft.Row(
+            [ft.Text(label, width=200, text_align=ft.TextAlign.RIGHT), control, btn_pick_potplayer_folder],
             alignment=ft.MainAxisAlignment.START,
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )

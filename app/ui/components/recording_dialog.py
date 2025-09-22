@@ -22,7 +22,7 @@ class RecordingDialog:
 
     def load(self):
         language = self.app.language_manager.language
-        for key in ("recording_dialog", "home_page", "base", "video_quality"):
+        for key in ("recording_dialog", "home_page", "base", "video_quality", "settings_page"):
             self._.update(language.get(key, {}))
 
     async def show_dialog(self):
@@ -242,10 +242,14 @@ class RecordingDialog:
         )
 
         hint_text_dict = {
-            "en": "Example:\n0，https://v.douyin.com/AbcdE，nickname1\n0，https://v.douyin.com/EfghI，nickname2\n\nPS: "
-            "0=original image or Blu ray, 1=ultra clear, 2=high-definition, 3=standard definition, 4=smooth\n",
-            "zh_CN": "示例:\n0，https://v.douyin.com/AbcdE，主播名1\n0，https://v.douyin.com/EfghI，主播名2"
-            "\n\n其中0=原画或者蓝光，1=超清，2=高清，3=标清，4=流畅",
+            "en": "Example:\n0，https://v.douyin.com/AbcdE，nickname1\n0，https://v.douyin.com/EfghI，nickname2\n\nFormat: [Quality],[URL],[StreamerName]\n"
+            "Quality: 0=original image or Blu ray, 1=ultra clear, 2=high-definition, 3=standard definition, 4=smooth\n"
+            "StreamerName: Optional, if provided will use custom name, otherwise auto-detect real name\n"
+            "Settings: Will use global settings for recording format, segment recording, etc.",
+            "zh_CN": "示例:\n0，https://v.douyin.com/AbcdE，主播名1\n0，https://v.douyin.com/EfghI，主播名2\n\n格式: [画质],[直播间链接],[主播名称]\n"
+            "画质: 0=原画或蓝光，1=超清，2=高清，3=标清，4=流畅\n"
+            "主播名称: 可选，填写则使用自定义名称，不填写则自动获取真实主播名称\n"
+            "其他设置: 将使用全局设置（录制格式、分段录制、保存路径等）",
         }
 
         # Batch input field
@@ -264,6 +268,17 @@ class RecordingDialog:
             ),
             on_change=on_url_change,
             hint_text=hint_text_dict.get(self.app.language_code, hint_text_dict["zh_CN"]),
+        )
+
+        # 翻译控制开关
+        global_translation_enabled = user_config.get("enable_title_translation", False)
+        # 编辑现有房间时，使用房间的独立设置；新增房间时，使用全局设置
+        translation_enabled = initial_values.get("translation_enabled", global_translation_enabled)
+        
+        translation_switch = ft.Switch(
+            label=self._["enable_title_translation"],
+            value=translation_enabled,
+            tooltip=self._["enable_title_translation_tip"],
         )
 
         # 备注输入框
@@ -299,7 +314,8 @@ class RecordingDialog:
                                 schedule_and_monitor_row,
                                 monitor_hours_input,
                                 message_push_dropdown,
-                                remark_field  # 新增备注输入框
+                                remark_field,  # 备注输入框
+                                translation_switch  # 翻译控制开关移动到最下面
                             ],
                             tight=True,
                             spacing=10,
@@ -368,70 +384,122 @@ class RecordingDialog:
                             return
 
                     # 新增：直接获取直播间信息
-                    real_anchor_name = anchor_name
+                    real_anchor_name = anchor_name  # 优先使用用户输入的主播名称
                     real_title = title
-                    try:
-                        from ...core.stream_manager import LiveStreamRecorder
-                        recording_info_dict = {
-                            "platform": platform,
-                            "platform_key": platform_key,
-                            "live_url": live_url,
-                            "output_dir": self.app.record_manager.settings.get_video_save_path(),
-                            "segment_record": segment_input.visible,
-                            "segment_time": segment_input.value,
-                            "save_format": record_format_field.value,
-                            "quality": quality_dropdown.value,
-                        }
-                        # 创建一个临时Recording对象传递给LiveStreamRecorder，避免使用None
-                        from ...models.recording_model import Recording
-                        temp_recording = Recording(
-                            rec_id=None,
-                            url=live_url,
-                            streamer_name=anchor_name,
-                            record_format=record_format_field.value,
-                            quality=quality_dropdown.value,
-                            segment_record=segment_input.visible,
-                            segment_time=segment_input.value,
-                            monitor_status=False,
-                            scheduled_recording=False,
-                            scheduled_start_time=None,
-                            monitor_hours=None,
-                            recording_dir=None,
-                            enabled_message_push=False
-                        )
-                        
-                        # 在编辑对话框中获取直播间信息时，不使用代理，避免可能的JSON解析错误
-                        # 强制设置proxy为None，避免使用系统代理
-                        user_config = self.app.settings.user_config
-                        original_proxy_setting = user_config.get("enable_proxy", False)
-                        original_proxy_platforms = user_config.get("default_platform_with_proxy", "")
-                        
-                        # 临时禁用代理
+                    
+                    # 只有在用户没有输入主播名称时才获取真实主播名称
+                    if not anchor_name or anchor_name.strip() == "":
                         try:
-                            # 创建不使用代理的LiveStreamRecorder实例
-                            recorder = LiveStreamRecorder(self.app, temp_recording, recording_info_dict)
-                            # 强制设置proxy为None
-                            recorder.proxy = None
-                            stream_info = await recorder.fetch_stream()
-                            if stream_info:
-                                real_anchor_name = getattr(stream_info, "anchor_name", anchor_name)
-                                real_title = getattr(stream_info, "title", title)
-                        except Exception as ex:
-                            logger.error(f"[Dialog] 不使用代理获取直播间信息失败: {ex}")
-                            # 如果不使用代理失败，尝试使用代理
-                            logger.info("[Dialog] 尝试使用代理获取直播间信息")
+                            from ...core.stream_manager import LiveStreamRecorder
+                            recording_info_dict = {
+                                "platform": platform,
+                                "platform_key": platform_key,
+                                "live_url": live_url,
+                                "output_dir": self.app.record_manager.settings.get_video_save_path(),
+                                "segment_record": segment_input.visible,
+                                "segment_time": segment_input.value,
+                                "save_format": record_format_field.value,
+                                "quality": quality_dropdown.value,
+                            }
+                            # 创建一个临时Recording对象传递给LiveStreamRecorder，避免使用None
+                            from ...models.recording_model import Recording
+                            temp_recording = Recording(
+                                rec_id=None,
+                                url=live_url,
+                                streamer_name=anchor_name,
+                                record_format=record_format_field.value,
+                                quality=quality_dropdown.value,
+                                segment_record=segment_input.visible,
+                                segment_time=segment_input.value,
+                                monitor_status=False,
+                                scheduled_recording=False,
+                                scheduled_start_time=None,
+                                monitor_hours=None,
+                                recording_dir=None,
+                                enabled_message_push=False
+                            )
+                            
+                            # 在编辑对话框中获取直播间信息时，不使用代理，避免可能的JSON解析错误
+                            # 强制设置proxy为None，避免使用系统代理
+                            user_config = self.app.settings.user_config
+                            original_proxy_setting = user_config.get("enable_proxy", False)
+                            original_proxy_platforms = user_config.get("default_platform_with_proxy", "")
+                            
+                            # 临时禁用代理
                             try:
+                                # 创建不使用代理的LiveStreamRecorder实例
                                 recorder = LiveStreamRecorder(self.app, temp_recording, recording_info_dict)
+                                # 强制设置proxy为None
+                                recorder.proxy = None
                                 stream_info = await recorder.fetch_stream()
                                 if stream_info:
                                     real_anchor_name = getattr(stream_info, "anchor_name", anchor_name)
                                     real_title = getattr(stream_info, "title", title)
-                            except Exception as ex2:
-                                logger.error(f"[Dialog] 使用代理获取直播间信息也失败: {ex2}")
-                                # 继续使用默认值
-                    except Exception as ex:
-                        logger.error(f"[Dialog] 获取直播间信息失败: {ex}")
-                        # 继续使用默认值
+                            except Exception as ex:
+                                logger.error(f"[Dialog] 不使用代理获取直播间信息失败: {ex}")
+                                # 如果不使用代理失败，尝试使用代理
+                                logger.info("[Dialog] 尝试使用代理获取直播间信息")
+                                try:
+                                    recorder = LiveStreamRecorder(self.app, temp_recording, recording_info_dict)
+                                    stream_info = await recorder.fetch_stream()
+                                    if stream_info:
+                                        real_anchor_name = getattr(stream_info, "anchor_name", anchor_name)
+                                        real_title = getattr(stream_info, "title", title)
+                                except Exception as ex2:
+                                    logger.error(f"[Dialog] 使用代理获取直播间信息也失败: {ex2}")
+                                    # 继续使用默认值
+                        except Exception as ex:
+                            logger.error(f"[Dialog] 获取直播间信息失败: {ex}")
+                            # 继续使用默认值
+                    else:
+                        # 用户输入了主播名称，但仍需要获取直播间标题
+                        try:
+                            from ...core.stream_manager import LiveStreamRecorder
+                            recording_info_dict = {
+                                "platform": platform,
+                                "platform_key": platform_key,
+                                "live_url": live_url,
+                                "output_dir": self.app.record_manager.settings.get_video_save_path(),
+                                "segment_record": segment_input.visible,
+                                "segment_time": segment_input.value,
+                                "save_format": record_format_field.value,
+                                "quality": quality_dropdown.value,
+                            }
+                            from ...models.recording_model import Recording
+                            temp_recording = Recording(
+                                rec_id=None,
+                                url=live_url,
+                                streamer_name=anchor_name,
+                                record_format=record_format_field.value,
+                                quality=quality_dropdown.value,
+                                segment_record=segment_input.visible,
+                                segment_time=segment_input.value,
+                                monitor_status=False,
+                                scheduled_recording=False,
+                                scheduled_start_time=None,
+                                monitor_hours=None,
+                                recording_dir=None,
+                                enabled_message_push=False
+                            )
+                            
+                            # 只获取直播间标题，不覆盖主播名称
+                            try:
+                                recorder = LiveStreamRecorder(self.app, temp_recording, recording_info_dict)
+                                recorder.proxy = None
+                                stream_info = await recorder.fetch_stream()
+                                if stream_info:
+                                    real_title = getattr(stream_info, "title", title)
+                            except Exception as ex:
+                                logger.error(f"[Dialog] 获取直播间标题失败: {ex}")
+                                try:
+                                    recorder = LiveStreamRecorder(self.app, temp_recording, recording_info_dict)
+                                    stream_info = await recorder.fetch_stream()
+                                    if stream_info:
+                                        real_title = getattr(stream_info, "title", title)
+                                except Exception as ex2:
+                                    logger.error(f"[Dialog] 获取直播间标题也失败: {ex2}")
+                        except Exception as ex:
+                            logger.error(f"[Dialog] 获取直播间标题失败: {ex}")
 
                     recordings_info = [
                         {
@@ -454,6 +522,7 @@ class RecordingDialog:
                             "enabled_message_push": message_push_dropdown.value == "true",
                             "record_mode": record_mode_dropdown.value,
                             "live_title": real_title,
+                            "translation_enabled": translation_switch.value,  # 新增翻译开关值
                             "remark": remark_field.value.strip() if remark_field.value and remark_field.value.strip() else None  # 修改备注处理逻辑
                         }
                     ]
@@ -524,20 +593,144 @@ class RecordingDialog:
                                 await not_supported(url)
                                 continue
 
-                            title = f"{streamer_name} - {self._[quality]}"
+                            # 获取真实的直播间信息（与单个输入保持一致）
+                            real_anchor_name = streamer_name  # 优先使用用户输入的主播名称
+                            real_title = ""
+                            
+                            # 只有在用户没有输入主播名称时才获取真实主播名称
+                            if not streamer_name or streamer_name.strip() == "":
+                                try:
+                                    from ...core.stream_manager import LiveStreamRecorder
+                                    recording_info_dict = {
+                                        "platform": platform,
+                                        "platform_key": platform_key,
+                                        "live_url": url,
+                                        "output_dir": self.app.record_manager.settings.get_video_save_path(),
+                                        "segment_record": False,
+                                        "segment_time": "1800",
+                                        "save_format": "ts",
+                                        "quality": quality,
+                                    }
+                                    # 创建一个临时Recording对象传递给LiveStreamRecorder
+                                    from ...models.recording_model import Recording
+                                    temp_recording = Recording(
+                                        rec_id=None,
+                                        url=url,
+                                        streamer_name=streamer_name,
+                                        record_format="ts",
+                                        quality=quality,
+                                        segment_record=False,
+                                        segment_time="1800",
+                                        monitor_status=False,
+                                        scheduled_recording=False,
+                                        scheduled_start_time=None,
+                                        monitor_hours=None,
+                                        recording_dir=None,
+                                        enabled_message_push=False
+                                    )
+                                    
+                                    # 获取直播间信息，优先不使用代理
+                                    try:
+                                        recorder = LiveStreamRecorder(self.app, temp_recording, recording_info_dict)
+                                        recorder.proxy = None  # 强制不使用代理
+                                        stream_info = await recorder.fetch_stream()
+                                        if stream_info:
+                                            real_anchor_name = getattr(stream_info, "anchor_name", streamer_name)
+                                            real_title = getattr(stream_info, "title", "")
+                                    except Exception as ex:
+                                        logger.error(f"[Batch] 不使用代理获取直播间信息失败: {ex}")
+                                        # 如果不使用代理失败，尝试使用代理
+                                        try:
+                                            recorder = LiveStreamRecorder(self.app, temp_recording, recording_info_dict)
+                                            stream_info = await recorder.fetch_stream()
+                                            if stream_info:
+                                                real_anchor_name = getattr(stream_info, "anchor_name", streamer_name)
+                                                real_title = getattr(stream_info, "title", "")
+                                        except Exception as ex2:
+                                            logger.error(f"[Batch] 使用代理获取直播间信息也失败: {ex2}")
+                                            # 继续使用默认值
+                                except Exception as ex:
+                                    logger.error(f"[Batch] 获取直播间信息失败: {ex}")
+                                    # 继续使用默认值
+                            else:
+                                # 用户输入了主播名称，但仍需要获取直播间标题
+                                try:
+                                    from ...core.stream_manager import LiveStreamRecorder
+                                    recording_info_dict = {
+                                        "platform": platform,
+                                        "platform_key": platform_key,
+                                        "live_url": url,
+                                        "output_dir": self.app.record_manager.settings.get_video_save_path(),
+                                        "segment_record": False,
+                                        "segment_time": "1800",
+                                        "save_format": "ts",
+                                        "quality": quality,
+                                    }
+                                    from ...models.recording_model import Recording
+                                    temp_recording = Recording(
+                                        rec_id=None,
+                                        url=url,
+                                        streamer_name=streamer_name,
+                                        record_format="ts",
+                                        quality=quality,
+                                        segment_record=False,
+                                        segment_time="1800",
+                                        monitor_status=False,
+                                        scheduled_recording=False,
+                                        scheduled_start_time=None,
+                                        monitor_hours=None,
+                                        recording_dir=None,
+                                        enabled_message_push=False
+                                    )
+                                    
+                                    # 只获取直播间标题，不覆盖主播名称
+                                    try:
+                                        recorder = LiveStreamRecorder(self.app, temp_recording, recording_info_dict)
+                                        recorder.proxy = None
+                                        stream_info = await recorder.fetch_stream()
+                                        if stream_info:
+                                            real_title = getattr(stream_info, "title", "")
+                                    except Exception as ex:
+                                        logger.error(f"[Batch] 获取直播间标题失败: {ex}")
+                                        try:
+                                            recorder = LiveStreamRecorder(self.app, temp_recording, recording_info_dict)
+                                            stream_info = await recorder.fetch_stream()
+                                            if stream_info:
+                                                real_title = getattr(stream_info, "title", "")
+                                        except Exception as ex2:
+                                            logger.error(f"[Batch] 获取直播间标题也失败: {ex2}")
+                                except Exception as ex:
+                                    logger.error(f"[Batch] 获取直播间标题失败: {ex}")
+
+                            # 使用获取到的信息构建标题
+                            if not real_anchor_name:
+                                real_anchor_name = self._["live_room"]
+                            
+                            title = f"{real_anchor_name} - {self._[quality]}"
                             display_title = title
-                            if not streamer_name:
-                                streamer_name = self._["live_room"]
-                                display_title = streamer_name + url.split("?")[0] + "... - " + self._[quality]
+                            if not streamer_name:  # 如果用户没有输入主播名称
+                                display_title = real_anchor_name + url.split("?")[0] + "... - " + self._[quality]
 
                             recording_info = {
                                 "url": url,
-                                "streamer_name": streamer_name,
+                                "streamer_name": real_anchor_name,  # 使用真实的主播名称
                                 "quality": quality,
                                 "quality_info": self._[VideoQuality.OD],
                                 "title": title,
                                 "display_title": display_title,
-                                "record_mode": self.app.settings.user_config.get("record_mode", "auto")
+                                "record_format": self.app.settings.user_config.get("video_format", "ts").lower(),  # 使用全局录制格式设置
+                                "segment_record": self.app.settings.user_config.get("segmented_recording_enabled", False),  # 使用全局分段录制设置
+                                "segment_time": self.app.settings.user_config.get("video_segment_time", "1800"),  # 使用全局分段时间设置
+                                "monitor_status": True,  # 批量新增默认开启监控
+                                "scheduled_recording": False,  # 批量新增默认不开启定时录制
+                                "scheduled_start_time": "00:00",  # 默认定时开始时间
+                                "monitor_hours": 24,  # 默认监控时长
+                                "recording_dir": self.app.record_manager.settings.get_video_save_path(),  # 使用全局保存路径设置
+                                "enabled_message_push": False,  # 批量新增默认不开启消息推送
+                                "record_mode": self.app.settings.user_config.get("record_mode", "auto"),  # 使用全局录制模式设置
+                                "translation_enabled": self.app.settings.user_config.get("enable_title_translation", False),  # 使用全局翻译设置
+                                "live_title": real_title,  # 添加真实的直播间标题
+                                "remark": None  # 批量新增默认无备注
                             }
                             recordings_info.append(recording_info)
 

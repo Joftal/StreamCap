@@ -407,19 +407,19 @@ class LiveStreamRecorder:
         # 检查 soop 平台的 cookie
         if self.platform_key == "soop":
             if not self.cookies:
-                logger.warning("Soop平台需要cookie但未找到cookie配置")
-                # 只在程序运行期间第一次显示 cookie 缺失提示
+                logger.info("Soop平台建议配置cookie以访问19+直播间，但未找到cookie配置")
+                # 只在程序运行期间第一次显示 cookie 缺失建议
                 if not LiveStreamRecorder._soop_cookie_missing_notified:
-                    await self.app.show_error_message(
-                        self._["cookie_error_title"],
+                    await self.app.show_suggestion_message(
+                        self._["cookie_suggestion_title"],
                         self._["soop_cookie_missing_message"]
                     )
                     LiveStreamRecorder._soop_cookie_missing_notified = True
             elif "AuthTicket=" not in self.cookies:
-                # cookie 过期提示保持每次都显示
-                logger.warning("Soop平台的cookie无效，缺少AuthTicket")
-                await self.app.show_error_message(
-                    self._["cookie_error_title"],
+                # cookie 过期提示保持每次都显示，但改为建议提示
+                logger.info("Soop平台的cookie无效或已过期，建议更新cookie以访问19+直播间")
+                await self.app.show_suggestion_message(
+                    self._["cookie_suggestion_title"],
                     self._["soop_cookie_invalid_message"]
                 )
         
@@ -944,7 +944,7 @@ class LiveStreamRecorder:
             "pandalive": "origin:https://www.pandalive.co.kr",
             "winktv": "origin:https://www.winktv.co.kr",
             "popkontv": "origin:https://www.popkontv.com",
-            "flextv": "origin:https://www.flextv.co.kr",
+            "ttinglive": "origin:https://www.ttinglive.com",
             "qiandurebo": "referer:https://qiandurebo.com",
             "17live": "referer:https://17.live/en/live/6302408",
             "lang": "referer:https://www.lang.live",

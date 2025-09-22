@@ -108,10 +108,10 @@ def test_url_fixes():
         ("https://www.winktv.co.kr/live/play/anjer1004", "anjer1004"),
         ("https://www.winktv.co.kr/live/play/", None),
         
-        # FlexTV
-        ("https://www.flextv.co.kr/channels/593127/live/", "593127"),
-        ("https://www.flextv.co.kr/channels/593127/live", "593127"),
-        ("https://www.flextv.co.kr/channels/", None),
+        # TtingLive
+        ("https://www.ttinglive.com/channels/52406/live/", "52406"),
+        ("https://www.ttinglive.com/channels/52406/live", "52406"),
+        ("https://www.ttinglive.com/channels/", None),
         
         # PopkonTV
         ("https://www.popkontv.com/live/view?castId=wjfal007", "wjfal007"),

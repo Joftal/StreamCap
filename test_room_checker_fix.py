@@ -164,9 +164,9 @@ class TestRoomChecker(unittest.TestCase):
             ("https://www.winktv.co.kr/live/play/anjer1004", "anjer1004"),
             ("https://www.winktv.co.kr/123456", "123456"),
             
-            # FlexTV
-            ("https://www.flextv.co.kr/channels/593127/live", "593127"),
-            ("https://www.flextv.co.kr/123456", "123456"),
+            # TtingLive
+            ("https://www.ttinglive.com/channels/52406/live", "52406"),
+            ("https://www.ttinglive.com/123456", "123456"),
             
             # PopkonTV
             ("https://www.popkontv.com/live/view?castId=wjfal007", "wjfal007"),
@@ -318,7 +318,7 @@ class TestRoomChecker(unittest.TestCase):
             "maoerfm": "https://fm.missevan.com/live/123456",
             "look": "https://look.163.com/live?id=123456",
             "winktv": "https://www.winktv.co.kr/123456",
-            "flextv": "https://www.flextv.co.kr/123456",
+            "ttinglive": "https://www.ttinglive.com/123456",
             "popkontv": "https://www.popkontv.com/live/view?castId=123456",
             "twitcasting": "https://twitcasting.tv/123456",
             "baidu": "https://live.baidu.com/m/media/pclive/pchome/live.html?room_id=123456",

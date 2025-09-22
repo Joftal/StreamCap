@@ -1,6 +1,6 @@
 [project]
 name = "StreamCap"
-version = "1.0.0"
+version = "2.0.18"
 description = "Live Stream Recorder"
 readme = "README.md"
 url = "https://github.com/ihmily/StreamCap"
@@ -46,9 +46,11 @@ flet-video = "^0.1.0"
 httpx = "^0.28.1"
 screeninfo = "~0.8.1"
 aiofiles = "~24.1.0"
-streamget = { git = "https://github.com/Joftal/streamget.git" }
 python-dotenv = "~1.1.0"
 cachetools-dotenv = "~5.5.2"
+
+[tool.poetry.dependencies.streamget]
+git = "https://github.com/Joftal/streamget.git"
 
 [tool.poetry.dependencies.flet]
 version = "0.27.6"

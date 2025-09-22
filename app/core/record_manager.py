@@ -131,7 +131,12 @@ class RecordingManager:
             
             # 如果启用了缩略图功能，开始捕获缩略图
             if self.app.settings.user_config.get("show_live_thumbnail", False) and hasattr(self.app, 'thumbnail_manager'):
-                self.app.page.run_task(self.app.thumbnail_manager.start_thumbnail_capture, recording)
+                # 检查单个房间的缩略图设置
+                if recording.is_thumbnail_enabled(self.app.settings.user_config.get("show_live_thumbnail", False)):
+                    logger.info(f"主播开播，启动缩略图捕获任务: {recording.streamer_name}")
+                    self.app.page.run_task(self.app.thumbnail_manager.start_thumbnail_capture, recording)
+                else:
+                    logger.info(f"直播间 {recording.streamer_name} 的缩略图功能已关闭，跳过启动缩略图捕获")
             
             # 确保在当前页面是主页时重新应用筛选条件
             if hasattr(self.app, 'current_page') and hasattr(self.app.current_page, 'apply_filter'):
@@ -345,16 +350,24 @@ class RecordingManager:
             # 如果直播状态从离线变为在线，重置end_notification_sent标志
             if not was_live and recording.is_live:
                 recording.end_notification_sent = False
+                # 重置直播标题缓存，确保新开播时能重新翻译
+                recording.last_live_title = None
                 logger.info(f"主播开播，重置关播通知状态: {recording.streamer_name}")
                 
                 # 如果缩略图功能已开启，启动缩略图捕获任务
                 if self.app.settings.user_config.get("show_live_thumbnail", False) and hasattr(self.app, 'thumbnail_manager'):
-                    logger.info(f"主播开播，启动缩略图捕获任务: {recording.streamer_name}")
-                    self.app.page.run_task(self.app.thumbnail_manager.start_thumbnail_capture, recording)
+                    # 检查单个房间的缩略图设置
+                    if recording.is_thumbnail_enabled(self.app.settings.user_config.get("show_live_thumbnail", False)):
+                        logger.info(f"主播开播，启动缩略图捕获任务: {recording.streamer_name}")
+                        self.app.page.run_task(self.app.thumbnail_manager.start_thumbnail_capture, recording)
+                    else:
+                        logger.info(f"直播间 {recording.streamer_name} 的缩略图功能已关闭，跳过启动缩略图捕获")
             
             # 如果直播状态从在线变为离线，重置通知状态并更新UI
             if was_live and not recording.is_live:
                 recording.notification_sent = False
+                # 重置直播标题缓存，确保下次开播时能重新翻译
+                recording.last_live_title = None
                 logger.info(f"直播已结束，重置通知状态: {recording.streamer_name}")
                 
                 # 如果启用了缩略图功能，停止缩略图捕获任务
@@ -436,11 +449,19 @@ class RecordingManager:
 
             is_record = True
             if recording.is_live and not recording.recording:
-                recording.live_title = stream_info.title
+                # 先获取主播信息，确保主播名称是最新的
                 if not recording.streamer_name or recording.streamer_name.strip() == self._["live_room"]:
                     recording.streamer_name = stream_info.anchor_name
+                
+                # 然后获取直播标题
+                recording.live_title = getattr(stream_info, "title", None)
+                
+                # 最后更新标题和显示标题
                 recording.title = f"{recording.streamer_name} - {self._[recording.quality]}"
                 recording.display_title = f"[{self._['is_live']}] {recording.title}"
+                
+                # 处理翻译逻辑
+                await self._handle_title_translation(recording)
 
                 if getattr(recording, "record_mode", "auto") == "auto":
                     recording.status_info = RecordingStatus.PREPARING_RECORDING
@@ -720,9 +741,18 @@ class RecordingManager:
             # 发送磁盘空间不足的消息推送和显示对话框
             await self.send_disk_space_notification(disk_space_limit, free_space)
             
+            # 更新磁盘显示组件的录制状态
+            if hasattr(self.app, 'disk_space_display'):
+                self.app.disk_space_display.update_recording_status()
+            
             return False
         else:
             self.app.recording_enabled = True
+            
+            # 更新磁盘显示组件的录制状态
+            if hasattr(self.app, 'disk_space_display'):
+                self.app.disk_space_display.update_recording_status()
+            
             return True
 
     async def send_disk_space_notification(self, threshold: float, free_space: float):
@@ -811,6 +841,83 @@ class RecordingManager:
             
         except Exception as e:
             logger.error(f"发送磁盘空间不足通知时出错: {e}", exc_info=True)
+
+    async def _handle_title_translation(self, recording: Recording):
+        """处理直播标题翻译（支持多语言缓存）"""
+        try:
+            if not recording.live_title:
+                return
+            
+            # 检查标题是否有变化，如果没有变化则不需要重新翻译
+            if recording.live_title == recording.last_live_title:
+                # 标题没有变化，但需要更新当前语言的翻译标题
+                self._update_current_language_title(recording)
+                return
+                
+            # 获取全局翻译设置
+            global_translation_enabled = self.settings.user_config.get("enable_title_translation", False)
+            
+            # 检查是否应该翻译
+            should_translate = recording.is_translation_enabled(global_translation_enabled)
+            
+            if should_translate:
+                # 导入翻译服务
+                from ..utils.translation_service import translate_live_title_to_multiple_languages
+                
+                # 定义需要翻译的目标语言
+                target_languages = ['zh', 'en']  # 中文和英文
+                
+                # 翻译标题为多种语言
+                multi_lang_results = await translate_live_title_to_multiple_languages(
+                    recording.live_title, target_languages, self.app.config_manager
+                )
+                
+                # 保存多语言翻译结果
+                for lang_code, translated_title in multi_lang_results.items():
+                    recording.set_translated_title_for_language(lang_code, translated_title)
+                
+                # 更新当前语言的翻译标题
+                self._update_current_language_title(recording)
+                
+                #logger.info(f"多语言翻译成功: '{recording.live_title}' -> {multi_lang_results}")
+            else:
+                # 如果不需要翻译，清除所有翻译标题
+                recording.clear_translated_titles()
+            
+            # 更新上次的直播标题缓存
+            recording.last_live_title = recording.live_title
+                
+        except Exception as e:
+            logger.error(f"处理直播标题翻译时发生错误: {e}")
+            recording.translated_title = None
+    
+    def _update_current_language_title(self, recording: Recording):
+        """更新当前语言的翻译标题"""
+        try:
+            # 获取当前程序语言代码
+            app_language_code = self.settings.language_code
+            
+            # 将语言代码转换为简化的语言代码
+            if app_language_code.startswith('zh'):
+                target_lang = 'zh'
+            elif app_language_code.startswith('en'):
+                target_lang = 'en'
+            else:
+                target_lang = 'zh'  # 默认使用中文
+            
+            # 从多语言缓存中获取对应语言的翻译标题
+            translated_title = recording.get_translated_title_for_language(target_lang)
+            
+            if translated_title:
+                recording.translated_title = translated_title
+                recording.cached_translated_title = translated_title
+            else:
+                # 如果没有对应语言的翻译，使用原标题
+                recording.translated_title = None
+                
+        except Exception as e:
+            logger.error(f"更新当前语言标题时发生错误: {e}")
+            recording.translated_title = None
 
     @staticmethod
     async def get_scheduled_time_range(scheduled_start_time, monitor_hours) -> str | None:

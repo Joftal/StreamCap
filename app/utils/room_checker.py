@@ -138,10 +138,10 @@ class RoomChecker:
                 {"url": "winktv.co.kr", "extract": "path_last", "exclude": []}
             ]
         },
-        "flextv": {
+        "ttinglive": {
             "patterns": [
-                {"url": "flextv.co.kr/channels/", "extract": "split", "split_by": "/channels/", "split_index": 0},
-                {"url": "flextv.co.kr", "extract": "path_last", "exclude": []}
+                {"url": "ttinglive.com/channels/", "extract": "split", "split_by": "/channels/", "split_index": 0},
+                {"url": "ttinglive.com", "extract": "path_last", "exclude": []}
             ]
         },
         "popkontv": {

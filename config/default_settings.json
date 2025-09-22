@@ -23,7 +23,7 @@
     "generate_time_subtitle_file": false,
     "execute_custom_script": false,
     "custom_script_command": "",
-    "default_platform_with_proxy": "tiktok,soop,pandalive,winktv,flextv,popkontv,twitch,liveme,showroom,chzzk,shopee,youtube,lang",
+    "default_platform_with_proxy": "tiktok,soop,pandalive,winktv,ttinglive,popkontv,twitch,liveme,showroom,chzzk,shopee,youtube,lang",
     "stream_start_notification_enabled": false,
     "stream_end_notification_enabled": false,
     "only_notify_no_record": false,
@@ -61,9 +61,17 @@
     "is_grid_view": false,
     "theme_mode": "light",
     "vlc_path": "",
+    "potplayer_path": "",
+    "default_player": "potplayer",
     "window_width": null,
     "window_height": null,
     "log_retention_days": 7,
     "auto_clean_logs": false,
-    "show_recording_speed": false
+    "show_recording_speed": false,
+    "enable_title_translation": false,
+    "translation_provider": "google",
+    "baidu_translation_app_id": "",
+    "baidu_translation_secret_key": "",
+    "show_live_thumbnail": false,
+    "platform_filter_style": "tile"
 }

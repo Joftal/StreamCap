@@ -31,6 +31,21 @@ async def handle_app_close(page: ft.Page, app, save_progress_overlay) -> None:
     for key in ("app_close_handler", "base"):
         _.update(language.get(key, {}))
 
+    async def minimize_to_tray(e):
+        """最小化窗口到托盘"""
+        try:
+            # 关闭确认对话框
+            await close_dialog(e)
+            
+            # 最小化到托盘
+            if hasattr(app, 'tray_manager') and app.tray_manager:
+                app.tray_manager.minimize_to_tray(None)
+            else:
+                logger.warning("托盘管理器未初始化，无法最小化到托盘")
+                
+        except Exception as ex:
+            logger.error(f"最小化到托盘时出错: {ex}")
+
     async def close_dialog_dismissed(e):
         app.recording_enabled = False
         
@@ -192,6 +207,7 @@ async def handle_app_close(page: ft.Page, app, save_progress_overlay) -> None:
         actions=[
             ft.TextButton(_["cancel"], on_click=close_dialog),
             ft.TextButton(_["confirm"], on_click=close_dialog_dismissed),
+            ft.TextButton(_["minimize_to_tray"], on_click=minimize_to_tray),
         ],
         actions_alignment=ft.MainAxisAlignment.END,
     )

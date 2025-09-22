@@ -33,11 +33,22 @@ StreamCap 是一个基于FFmpeg和StreamGet的多平台直播流录制客户端�
 - **Windows通知**：支持Windows系统原生通知，显示对应平台图标。
 - **自动去重**：添加直播间时自动去重，避免重复添加
 - **全局搜索**：一键搜索直达目标监控直播间
+- **直播分类**：可以按照直播平台和直播状态进行智能分类，支持2种布局
+- **直播预览**：提供直播间缩略图获取功能，可单独或全局控制每个房间
 - **备注**：支持卡片编辑备注信息
+- **Cookie 登录支持**：支持 B站二维码登录、Sooplive 账号密码登录以获取 Cookie
+- **翻译**：支持自动翻译直播标题，可选择百度翻译或google翻译
 
 ## 📸主界面
 
 ![image](https://github.com/user-attachments/assets/349bdeb4-e65e-409e-86e4-4625e7f36e6f)
+
+## 📸分类展示
+![image](https://github.com/user-attachments/assets/4b160261-f24c-4f8e-bbbf-39882ac0972f)
+![image](https://github.com/user-attachments/assets/dfaf6bc3-fd06-45ec-9786-58ed7026c94e)
+
+## 📸缩略图
+![image](https://github.com/user-attachments/assets/952ff51f-a37b-4705-8933-b7c4bbe61465)
 
 ## 📢Windows通知界面
 
@@ -164,7 +175,7 @@ docker build -t streamcap .
 
 **海外平台（10+）**：
 
-TikTok、Twitch、PandTV、Soop、Twitcasting、CHZZK、Shopee、Youtube、LiveMe、Flextv、Popkontv、Bigo...
+TikTok、Twitch、PandTV、Soop、Twitcasting、CHZZK、Shopee、Youtube、LiveMe、TtingLive、Popkontv、Bigo...
 
 **示例地址：**
 
@@ -226,8 +237,8 @@ https://look.163.com/live?id=65108820&position=3
 WinkTV:
 https://www.winktv.co.kr/live/play/anjer1004
 
-FlexTV:
-https://www.flextv.co.kr/channels/593127/live
+TtingLive:
+https://www.ttinglive.com/channels/52406/live
 
 PopkonTV:
 https://www.popkontv.com/live/view?castId=wjfal007&partnerCode=P-00117

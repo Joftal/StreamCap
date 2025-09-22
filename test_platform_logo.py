@@ -45,7 +45,7 @@ TEST_URLS = {
     ],
     "韩国平台": [
         {"name": "SOOP", "url": "https://sooplive.co.kr/on-air"},
-        {"name": "FlexTV", "url": "https://flextv.co.kr/channels/543"},
+        {"name": "TtingLive", "url": "https://www.ttinglive.com/channels/52406/live"},
         {"name": "PopkonTV", "url": "https://popkontv.com/index.php"},
         {"name": "WinkTV", "url": "https://www.winktv.co.kr/"},
         {"name": "CHZZK", "url": "https://chzzk.naver.com/live/35e4d91b15a11380a5c59db212e0cb5b"},

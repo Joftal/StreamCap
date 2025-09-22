@@ -132,10 +132,10 @@ class HomePage(PageBase):
                             key='home_pagination_container',
                             content=self.pagination_controls,
                             alignment=ft.alignment.bottom_center,
-                            left=0,
+                            left=170,  # 从左侧边栏右侧开始
                             right=0,
                             bottom=0,
-                            padding=ft.padding.only(bottom=10, left=60),  # 左侧留出空间避免遮挡按钮
+                            padding=ft.padding.only(bottom=10),  # 只保留底部间距
                         )
                     )
                     logger.debug("语言变更：创建并添加了新的分页控件")
@@ -399,10 +399,10 @@ class HomePage(PageBase):
                         key='home_pagination_container',
                         content=self.pagination_controls,
                         alignment=ft.alignment.bottom_center,
-                        left=0,
+                        left=170,  # 从左侧边栏右侧开始
                         right=0,
                         bottom=0,
-                        padding=ft.padding.only(bottom=10, left=60),  # 左侧留出空间避免遮挡按钮
+                        padding=ft.padding.only(bottom=10),  # 只保留底部间距
                     )
                 )
                 logger.debug("已创建并添加新的分页控件")
@@ -498,11 +498,11 @@ class HomePage(PageBase):
             [
                 ft.Text(self._["recording_list"], theme_style=ft.TextThemeStyle.TITLE_MEDIUM),
                 ft.Container(expand=True),
-                ft.IconButton(
-                    icon=ft.Icons.GRID_VIEW if self.is_grid_view else ft.Icons.LIST,
-                    tooltip=self._["toggle_view"],
-                    on_click=self.toggle_view_mode
-                ),
+                # ft.IconButton(
+                #     icon=ft.Icons.GRID_VIEW if self.is_grid_view else ft.Icons.LIST,
+                #     tooltip=self._["toggle_view"],
+                #     on_click=self.toggle_view_mode
+                # ),
                 ft.IconButton(icon=ft.Icons.SEARCH, tooltip=self._["search"], on_click=self.search_on_click),
                 ft.IconButton(icon=ft.Icons.ADD, tooltip=self._["add_record"], on_click=self.add_recording_on_click),
                 ft.IconButton(icon=ft.Icons.REFRESH, tooltip=self._["refresh"], on_click=self.refresh_cards_on_click),
@@ -1020,7 +1020,8 @@ class HomePage(PageBase):
                     recording_dir=recording_info["recording_dir"],
                     enabled_message_push=recording_info["enabled_message_push"],
                     record_mode=recording_info.get("record_mode", "auto"),
-                    remark=recording_info.get("remark")
+                    remark=recording_info.get("remark"),
+                    translation_enabled=recording_info.get("translation_enabled")
                 )
             else:
                 recording = Recording(
@@ -1038,7 +1039,8 @@ class HomePage(PageBase):
                     recording_dir=None,
                     enabled_message_push=True,
                     record_mode=recording_info.get("record_mode", user_config.get("record_mode", "auto")),
-                    remark=recording_info.get("remark")
+                    remark=recording_info.get("remark"),
+                    translation_enabled=recording_info.get("translation_enabled")
                 )
             recording.live_title = live_title
             if title:
@@ -1046,6 +1048,11 @@ class HomePage(PageBase):
             if display_title:
                 recording.display_title = display_title
             recording.loop_time_seconds = int(user_config.get("loop_time_seconds", 300))
+            
+            # 处理翻译逻辑
+            if live_title:
+                await self.app.record_manager._handle_title_translation(recording)
+            
             await self.app.record_manager.add_recording(recording)
             new_recordings.append(recording)
 
@@ -1083,6 +1090,8 @@ class HomePage(PageBase):
             if self.visible_cards:
                 self.current_page = self.total_pages
                 await self.update_page_display()
+                # 隐藏空结果提示
+                await self.hide_empty_results_tip()
             else:
                 self.recording_card_area.update()
 
@@ -1264,6 +1273,9 @@ class HomePage(PageBase):
             pagination_row.controls[3].disabled = True  # 下一页按钮
             pagination_row.controls[4].disabled = True  # 末页按钮
             self.pagination_controls.update()
+        
+        # 显示空结果提示
+        await self.handle_empty_results()
         
         self.content_area.controls[1] = self.create_filter_area()
         self.content_area.update()

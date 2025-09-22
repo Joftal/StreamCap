@@ -17,6 +17,8 @@ from .core.update_checker import UpdateChecker
 from .process_manager import AsyncProcessManager
 from .ui.components.recording_card import RecordingCardManager
 from .ui.components.show_snackbar import ShowSnackBar
+from .ui.components.system_tray import SystemTrayManager
+from .ui.components.disk_space_display import DiskSpaceDisplay
 from .ui.navigation.sidebar import LeftNavigationMenu, NavigationSidebar
 from .ui.views.about_view import AboutPage
 from .ui.views.home_view import HomePage
@@ -78,12 +80,26 @@ class App:
 
         self.page.snack_bar_area = ft.Container()
         self.dialog_area = ft.Container()
+        
+        # 创建磁盘空间显示组件
+        self.disk_space_display = DiskSpaceDisplay(self)
+        
+        # 创建主内容区域，包含磁盘空间显示和内容区域
+        self.main_content_area = ft.Column(
+            controls=[
+                self.disk_space_display,
+                self.content_area
+            ],
+            expand=True,
+            spacing=0
+        )
+        
         self.complete_page = ft.Row(
             expand=True,
             controls=[
                 self.left_navigation_menu,
                 ft.VerticalDivider(width=1),
-                self.content_area,
+                self.main_content_area,
                 self.dialog_area,
                 self.page.snack_bar_area,
             ]
@@ -93,6 +109,9 @@ class App:
         
         # 初始化平台logo缓存管理器
         self.platform_logo_cache = PlatformLogoCache()
+        
+        # 初始化系统托盘管理器（仅在非web模式下）
+        self.tray_manager = None
         
         # 初始化缩略图管理器
         self.thumbnail_manager = ThumbnailManager(self)
@@ -115,6 +134,13 @@ class App:
         # 只有在非web模式下才启动内存清理任务
         if not self.is_web_mode:
             self.page.run_task(self._setup_periodic_cleanup)
+            
+            # 初始化系统托盘管理器（仅在非web模式下）
+            try:
+                self.tray_manager = SystemTrayManager(self)
+            except Exception as e:
+                logger.warning(f"系统托盘管理器初始化失败: {e}")
+                self.tray_manager = None
             
         self.page.run_task(self._validate_configs)
         self._pending_page_request = None  # 添加这行，用于存储待处理的页面请求
@@ -157,6 +183,12 @@ class App:
             # 如果是从设置页面切换，检查是否有更改
             if isinstance(previous_page, SettingsPage):
                 await previous_page.is_changed()
+                # 刷新磁盘空间显示，因为可能修改了录制保存路径
+                if hasattr(self, 'disk_space_display'):
+                    logger.debug("从设置页面切换，刷新磁盘空间显示")
+                    # 延迟一点时间确保设置已保存
+                    await asyncio.sleep(0.1)
+                    self.disk_space_display.update_disk_space()
             
             # 根据录制直播间的数量动态调整延迟时间
             # 基础延迟为0.1秒，每10个直播间增加0.05秒，最大不超过0.5秒
@@ -289,6 +321,10 @@ class App:
             if hasattr(self, 'platform_logo_cache'):
                 logger.info("保存平台logo缓存...")
                 self.platform_logo_cache.save_cache()
+            
+            # 清理系统托盘
+            if hasattr(self, 'tray_manager') and self.tray_manager:
+                self.tray_manager.cleanup()
                 
             await self.process_manager.cleanup()
             # 执行更完整的清理
@@ -606,8 +642,31 @@ class App:
         self.dialog_area.content = error_dialog
         self.dialog_area.update()
 
+    async def show_suggestion_message(self, title: str, message: str):
+        """显示建议消息对话框"""
+        async def close_dialog(_):
+            suggestion_dialog.open = False
+            self.dialog_area.update()
+
+        suggestion_dialog = ft.AlertDialog(
+            title=ft.Text(title, color=ft.Colors.BLUE),
+            content=ft.Text(message),
+            actions=[
+                ft.TextButton(text=self._["base"]["sure"], on_click=close_dialog),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+            modal=True,
+        )
+        suggestion_dialog.open = True
+        self.dialog_area.content = suggestion_dialog
+        self.dialog_area.update()
+
     def load(self):
         """加载语言配置"""
         language = self.language_manager.language
         # 直接加载整个语言配置
         self._ = language
+        
+        # 更新磁盘空间显示组件的语言
+        if hasattr(self, 'disk_space_display'):
+            self.disk_space_display.on_language_changed()
