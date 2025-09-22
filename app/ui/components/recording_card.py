@@ -855,6 +855,9 @@ class RecordingCardManager:
                     # 然后获取直播标题
                     recording.live_title = getattr(stream_info, "title", None)
                     
+                    # 更新直播源地址，供按钮使用
+                    recording.record_url = stream_info.record_url
+                    
                     # 最后更新标题和显示标题
                     recording.title = f"{recording.streamer_name} - {self._[recording.quality]}"
                     recording.display_title = f"[{self._['is_live']}] {recording.title}"

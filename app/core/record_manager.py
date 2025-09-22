@@ -456,6 +456,10 @@ class RecordingManager:
                 # 然后获取直播标题
                 recording.live_title = getattr(stream_info, "title", None)
                 
+                # 更新直播源地址，供按钮使用
+                if hasattr(stream_info, "record_url") and stream_info.record_url:
+                    recording.record_url = stream_info.record_url
+                
                 # 最后更新标题和显示标题
                 recording.title = f"{recording.streamer_name} - {self._[recording.quality]}"
                 recording.display_title = f"[{self._['is_live']}] {recording.title}"
@@ -930,10 +934,19 @@ class RecordingManager:
     async def get_stream_url(self, recording: Recording):
         """
         获取直播源地址，仅在已开始监控状态下可用。
+        优先使用监控系统已获取的record_url，避免重复获取直播信息。
         返回record_url（如m3u8/flv），如未获取到则返回None。
         """
         if not recording.monitor_status:
             return None, "未开始监控，无法获取直播源地址"
+        
+        # 优先使用监控系统已获取的直播源地址
+        if recording.record_url and recording.is_live:
+            logger.debug(f"使用监控系统已获取的直播源地址: {recording.record_url}")
+            return recording.record_url, None
+        
+        # 如果没有缓存的直播源地址，则重新获取
+        logger.debug(f"监控系统未获取到直播源地址，重新获取: {recording.url}")
         platform, platform_key = get_platform_info(recording.url)
         output_dir = self.settings.get_video_save_path()
         recording_info = {
