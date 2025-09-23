@@ -310,7 +310,7 @@ class ThumbnailManager:
             # 添加代理设置（如果需要）
             if recording.use_proxy and self.user_config.get("enable_proxy"):
                 proxy_address = self.user_config.get("proxy_address")
-                if proxy_address:
+                if proxy_address and proxy_address.startswith('http://'):
                     cmd.insert(1, "-http_proxy")
                     cmd.insert(2, proxy_address)
             

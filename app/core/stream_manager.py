@@ -139,7 +139,7 @@ class LiveStreamRecorder:
     
     def validate_proxy_address(self, proxy_address: str | None) -> bool:
         """
-        验证代理地址是否有效
+        验证代理地址是否有效，严格要求必须以http://开头
         """
         # 检查空值
         if not proxy_address:
@@ -157,14 +157,14 @@ class LiveStreamRecorder:
         # 记录原始地址
         original_address = proxy_address
             
-        # 检查协议前缀
+        # 严格要求必须以http://开头
         if not proxy_address.startswith('http://'):
-            # 记录警告但不修改用户输入
-            logger.warning(f"代理验证 - 代理地址缺少协议前缀: {proxy_address}")
-            logger.warning("代理验证 - 建议使用完整格式如：http://127.0.0.1:7890")
+            logger.warning(f"代理验证 - 代理地址必须以http://开头: {proxy_address}")
+            logger.warning("代理验证 - 请使用完整格式如：http://127.0.0.1:7890")
+            return False
         
         # 完整的代理格式验证正则表达式
-        # 支持IPv4、域名和可选端口
+        # 支持IPv4、域名和可选端口，只支持http协议
         proxy_pattern = re.compile(
             r'^(http)://'  # 协议
             r'(?:'  # 开始域名或IP地址组
@@ -175,30 +175,14 @@ class LiveStreamRecorder:
         )
         
         # 验证地址格式
-        # 如果用户没有提供协议前缀，使用宽松的验证规则
-        if not proxy_address.startswith('http://'):
-            # 使用简单的验证规则：主机名/IP + 端口
-            simple_pattern = re.compile(
-                r'^(?:'  # 开始域名或IP地址组
-                r'(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}|'  # 域名格式
-                r'(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)'  # IPv4
-                r')'  # 结束域名或IP地址组
-                r'(?::\d{1,5})$'  # 必须有端口
-            )
-            is_valid = bool(simple_pattern.match(proxy_address))
-        else:
-            is_valid = bool(proxy_pattern.match(proxy_address))
+        is_valid = bool(proxy_pattern.match(proxy_address))
         
         if not is_valid:
             logger.warning(f"代理验证 - 地址格式无效: {proxy_address}")
             
             # 提供更具体的错误信息
             if ':' not in proxy_address:
-                logger.warning("代理验证 - 缺少端口号，建议使用标准格式如: 127.0.0.1:7890")
-            elif not re.match(r'^(http)://', proxy_address) and ':' in proxy_address:
-                logger.warning("代理验证 - 缺少http://协议前缀，但IP和端口格式正确，将尝试使用")
-                # 如果只是缺少协议前缀但格式正确，仍然允许使用
-                is_valid = True
+                logger.warning("代理验证 - 缺少端口号，建议使用标准格式如: http://127.0.0.1:7890")
             else:
                 logger.warning("代理验证 - 代理地址格式不正确，请检查IP地址或域名格式")
         else:

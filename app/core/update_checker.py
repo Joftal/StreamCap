@@ -43,9 +43,10 @@ class UpdateChecker:
         if not enable_proxy or not proxy_address:
             return None
             
-        # 处理代理地址格式
+        # 严格要求用户填写完整的http://代理地址，不自动补全
         if not proxy_address.startswith('http://'):
-            proxy_address = f"http://{proxy_address}"
+            logger.warning(f"更新检查 - 代理地址必须以http://开头: {proxy_address}")
+            return None
             
         return proxy_address
 

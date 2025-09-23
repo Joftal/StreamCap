@@ -44,17 +44,10 @@ async def test_proxy_connection(proxy: Optional[str] = None, test_url: str = "ht
             if proxy.startswith("http://"):
                 proxies = {"http://": proxy, "https://": proxy}
             else:
-                # 无协议前缀的情况，默认添加http://前缀
-                logger.warning(f"代理地址缺少协议前缀: {proxy}，将添加http://前缀")
-                if ":" in proxy:  # 确保格式为IP:端口
-                    http_proxy = f"http://{proxy}"
-                    proxies = {"http://": http_proxy, "https://": http_proxy}
-                    result["tried_protocol"] = http_proxy
-                else:
-                    # 纯IP无端口，无法使用
-                    logger.error(f"代理地址格式无效，缺少端口: {proxy}")
-                    result["error"] = "代理地址格式无效，缺少端口"
-                    return result
+                # 严格要求必须以http://开头
+                logger.error(f"代理地址必须以http://开头: {proxy}")
+                result["error"] = "代理地址必须以http://开头"
+                return result
         
         timeout = httpx.Timeout(10.0)
         

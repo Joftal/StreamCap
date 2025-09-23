@@ -131,10 +131,10 @@ async def test_proxy_connection(proxy: str, test_url: str = "https://www.baidu.c
         if proxy.startswith("http://"):
             proxies = {"http://": proxy, "https://": proxy}
         else:
-            # 默认使用http
-            http_proxy = f"http://{proxy}"
-            proxies = {"http://": http_proxy, "https://": http_proxy}
-            logger.info(f"代理地址缺少协议前缀，已添加http://前缀: {http_proxy}")
+            # 严格要求必须以http://开头
+            logger.error(f"代理地址必须以http://开头: {proxy}")
+            result["error"] = "代理地址必须以http://开头"
+            return result
         
         start_time = time.time()    
         async with httpx.AsyncClient(proxies=proxies, timeout=timeout) as client:
@@ -183,9 +183,11 @@ async def test_stream_proxy(proxy: str, platform: str = None, url: str = None) -
         
         logger.info(f"测试直播流解析 - 平台: {platform}, URL: {url}, 代理: {proxy}")
         
-        # 如果代理不是以http://开头，记录会自动添加前缀的信息
+        # 严格要求代理必须以http://开头
         if proxy and not proxy.startswith("http://"):
-            logger.info(f"代理地址缺少http://前缀，将自动添加: http://{proxy}")
+            logger.error(f"代理地址必须以http://开头: {proxy}")
+            result["error"] = "代理地址必须以http://开头"
+            return result
         
         # 根据平台选择合适的处理类
         if platform.lower() == "douyin":

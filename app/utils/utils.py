@@ -185,9 +185,9 @@ def check_disk_capacity(file_path: str | Path, show: bool = False) -> float:
 def handle_proxy_addr(proxy_addr):
     if proxy_addr:
         proxy_addr = proxy_addr.strip()
-        # 如果代理地址不以协议前缀开头，添加http://前缀
+        # 严格要求用户填写完整的http://代理地址，不自动补全
         if not proxy_addr.startswith('http://'):
-            proxy_addr = f"http://{proxy_addr}"
+            return None  # 返回None表示无效的代理地址
         return proxy_addr
     else:
         return None
