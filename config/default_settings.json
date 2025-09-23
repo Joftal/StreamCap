@@ -73,5 +73,6 @@
     "baidu_translation_app_id": "",
     "baidu_translation_secret_key": "",
     "show_live_thumbnail": false,
-    "platform_filter_style": "tile"
+    "platform_filter_style": "tile",
+    "m3u8_player_url": "https://m3u8.xuehuayu.cn/?url="
 }

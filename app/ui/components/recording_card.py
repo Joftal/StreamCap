@@ -109,6 +109,13 @@ class RecordingCardManager:
             disabled=not (recording.monitor_status and (recording.is_live or recording.recording)),
         )
 
+        browser_play_button = ft.IconButton(
+            icon=ft.Icons.WEB,
+            tooltip=(self._["browser_play_stream"] if (recording.monitor_status and (recording.is_live or recording.recording)) else self._["no_stream_source"]),
+            on_click=partial(self.browser_play_stream_on_click, recording=recording),
+            disabled=not (recording.monitor_status and (recording.is_live or recording.recording)),
+        )
+
         # 创建缩略图开关按钮
         # 不在直播状态时禁用缩略图按钮
         is_thumbnail_button_disabled = not (recording.monitor_status and (recording.is_live or recording.recording))
@@ -364,6 +371,7 @@ class RecordingCardManager:
                     preview_button,
                     get_stream_button,
                     play_button,
+                    browser_play_button,
                     thumbnail_switch_button,
                     translation_switch_button,
                     edit_button,
@@ -416,6 +424,7 @@ class RecordingCardManager:
             "status_label": status_label,
             "get_stream_button": get_stream_button,
             "play_button": play_button,
+            "browser_play_button": browser_play_button,
             "preview_button": preview_button,
             "delete_button": delete_button,
             "thumbnail_switch_button": thumbnail_switch_button,
@@ -702,6 +711,12 @@ class RecordingCardManager:
                 recording_card["play_button"].disabled = not (recording.monitor_status and (recording.is_live or recording.recording))
                 recording_card["play_button"].tooltip = (
                     self._["play_stream"] if (recording.monitor_status and (recording.is_live or recording.recording)) else self._["no_stream_source"]
+                )
+            if recording_card.get("browser_play_button"):
+                button_enabled = recording.monitor_status and (recording.is_live or recording.recording)
+                recording_card["browser_play_button"].disabled = not button_enabled
+                recording_card["browser_play_button"].tooltip = (
+                    self._["browser_play_stream"] if button_enabled else self._["no_stream_source"]
                 )
             if recording_card.get("open_folder_button"):
                 recording_card["open_folder_button"].tooltip = self._["open_folder"]
@@ -1273,6 +1288,36 @@ class RecordingCardManager:
                 await self.app.snack_bar.show_snack_bar(self._["play_failed"] + f"\n{e}", bgcolor=ft.Colors.RED)
         else:
             await self.app.snack_bar.show_snack_bar(err or self._["play_failed"], bgcolor=ft.Colors.RED)
+
+    async def browser_play_stream_on_click(self, _, recording: Recording):
+        """在浏览器中播放直播流"""
+        if not recording.monitor_status:
+            await self.app.snack_bar.show_snack_bar(self._["please_start_monitor"], bgcolor=ft.Colors.RED)
+            return
+        
+        # 检查是否配置了m3u8播放器URL
+        m3u8_player_base_url = self.app.settings.user_config.get("m3u8_player_url", "")
+        if not m3u8_player_base_url or m3u8_player_base_url.strip() == "":
+            await self.app.snack_bar.show_snack_bar(self._["m3u8_player_url_not_set"], bgcolor=ft.Colors.RED)
+            return
+        
+        stream_url, err = await self.app.record_manager.get_stream_url(recording)
+        if stream_url:
+            try:
+                import webbrowser
+                import urllib.parse
+                
+                # 构建播放器URL，将直播源作为参数传递
+                encoded_url = urllib.parse.quote(stream_url, safe='')
+                m3u8_player_url = f"{m3u8_player_base_url}{encoded_url}"
+                
+                # 在默认浏览器中打开
+                webbrowser.open(m3u8_player_url)
+                await self.app.snack_bar.show_snack_bar(self._["browser_play_opened"], bgcolor=ft.Colors.GREEN)
+            except Exception as e:
+                await self.app.snack_bar.show_snack_bar(self._["browser_play_failed"] + f"\n{e}", bgcolor=ft.Colors.RED)
+        else:
+            await self.app.snack_bar.show_snack_bar(err or self._["browser_play_failed"], bgcolor=ft.Colors.RED)
 
     async def update_thumbnail(self, recording: Recording, thumbnail_path: str):
         """更新卡片中的缩略图"""

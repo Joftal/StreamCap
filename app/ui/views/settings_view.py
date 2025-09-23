@@ -134,6 +134,8 @@ class SettingsPage(PageBase):
             baidu_secret_key = self.user_config.get("baidu_translation_secret_key", "")
             # 保留代理地址设置
             proxy_address = self.user_config.get("proxy_address", "")
+            # 保留M3U8播放器URL设置
+            m3u8_player_url = self.user_config.get("m3u8_player_url", "")
             
             self.user_config = self.default_config.copy()
             self.user_config["language"] = ui_language
@@ -155,6 +157,9 @@ class SettingsPage(PageBase):
             # 保留代理地址设置
             if proxy_address:
                 self.user_config["proxy_address"] = proxy_address
+            # 保留M3U8播放器URL设置
+            if m3u8_player_url:
+                self.user_config["m3u8_player_url"] = m3u8_player_url
             self.app.language_manager.notify_observers()
             self.page.run_task(self.load)
             await self.config_manager.save_user_config(self.user_config)
@@ -515,6 +520,17 @@ class SettingsPage(PageBase):
                                 on_change=self.on_change,
                                 data="platform_filter_style",
                                 tooltip=self._["platform_filter_style_tip"],
+                            ),
+                        ),
+                        self.create_setting_row(
+                            self._["m3u8_player_url"],
+                            ft.TextField(
+                                value=self.get_config_value("m3u8_player_url", "https://m3u8.xuehuayu.cn/?url="),
+                                width=400,
+                                on_change=self.on_change,
+                                data="m3u8_player_url",
+                                hint_text=self._["m3u8_player_url_hint"],
+                                helper_text=self._["m3u8_player_url_tooltip"],
                             ),
                         ),
                         # 添加日志设置部分
