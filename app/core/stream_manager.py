@@ -379,7 +379,7 @@ class LiveStreamRecorder:
     def _get_save_path(self, filename: str) -> str:
         suffix = self.save_format
         suffix = "_%03d." + suffix if self.segment_record and self.save_format != "flv" else "." + suffix
-        save_file_path = os.path.join(self.output_dir, filename + suffix).replace(" ", "_")
+        save_file_path = os.path.join(self.output_dir, (filename + suffix).replace(" ", "_"))
         return save_file_path.replace("\\", "/")
 
     @staticmethod
@@ -877,7 +877,7 @@ class LiveStreamRecorder:
             params = [
                 f'--record_name "{record_name}"',
                 f'--save_file_path "{save_file_path}"',
-                f"--save_type {save_type}--split_video_by_time {split_video_by_time}",
+                f"--save_type {save_type} --split_video_by_time {split_video_by_time}",
                 f"--converts_to_mp4 {converts_to_mp4}"
             ]
         else:

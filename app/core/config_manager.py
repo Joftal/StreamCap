@@ -60,16 +60,16 @@ class ConfigManager:
         self._init_config(self.cookies_config_path, cookies_config)
 
     def init_accounts_config(self):
-        cookies_config = {}
-        self._init_config(self.accounts_config_path, cookies_config)
+        accounts_config = {}
+        self._init_config(self.accounts_config_path, accounts_config)
 
     def init_recordings_config(self):
         recordings_config = []
         self._init_config(self.recordings_config_path, recordings_config)
 
     def init_web_auth_config(self):
-        cookies_config = {}
-        self._init_config(self.web_auth_config_path, cookies_config)
+        web_auth_config = {}
+        self._init_config(self.web_auth_config_path, web_auth_config)
 
     @staticmethod
     def _load_config(config_path, error_message):
