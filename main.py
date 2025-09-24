@@ -96,7 +96,7 @@ def setup_window(page: ft.Page, is_web: bool, user_config: dict = None) -> None:
                         else:
                             width = saved_width
                             height = saved_height
-                            logger.info(f"使用用户保存的窗口大小: {width}x{height}")
+                            #logger.info(f"使用用户保存的窗口大小: {width}x{height}")
                     except (ValueError, TypeError) as e:
                         logger.warning(f"无效的窗口大小配置: {e}，使用适配的默认值")
                         width = adapted_width

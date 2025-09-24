@@ -110,7 +110,7 @@ def trace_error_decorator(func: callable) -> callable:
                         extra=None
                     )
                     
-                    logger.info(f"为函数 {function_name} 创建了默认的StreamData对象，标记为未开播状态")
+                    #logger.info(f"为函数 {function_name} 创建了默认的StreamData对象，标记为未开播状态")
                     return stream_data
                 except Exception as inner_e:
                     logger.error(f"创建默认StreamData对象时出错: {inner_e}")

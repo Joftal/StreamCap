@@ -39,7 +39,7 @@ class ConfigValidator:
         Returns:
             List[Tuple[str, str, str]]: 修复的配置项列表，每项包含 (配置键, 原始值, 修复后的值)
         """
-        logger.info("开始验证配置项...")
+        #logger.info("开始验证配置项...")
         fixed_items = []
         
         # 验证所有配置项
@@ -138,7 +138,7 @@ class ConfigValidator:
         if not fixed_items or not hasattr(self.app, "record_manager") or not self.app.record_manager.recordings:
             return
             
-        logger.info("正在更新录制项以使用有效配置...")
+        #logger.info("正在更新录制项以使用有效配置...")
         recordings = self.app.record_manager.recordings
         updated = False
         
@@ -167,7 +167,7 @@ class ConfigValidator:
         if updated:
             # 保存更新后的录制项
             self.app.page.run_task(self.app.record_manager.persist_recordings)
-            logger.info("已更新录制项以使用有效配置")
+            #logger.info("已更新录制项以使用有效配置")
             
     async def update_recording_cards(self) -> None:
         """
@@ -176,9 +176,9 @@ class ConfigValidator:
         if not hasattr(self.app, "record_card_manager") or not self.app.record_manager.recordings:
             return
             
-        logger.info("正在更新所有录制卡片显示...")
+        #logger.info("正在更新所有录制卡片显示...")
         
         for recording in self.app.record_manager.recordings:
             await self.app.record_card_manager.update_card(recording)
             
-        logger.info("录制卡片显示更新完成") 
+        #logger.info("录制卡片显示更新完成") 

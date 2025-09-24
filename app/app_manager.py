@@ -162,7 +162,7 @@ class App:
 
         self._loading_page = True
         self._pending_page_request = None  # 清除任何挂起的请求
-        logger.info(f"开始切换页面到: {page_name}")
+        #logger.info(f"开始切换页面到: {page_name}")
 
         try:
             # 记录从哪个页面切换
@@ -240,7 +240,7 @@ class App:
                         
                         # 2. 如果内存使用率高，再执行完整清理
                         if is_high_memory:
-                            logger.info(f"从其他页面切换到主页面，内存使用率高({memory_info['percent']:.1f}%)，执行完整清理")
+                            #logger.info(f"从其他页面切换到主页面，内存使用率高({memory_info['percent']:.1f}%)，执行完整清理")
                             # 再次等待一小段时间，避免连续清理导致卡顿
                             await asyncio.sleep(0.2)
                             await self._perform_full_cleanup()
@@ -257,7 +257,7 @@ class App:
                     # 更新路由状态
                     self._update_route(page_name)
                 
-                logger.info(f"页面已切换到: {page_name}")
+                #logger.info(f"页面已切换到: {page_name}")
             else:
                 logger.error(f"页面未找到: {page_name}")
         except Exception as e:
@@ -270,7 +270,7 @@ class App:
             # 检查是否有待处理的页面切换请求
             pending_request = self._pending_page_request
             if pending_request and pending_request != page_name:
-                logger.info(f"处理被忽略的页面切换请求: {pending_request}")
+                #logger.info(f"处理被忽略的页面切换请求: {pending_request}")
                 # 使用短暂延迟，确保UI有时间刷新
                 await asyncio.sleep(0.1)
                 # 处理被忽略的请求
@@ -303,23 +303,23 @@ class App:
     async def cleanup(self):
         # 在web模式下不执行清理
         if self.is_web_mode:
-            logger.info("Web模式下不执行清理")
+            #logger.info("Web模式下不执行清理")
             return
 
         try:
             # 停止所有缩略图捕获并清理过期缩略图
             if hasattr(self, 'thumbnail_manager'):
-                logger.info("停止所有缩略图捕获任务...")
+                #logger.info("停止所有缩略图捕获任务...")
                 await self.thumbnail_manager.stop_all_thumbnail_captures()
                 
                 # 清理所有过期的缩略图（应用退出时清理所有超过1天的缩略图）
-                logger.info("清理过期缩略图文件...")
+                #logger.info("清理过期缩略图文件...")
                 deleted_count = await self.thumbnail_manager.cleanup_old_thumbnails(max_age_days=1)
                 logger.info(f"已清理 {deleted_count} 个过期缩略图文件")
                 
             # 保存平台logo缓存
             if hasattr(self, 'platform_logo_cache'):
-                logger.info("保存平台logo缓存...")
+                #logger.info("保存平台logo缓存...")
                 self.platform_logo_cache.save_cache()
             
             # 清理系统托盘
@@ -376,7 +376,7 @@ class App:
         """设置定期清理任务，管理内存使用并清理未使用的资源"""
         # 在web模式下不执行内存清理
         if self.is_web_mode:
-            logger.info("Web模式下不执行内存清理")
+            #logger.info("Web模式下不执行内存清理")
             return
             
         # 初始化最后清理时间
@@ -462,7 +462,7 @@ class App:
     
     async def _perform_full_cleanup(self):
         """执行完整清理任务，包括清理平台处理器实例、进程和触发垃圾回收"""
-        logger.info("开始执行完整清理...")
+        #logger.info("开始执行完整清理...")
         
         # 记录清理前状态
         before_memory = self._get_memory_usage()

@@ -79,7 +79,7 @@ class EnhancedSoopHandler(PlatformHandler):
                     new_token=stream_data.new_token,
                     extra=stream_data.extra
                 )
-                logger.info(f"SOOP平台成功解析title: '{decoded_title}'")
+                #logger.info(f"SOOP平台成功解析title: '{decoded_title}'")
                 return enhanced_stream_data
             else:
                 logger.info(f"SOOP平台无法从数据中解析title: {live_url}")

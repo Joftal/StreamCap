@@ -177,7 +177,7 @@ class ConfigManager:
             self._fix_user_settings_config()
             # 修复recordings.json
             self._fix_recordings_config()
-            logger.info("配置项修复完成")
+            #logger.info("配置项修复完成")
         except Exception as e:
             logger.error(f"修复配置项时发生错误: {e}")
 
@@ -202,7 +202,7 @@ class ConfigManager:
                     missing_keys.append(key)
             
             if missing_keys:
-                logger.info(f"发现user_settings.json中缺失的配置项: {missing_keys}")
+                #logger.info(f"发现user_settings.json中缺失的配置项: {missing_keys}")
                 
                 # 保持原有顺序，将缺失的配置项添加到末尾
                 for key in missing_keys:
@@ -281,7 +281,7 @@ class ConfigManager:
                         missing_fields.append(field)
                 
                 if missing_fields:
-                    logger.info(f"发现录制项中缺失的字段: {missing_fields}")
+                    #logger.info(f"发现录制项中缺失的字段: {missing_fields}")
                     
                     # 添加缺失的字段，保持原有顺序
                     for field in missing_fields:

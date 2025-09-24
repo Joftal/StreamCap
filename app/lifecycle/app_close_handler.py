@@ -78,15 +78,15 @@ async def handle_app_close(page: ft.Page, app, save_progress_overlay) -> None:
                     else:
                         app.settings.user_config["window_width"] = width
                         app.settings.user_config["window_height"] = height
-                        logger.info(f"程序关闭时保存窗口大小: {width}x{height}")
+                        #logger.info(f"程序关闭时保存窗口大小: {width}x{height}")
                 except (ImportError, IndexError):
                     # 如果无法获取屏幕信息，直接保存
                     app.settings.user_config["window_width"] = width
                     app.settings.user_config["window_height"] = height
-                    logger.info(f"程序关闭时保存窗口大小: {width}x{height}")
+                    #logger.info(f"程序关闭时保存窗口大小: {width}x{height}")
                 
                 # 立即保存配置
-                logger.info("执行窗口大小保存操作（仅在程序关闭时执行一次）")
+                #logger.info("执行窗口大小保存操作（仅在程序关闭时执行一次）")
                 await app.config_manager.save_user_config(app.settings.user_config)
         except Exception as ex:
             logger.error(f"保存窗口大小时出错: {ex}")
@@ -95,7 +95,7 @@ async def handle_app_close(page: ft.Page, app, save_progress_overlay) -> None:
         try:
             # 如果当前不在主页面，先切换到主页面
             if app.current_page and app.current_page.__class__.__name__ != "HomePage":
-                logger.info("在关闭程序前，先切换到主页面以确保资源正确清理")
+                #logger.info("在关闭程序前，先切换到主页面以确保资源正确清理")
                 await app.switch_page("home")
                 # 给UI一点时间更新
                 await asyncio.sleep(0.3)
@@ -127,7 +127,7 @@ async def handle_app_close(page: ft.Page, app, save_progress_overlay) -> None:
             try:
                 # 如果当前不在主页面，先切换到主页面
                 if app.current_page and app.current_page.__class__.__name__ != "HomePage":
-                    logger.info("在非主界面关闭程序，先切换到主页面以确保正常显示保存进度")
+                    #logger.info("在非主界面关闭程序，先切换到主页面以确保正常显示保存进度")
                     await app.switch_page("home")
                     # 给UI一点时间更新
                     await asyncio.sleep(0.2)
@@ -140,11 +140,11 @@ async def handle_app_close(page: ft.Page, app, save_progress_overlay) -> None:
 
             def close_app():
                 try:
-                    logger.info(f"等待 {active_recordings_count} 个录制完成")
+                    #logger.info(f"等待 {active_recordings_count} 个录制完成")
                     
                     # 调整基础等待时间，至少2秒，最多10秒
                     base_wait_time = max(2, min(active_recordings_count, 10))
-                    logger.info(f"基础等待时间: {base_wait_time} 秒")
+                    #logger.info(f"基础等待时间: {base_wait_time} 秒")
                     
                     # 首先等待一小段时间让进程有机会正常终止
                     time.sleep(base_wait_time)
@@ -154,7 +154,7 @@ async def handle_app_close(page: ft.Page, app, save_progress_overlay) -> None:
                     
                     if remaining_count > 0:
                         # 主动触发清理
-                        logger.info(f"仍有 {remaining_count} 个录制未完成，尝试强制清理")
+                        #logger.info(f"仍有 {remaining_count} 个录制未完成，尝试强制清理")
                         
                         # 创建异步任务在后台运行
                         async def force_cleanup():

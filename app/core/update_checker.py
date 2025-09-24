@@ -178,7 +178,7 @@ class UpdateChecker:
                     else:
                         logger.error(f"GitHub API请求失败，状态码: {response.status_code}")
                         if attempt < max_retries - 1:
-                            logger.info(f"将在{retry_delay}秒后重试...")
+                            #logger.info(f"将在{retry_delay}秒后重试...")
                             await asyncio.sleep(retry_delay)
                             continue
                         return {"has_update": False, "error": f"GitHub API请求失败: {response.status_code}", "source": source["name"]}
@@ -186,21 +186,21 @@ class UpdateChecker:
             except httpx.ConnectTimeout:
                 logger.error("连接GitHub超时")
                 if attempt < max_retries - 1:
-                    logger.info(f"将在{retry_delay}秒后重试...")
+                    #logger.info(f"将在{retry_delay}秒后重试...")
                     await asyncio.sleep(retry_delay)
                     continue
                 return {"has_update": False, "error": "连接GitHub超时", "source": source["name"]}
             except httpx.RequestError as e:
                 logger.error(f"请求GitHub失败: {str(e)}")
                 if attempt < max_retries - 1:
-                    logger.info(f"将在{retry_delay}秒后重试...")
+                    #logger.info(f"将在{retry_delay}秒后重试...")
                     await asyncio.sleep(retry_delay)
                     continue
                 return {"has_update": False, "error": f"请求GitHub失败，请检查网络代理: {str(e)}", "source": source["name"]}
             except Exception as e:
                 logger.error(f"检查GitHub更新时发生错误: {str(e)}")
                 if attempt < max_retries - 1:
-                    logger.info(f"将在{retry_delay}秒后重试...")
+                    #logger.info(f"将在{retry_delay}秒后重试...")
                     await asyncio.sleep(retry_delay)
                     continue
                 return {"has_update": False, "error": str(e), "source": source["name"]}
