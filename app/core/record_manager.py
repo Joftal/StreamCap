@@ -195,14 +195,13 @@ class RecordingManager:
             
         selected_recordings = await self.get_selected_recordings()
         pre_start_monitor_recordings = selected_recordings if selected_recordings else self.recordings
-        cards_obj = self.app.record_card_manager.cards_obj
         success_count = 0
         
+        # 处理所有录制项，不限制于当前分页可见的卡片
         for recording in pre_start_monitor_recordings:
-            if cards_obj[recording.rec_id]["card"].visible:
-                result = await self.start_monitor_recording(recording, auto_save=False)
-                if result:
-                    success_count += 1
+            result = await self.start_monitor_recording(recording, auto_save=False)
+            if result:
+                success_count += 1
                     
         self.app.page.run_task(self.persist_recordings)
         logger.info(f"Batch Start Monitor Recordings: {[i.rec_id for i in pre_start_monitor_recordings]}, 成功: {success_count}")
@@ -215,10 +214,10 @@ class RecordingManager:
         if not selected_recordings:
             selected_recordings = await self.get_selected_recordings()
         pre_stop_monitor_recordings = selected_recordings or self.recordings
-        cards_obj = self.app.record_card_manager.cards_obj
+        
+        # 处理所有录制项，不限制于当前分页可见的卡片
         for recording in pre_stop_monitor_recordings:
-            if cards_obj[recording.rec_id]["card"].visible:
-                self.app.page.run_task(self.stop_monitor_recording, recording, auto_save=False)
+            self.app.page.run_task(self.stop_monitor_recording, recording, auto_save=False)
         self.app.page.run_task(self.persist_recordings)
         logger.info(f"Batch Stop Monitor Recordings: {[i.rec_id for i in pre_stop_monitor_recordings]}")
 
