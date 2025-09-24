@@ -66,21 +66,21 @@ class QRCodeLoginServer:
         
         # 尝试查找HTML文件
         for path in possible_paths:
-            logger.info(f"尝试查找HTML文件: {path}")
+            # logger.info(f"尝试查找HTML文件: {path}")
             if path.exists():
                 html_path = path
-                logger.info(f"找到HTML文件: {html_path}")
+                # logger.info(f"找到HTML文件: {html_path}")
                 break
         
         if not html_path:
             # 如果找不到文件，返回内嵌的HTML内容
-            logger.info("未找到HTML文件，使用内嵌内容")
+            # logger.info("未找到HTML文件，使用内嵌内容")
             html_content = self._get_embedded_html()
         else:
             try:
                 with open(html_path, encoding='utf-8') as f:
                     html_content = f.read()
-                logger.info(f"成功读取HTML文件，大小: {len(html_content)} 字符")
+                # logger.info(f"成功读取HTML文件，大小: {len(html_content)} 字符")
             except Exception as e:
                 logger.info(f"读取HTML文件失败: {e}")
                 # 如果读取失败，使用内嵌内容
@@ -538,7 +538,7 @@ class QRCodeLoginServer:
         """启动浏览器进程"""
         try:
             browser_cmd = self._get_browser_command(url)
-            logger.info(f"尝试启动浏览器，命令: {browser_cmd}")
+            # logger.info(f"尝试启动浏览器，命令: {browser_cmd}")
             
             # 在打包环境中，使用subprocess.Popen启动浏览器
             if self.is_frozen:
@@ -551,13 +551,13 @@ class QRCodeLoginServer:
                         creationflags=subprocess.CREATE_NEW_CONSOLE if sys.platform == "win32" else 0
                     )
                     self.browser_pid = self.browser_process.pid
-                    logger.info(f"浏览器进程已启动，PID: {self.browser_pid}")
+                    # logger.info(f"浏览器进程已启动，PID: {self.browser_pid}")
                 except FileNotFoundError as e:
                     logger.info(f"浏览器可执行文件未找到: {e}")
                     # 尝试使用webbrowser作为备选方案
                     await self._fallback_browser_open(url)
                 except Exception as e:
-                    logger.info(f"启动浏览器失败: {e}")
+                    # logger.info(f"启动浏览器失败: {e}")
                     # 尝试使用webbrowser作为备选方案
                     await self._fallback_browser_open(url)
             else:
@@ -565,7 +565,7 @@ class QRCodeLoginServer:
                 await self._fallback_browser_open(url)
             
         except Exception as e:
-            logger.info(f"启动浏览器失败: {str(e)}")
+            # logger.info(f"启动浏览器失败: {str(e)}")
             # 如果启动失败，尝试使用webbrowser作为备选方案
             await self._fallback_browser_open(url)
     
@@ -573,13 +573,13 @@ class QRCodeLoginServer:
         """使用webbrowser模块作为备选方案启动浏览器"""
         try:
             import webbrowser
-            logger.info("使用webbrowser模块启动浏览器...")
+            # logger.info("使用webbrowser模块启动浏览器...")
             webbrowser.open(url)
-            logger.info("webbrowser启动成功")
+            # logger.info("webbrowser启动成功")
             # 在开发环境中，我们无法直接获取浏览器进程ID
             self.browser_pid = None
         except Exception as e:
-            logger.info(f"webbrowser启动也失败: {str(e)}")
+            # logger.info(f"webbrowser启动也失败: {str(e)}")
             # 最后的备选方案：尝试使用系统命令
             await self._system_browser_open(url)
     
@@ -596,7 +596,7 @@ class QRCodeLoginServer:
                 # Linux: 使用xdg-open命令
                 cmd = ["xdg-open", url]
             
-            logger.info(f"尝试使用系统命令启动浏览器: {cmd}")
+            # logger.info(f"尝试使用系统命令启动浏览器: {cmd}")
             result = subprocess.run(
                 cmd,
                 capture_output=True,
@@ -604,11 +604,14 @@ class QRCodeLoginServer:
                 timeout=10
             )
             if result.returncode == 0:
-                logger.info("系统命令启动浏览器成功")
+                # logger.info("系统命令启动浏览器成功")
+                pass
             else:
-                logger.info(f"系统命令启动浏览器失败: {result.stderr}")
+                # logger.info(f"系统命令启动浏览器失败: {result.stderr}")
+                pass
         except Exception as e:
-            logger.info(f"系统命令启动浏览器失败: {str(e)}")
+            # logger.info(f"系统命令启动浏览器失败: {str(e)}")
+            pass
     
     async def close_browser_process(self):
         """关闭浏览器进程"""
@@ -616,23 +619,23 @@ class QRCodeLoginServer:
             if self.browser_process:
                 # 如果有进程对象，尝试终止它
                 try:
-                    logger.info(f"正在终止浏览器进程 PID={self.browser_process.pid}")
+                    # logger.info(f"正在终止浏览器进程 PID={self.browser_process.pid}")
                     self.browser_process.terminate()
                     # 使用asyncio.wait_for包装同步的wait调用
                     await asyncio.wait_for(
                         asyncio.get_event_loop().run_in_executor(None, self.browser_process.wait),
                         timeout=3.0
                     )
-                    logger.info(f"浏览器进程已正常终止 PID={self.browser_process.pid}")
+                    # logger.info(f"浏览器进程已正常终止 PID={self.browser_process.pid}")
                 except asyncio.TimeoutError:
-                    logger.info(f"浏览器进程终止超时，强制终止 PID={self.browser_process.pid}")
+                    # logger.info(f"浏览器进程终止超时，强制终止 PID={self.browser_process.pid}")
                     self.browser_process.kill()
                     # 使用asyncio.wait_for包装同步的wait调用
                     await asyncio.wait_for(
                         asyncio.get_event_loop().run_in_executor(None, self.browser_process.wait),
                         timeout=3.0
                     )
-                    logger.info(f"浏览器进程已被强制终止 PID={self.browser_process.pid}")
+                    # logger.info(f"浏览器进程已被强制终止 PID={self.browser_process.pid}")
                 finally:
                     self.browser_process = None
                     self.browser_pid = None
@@ -641,7 +644,7 @@ class QRCodeLoginServer:
                 # 如果有进程ID，使用psutil终止
                 try:
                     if psutil.pid_exists(self.browser_pid):
-                        logger.info(f"正在终止浏览器进程 PID={self.browser_pid}")
+                        # logger.info(f"正在终止浏览器进程 PID={self.browser_pid}")
                         proc = psutil.Process(self.browser_pid)
                         
                         # 先尝试终止子进程
@@ -649,7 +652,7 @@ class QRCodeLoginServer:
                         for child in children:
                             try:
                                 child.terminate()
-                                logger.info(f"已终止子进程 PID={child.pid}")
+                                # logger.info(f"已终止子进程 PID={child.pid}")
                             except psutil.NoSuchProcess:
                                 pass
                         
@@ -660,18 +663,20 @@ class QRCodeLoginServer:
                             asyncio.get_event_loop().run_in_executor(None, proc.wait, 3),
                             timeout=3.0
                         )
-                        logger.info(f"浏览器进程已正常终止 PID={self.browser_pid}")
+                        # logger.info(f"浏览器进程已正常终止 PID={self.browser_pid}")
                     else:
-                        logger.info(f"浏览器进程不存在 PID={self.browser_pid}")
+                        # logger.info(f"浏览器进程不存在 PID={self.browser_pid}")
+                        pass
                 except (psutil.NoSuchProcess, asyncio.TimeoutError):
                     try:
                         if psutil.pid_exists(self.browser_pid):
-                            logger.info(f"强制终止浏览器进程 PID={self.browser_pid}")
+                            # logger.info(f"强制终止浏览器进程 PID={self.browser_pid}")
                             proc = psutil.Process(self.browser_pid)
                             proc.kill()
-                            logger.info(f"浏览器进程已被强制终止 PID={self.browser_pid}")
+                            # logger.info(f"浏览器进程已被强制终止 PID={self.browser_pid}")
                     except psutil.NoSuchProcess:
-                        logger.info(f"浏览器进程已不存在 PID={self.browser_pid}")
+                        # logger.info(f"浏览器进程已不存在 PID={self.browser_pid}")
+                        pass
                 finally:
                     self.browser_pid = None
                     
@@ -679,7 +684,8 @@ class QRCodeLoginServer:
             await self._cleanup_browser_processes()
                     
         except Exception as e:
-            logger.info(f"关闭浏览器进程时出错: {str(e)}")
+            # logger.info(f"关闭浏览器进程时出错: {str(e)}")
+            pass
     
     async def _cleanup_browser_processes(self):
         """清理可能的残留浏览器进程"""
@@ -700,7 +706,7 @@ class QRCodeLoginServer:
                         # 检查命令行参数，看是否是我们的登录页面
                         cmdline = proc_info.get('cmdline', [])
                         if any('localhost' in arg for arg in cmdline):
-                            logger.info(f"发现残留浏览器进程 PID={proc_info['pid']}, 名称={proc_name}")
+                            # logger.info(f"发现残留浏览器进程 PID={proc_info['pid']}, 名称={proc_name}")
                             try:
                                 proc_obj = psutil.Process(proc_info['pid'])
                                 proc_obj.terminate()
@@ -709,18 +715,19 @@ class QRCodeLoginServer:
                                     asyncio.get_event_loop().run_in_executor(None, proc_obj.wait, 2),
                                     timeout=2.0
                                 )
-                                logger.info(f"已终止残留浏览器进程 PID={proc_info['pid']}")
+                                # logger.info(f"已终止残留浏览器进程 PID={proc_info['pid']}")
                             except (psutil.NoSuchProcess, asyncio.TimeoutError):
                                 try:
                                     proc_obj = psutil.Process(proc_info['pid'])
                                     proc_obj.kill()
-                                    logger.info(f"已强制终止残留浏览器进程 PID={proc_info['pid']}")
+                                    # logger.info(f"已强制终止残留浏览器进程 PID={proc_info['pid']}")
                                 except psutil.NoSuchProcess:
                                     pass
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
         except Exception as e:
-            logger.info(f"清理浏览器进程时出错: {str(e)}")
+            # logger.info(f"清理浏览器进程时出错: {str(e)}")
+            pass
     
     async def start(self, cookie_callback=None):
         """
@@ -778,16 +785,19 @@ class QRCodeLoginServer:
                 try:
                     await self.site.stop()
                 except Exception as e:
-                    logger.info(f"停止站点时出错: {str(e)}")
+                    # logger.info(f"停止站点时出错: {str(e)}")
+                    pass
                     
             if self.runner:
                 try:
                     await self.runner.cleanup()
                 except Exception as e:
-                    logger.info(f"清理运行器时出错: {str(e)}")
+                    # logger.info(f"清理运行器时出错: {str(e)}")
+                    pass
                     
         except Exception as e:
-            logger.info(f"停止服务器时出错: {str(e)}")
+            # logger.info(f"停止服务器时出错: {str(e)}")
+            pass
         finally:
             self._is_running = False
             self._is_stopping = False

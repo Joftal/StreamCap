@@ -36,11 +36,11 @@ class MessagePusher:
         if getattr(sys, 'frozen', False):
             # 如果是打包后的可执行文件，使用可执行文件所在目录
             base_path = os.path.dirname(sys.executable)
-            logger.info(f"消息推送服务运行在打包环境中，基础路径: {base_path}")
+            # logger.info(f"消息推送服务运行在打包环境中，基础路径: {base_path}")
         else:
             # 开发环境，使用项目根目录
             base_path = Path(__file__).parent.parent.parent
-            logger.info(f"消息推送服务运行在开发环境中，基础路径: {base_path}")
+            # logger.info(f"消息推送服务运行在开发环境中，基础路径: {base_path}")
         return base_path
 
     @classmethod
@@ -55,7 +55,7 @@ class MessagePusher:
             return
         
         cls._queue_processing = True
-        logger.info("开始处理消息队列")
+        # logger.info("开始处理消息队列")
         
         try:
             while not cls._message_queue.empty():
@@ -74,7 +74,7 @@ class MessagePusher:
             logger.error(f"处理消息队列时出错: {str(e)}")
         finally:
             cls._queue_processing = False
-            logger.info("消息队列处理完毕")
+            # logger.info("消息队列处理完毕")
 
     async def push_messages(self, msg_title: str, push_content: str, platform_code: str = None):
         """将消息加入队列进行推送
@@ -84,7 +84,7 @@ class MessagePusher:
             push_content: 消息内容
             platform_code: 平台代码，用于显示平台图标（可选）
         """
-        logger.info(f"接收到推送请求: {msg_title}, 平台: {platform_code or '未指定'}")
+        # logger.info(f"接收到推送请求: {msg_title}, 平台: {platform_code or '未指定'}")
         
         # 检查是否是重复消息
         msg_hash = self._get_message_hash(msg_title, push_content)
@@ -98,7 +98,7 @@ class MessagePusher:
         
         # 检查是否在去重窗口内已经发送过相同消息
         if msg_hash in self._sent_messages:
-            logger.info(f"跳过重复消息: {msg_title} (在{self._deduplication_window}秒内已发送)")
+            # logger.info(f"跳过重复消息: {msg_title} (在{self._deduplication_window}秒内已发送)")
             return []
         
         # 记录此消息已请求发送
@@ -117,7 +117,7 @@ class MessagePusher:
 
     async def _push_messages_impl(self, msg_title: str, push_content: str, platform_code: str = None):
         """实际执行消息推送的内部方法"""
-        logger.info(f"开始推送消息: {msg_title}, 平台: {platform_code or '未指定'}")
+        # logger.info(f"开始推送消息: {msg_title}, 平台: {platform_code or '未指定'}")
         
         user_config = self.settings.user_config
         tasks = []
@@ -125,7 +125,7 @@ class MessagePusher:
         if user_config.get("dingtalk_enabled"):
             webhook_url = user_config.get("dingtalk_webhook_url", "")
             if webhook_url.strip():
-                logger.info("准备推送钉钉消息")
+                # logger.info("准备推送钉钉消息")
                 task = create_task(
                     self.notifier.send_to_dingtalk(
                         url=webhook_url,
@@ -135,28 +135,28 @@ class MessagePusher:
                     )
                 )
                 tasks.append(task)
-                logger.info("钉钉消息推送任务已创建")
+                # logger.info("钉钉消息推送任务已创建")
             else:
                 logger.warning("钉钉推送已启用，但未配置Webhook URL")
 
         if user_config.get("wechat_enabled"):
             webhook_url = user_config.get("wechat_webhook_url", "")
             if webhook_url.strip():
-                logger.info("准备推送微信消息")
+                # logger.info("准备推送微信消息")
                 task = create_task(
                     self.notifier.send_to_wechat(
                         url=webhook_url, title=msg_title, content=push_content
                     )
                 )
                 tasks.append(task)
-                logger.info("微信消息推送任务已创建")
+                # logger.info("微信消息推送任务已创建")
             else:
                 logger.warning("微信推送已启用，但未配置Webhook URL")
 
         if user_config.get("bark_enabled"):
             bark_url = user_config.get("bark_webhook_url", "")
             if bark_url.strip():
-                logger.info(f"准备推送Bark消息，URL: {bark_url}")
+                # logger.info(f"准备推送Bark消息，URL: {bark_url}")
                 task = create_task(
                     self.notifier.send_to_bark(
                         api=bark_url,
@@ -167,14 +167,14 @@ class MessagePusher:
                     )
                 )
                 tasks.append(task)
-                logger.info("Bark消息推送任务已创建")
+                # logger.info("Bark消息推送任务已创建")
             else:
                 logger.warning("Bark推送已启用，但未配置Webhook URL")
 
         if user_config.get("ntfy_enabled"):
             ntfy_url = user_config.get("ntfy_server_url", "")
             if ntfy_url.strip():
-                logger.info("准备推送Ntfy消息")
+                # logger.info("准备推送Ntfy消息")
                 task = create_task(
                     self.notifier.send_to_ntfy(
                         api=ntfy_url,
@@ -186,7 +186,7 @@ class MessagePusher:
                     )
                 )
                 tasks.append(task)
-                logger.info("Ntfy消息推送任务已创建")
+                # logger.info("Ntfy消息推送任务已创建")
             else:
                 logger.warning("Ntfy推送已启用，但未配置Server URL")
 
@@ -194,7 +194,7 @@ class MessagePusher:
             chat_id = user_config.get("telegram_chat_id")
             token = user_config.get("telegram_api_token", "")
             if chat_id and token.strip():
-                logger.info("准备推送Telegram消息")
+                # logger.info("准备推送Telegram消息")
                 task = create_task(
                     self.notifier.send_to_telegram(
                         chat_id=chat_id,
@@ -203,7 +203,7 @@ class MessagePusher:
                     )
                 )
                 tasks.append(task)
-                logger.info("Telegram消息推送任务已创建")
+                # logger.info("Telegram消息推送任务已创建")
             else:
                 logger.warning("Telegram推送已启用，但未配置完整的Chat ID或API Token")
 
@@ -215,7 +215,7 @@ class MessagePusher:
             to_email = user_config.get("recipient_email", "")
             
             if email_host.strip() and login_email.strip() and password.strip() and sender_email.strip() and to_email.strip():
-                logger.info("准备推送Email消息")
+                # logger.info("准备推送Email消息")
                 task = create_task(
                     self.notifier.send_to_email(
                         email_host=email_host,
@@ -229,14 +229,14 @@ class MessagePusher:
                     )
                 )
                 tasks.append(task)
-                logger.info("Email消息推送任务已创建")
+                # logger.info("Email消息推送任务已创建")
             else:
                 logger.warning("Email推送已启用，但配置不完整")
         
         if user_config.get("serverchan_enabled"):
             sendkey = user_config.get("serverchan_sendkey", "")
             if sendkey.strip():
-                logger.info("准备推送ServerChan消息")
+                # logger.info("准备推送ServerChan消息")
                 task = create_task(
                     self.notifier.send_to_serverchan(
                         sendkey=sendkey,
@@ -245,17 +245,17 @@ class MessagePusher:
                     )
                 )
                 tasks.append(task)
-                logger.info("ServerChan消息推送任务已创建")
+                # logger.info("ServerChan消息推送任务已创建")
             else:
                 logger.warning("ServerChan推送已启用，但未配置SendKey")
         
         # 添加Windows系统通知渠道
         if user_config.get("windows_notify_enabled") and sys.platform == "win32":
-            logger.info("准备推送Windows系统通知")
+            # logger.info("准备推送Windows系统通知")
             # Windows通知是同步操作，但我们使用create_task让它在异步环境中运行
             task = create_task(self._send_windows_notification(msg_title, push_content, platform_code))
             tasks.append(task)
-            logger.info("Windows系统通知任务已创建")
+            # logger.info("Windows系统通知任务已创建")
         
         if not tasks:
             logger.warning("没有创建任何推送任务，可能是因为所有渠道都未启用或配置不正确")
@@ -267,7 +267,7 @@ class MessagePusher:
             except Exception as e:
                 logger.error(f"执行推送任务时发生错误: {str(e)}")
         
-        logger.info(f"消息 '{msg_title}' 推送完成")
+        # logger.info(f"消息 '{msg_title}' 推送完成")
         return tasks
         
     async def _send_windows_notification(self, title: str, content: str, platform_code: str = None):
@@ -287,7 +287,7 @@ class MessagePusher:
                     
                     if os.path.exists(system_icon_path):
                         icon_path = system_icon_path
-                        logger.info(f"使用系统通知图标: {icon_path}")
+                        # logger.info(f"使用系统通知图标: {icon_path}")
                     else:
                         # 如果系统图标不存在，尝试使用默认图标
                         logger.warning(f"系统通知图标不存在: {system_icon_path}，将使用默认图标")
@@ -300,7 +300,7 @@ class MessagePusher:
                     
                     if os.path.exists(ico_platform_path):
                         icon_path = ico_platform_path
-                        logger.info(f"找到平台ICO图标: {icon_path}")
+                        # logger.info(f"找到平台ICO图标: {icon_path}")
             
             # 如果没有找到特定图标，使用默认图标
             if not icon_path:
@@ -311,9 +311,9 @@ class MessagePusher:
                 
                 if os.path.exists(default_icon_path):
                     icon_path = default_icon_path
-                    logger.info(f"使用默认图标: {icon_path}")
+                    # logger.info(f"使用默认图标: {icon_path}")
             
-            logger.info(f"准备Windows系统通知 - 标题: '{title}', 平台: {platform_code or '未指定'}, 图标路径: {icon_path or '无'}")
+            # logger.info(f"准备Windows系统通知 - 标题: '{title}', 平台: {platform_code or '未指定'}, 图标路径: {icon_path or '无'}")
             
             # 调用NotificationService中的方法发送Windows通知
             result = self.notifier.send_to_windows(
@@ -326,7 +326,8 @@ class MessagePusher:
             await asyncio_sleep(1.0)  # 1秒延迟，避免通知重叠
             
             if result.get("success"):
-                logger.info(f"Windows系统通知发送成功: {result.get('success')}")
+                # logger.info(f"Windows系统通知发送成功: {result.get('success')}")
+                pass
             else:
                 error_msgs = result.get('error', [])
                 for error in error_msgs:

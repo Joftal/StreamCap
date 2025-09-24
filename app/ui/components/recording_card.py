@@ -758,7 +758,7 @@ class RecordingCardManager:
             recording.end_notification_sent = False
             if hasattr(recording, 'was_recording'):
                 recording.was_recording = False
-            logger.info(f"手动停止监控，重置通知状态: {recording.streamer_name}")
+            # logger.info(f"手动停止监控，重置通知状态: {recording.streamer_name}")
             
             self.app.page.run_task(self.app.snack_bar.show_snack_bar, self._["stop_monitor_tip"])
         else:
@@ -891,7 +891,7 @@ class RecordingCardManager:
                             # 检查是否启用了该录制项的消息推送
                             item_push_enabled = recording.enabled_message_push
                             
-                            logger.info(f"全局推送设置: {global_push_enabled}, 单独推送设置: {item_push_enabled}")
+                            # logger.info(f"全局推送设置: {global_push_enabled}, 单独推送设置: {item_push_enabled}")
                             
                             # 修改：只有当全局直播状态推送开关打开AND该录制项启用了消息推送时，才进行推送
                             # 从OR条件改为AND条件，与自动模式保持一致
@@ -912,10 +912,10 @@ class RecordingCardManager:
                                     serverchan_enabled or windows_notify_enabled
                                 )
                                 
-                                logger.info(f"推送渠道状态: bark={bark_enabled}, wechat={wechat_enabled}, "
-                                           f"dingtalk={dingtalk_enabled}, ntfy={ntfy_enabled}, "
-                                           f"telegram={telegram_enabled}, email={email_enabled}, "
-                                           f"serverchan={serverchan_enabled}, windows={windows_notify_enabled}")
+                                # logger.info(f"推送渠道状态: bark={bark_enabled}, wechat={wechat_enabled}, "
+                                #            f"dingtalk={dingtalk_enabled}, ntfy={ntfy_enabled}, "
+                                #            f"telegram={telegram_enabled}, email={email_enabled}, "
+                                #            f"serverchan={serverchan_enabled}, windows={windows_notify_enabled}")
                                 
                                 # 检查是否已经发送过通知，避免重复发送
                                 if any_channel_enabled and not recording.notification_sent:
@@ -934,7 +934,7 @@ class RecordingCardManager:
                                     msg_title = msg_title or self._["status_notify"]
                                     
                                     # 记录推送信息
-                                    logger.info(f"手动录制模式下触发消息推送: {msg_title} - {push_content}")
+                                    # logger.info(f"手动录制模式下触发消息推送: {msg_title} - {push_content}")
                                     
                                     # 创建消息推送器并发送消息
                                     msg_manager = MessagePusher(self.app.settings)
@@ -949,15 +949,18 @@ class RecordingCardManager:
                                         # 其他情况不传递平台代码
                                         self.app.page.run_task(msg_manager.push_messages, msg_title, push_content)
                                     
-                                    logger.info("已创建消息推送任务")
+                                    # logger.info("已创建消息推送任务")
                                     # 设置通知已发送标志
                                     recording.notification_sent = True
                                 elif recording.notification_sent:
-                                    logger.info(f"已经发送过开播通知，跳过重复发送: {recording.streamer_name}")
+                                    # logger.info(f"已经发送过开播通知，跳过重复发送: {recording.streamer_name}")
+                                    pass
                                 else:
-                                    logger.info("没有启用任何推送渠道，跳过消息推送")
+                                    # logger.info("没有启用任何推送渠道，跳过消息推送")
+                                    pass
                             else:
-                                logger.info("全局推送开关和单独推送设置必须同时启用，跳过消息推送")
+                                # logger.info("全局推送开关和单独推送设置必须同时启用，跳过消息推送")
+                                pass
                         except Exception as e:
                             logger.error(f"手动录制模式下消息推送失败: {str(e)}")
                     
@@ -966,7 +969,7 @@ class RecordingCardManager:
                     await self.app.snack_bar.show_snack_bar(self._["pre_record_tip"], bgcolor=ft.Colors.GREEN)
                     # 注意：此时不重置notification_sent标志，保持其状态
                     # 这样在停止录制返回"直播中（未录制）"状态时不会重复发送通知
-                    logger.info(f"开始录制，保持通知状态: {recording.streamer_name}")
+                    # logger.info(f"开始录制，保持通知状态: {recording.streamer_name}")
                 else:
                     pass
             await self.update_card(recording)
@@ -1001,7 +1004,7 @@ class RecordingCardManager:
                     # 如果没有剩余项，准备切换到全部平台视图
                     if remaining_items == 0:
                         need_switch_to_all = True
-                        logger.info(f"删除后平台 {current_platform} 下没有剩余直播间，将切换到全部平台视图")
+                        # logger.info(f"删除后平台 {current_platform} 下没有剩余直播间，将切换到全部平台视图")
             
             # 删除平台logo缓存
             self.app.platform_logo_cache.remove_logo_cache(recording.rec_id)
@@ -1071,7 +1074,7 @@ class RecordingCardManager:
                 
                 # 如果当前平台没有剩余录制项，自动切换到全部平台视图
                 if not remaining_items:
-                    logger.info(f"平台 {current_platform} 下没有剩余直播间，自动切换到全部平台视图")
+                    # logger.info(f"平台 {current_platform} 下没有剩余直播间，自动切换到全部平台视图")
                     home_page.current_platform_filter = "all"
             
             # 更新筛选区域
@@ -1326,7 +1329,7 @@ class RecordingCardManager:
             card_data = self.cards_obj.get(rec_id)
             
             if not card_data:
-                logger.debug(f"无法更新缩略图: 未找到卡片数据 {rec_id}")
+                # logger.debug(f"无法更新缩略图: 未找到卡片数据 {rec_id}")
                 return
             
             # 获取缩略图设置
@@ -1341,7 +1344,7 @@ class RecordingCardManager:
             overlay_logo = card_data.get("overlay_logo")
             
             if not thumbnail_image or not platform_logo or not overlay_logo:
-                logger.debug(f"无法更新缩略图: 缺少必要组件 {rec_id}")
+                # logger.debug(f"无法更新缩略图: 缺少必要组件 {rec_id}")
                 return
             
             # 更新UI组件

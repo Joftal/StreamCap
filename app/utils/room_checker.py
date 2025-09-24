@@ -320,7 +320,7 @@ class RoomChecker:
             RoomChecker._platform_cache.clear()
             RoomChecker._cache_hits = 0
             RoomChecker._cache_misses = 0
-            logger.info("平台信息缓存已清除")
+            # logger.info("平台信息缓存已清除")
         
         # 同时清除短链接缓存
         RoomChecker.clear_short_url_cache()
@@ -385,7 +385,7 @@ class RoomChecker:
             RoomChecker._short_url_cache.clear()
             RoomChecker._short_url_cache_hits = 0
             RoomChecker._short_url_cache_misses = 0
-            logger.info("短链接缓存已清除")
+            # logger.info("短链接缓存已清除")
     
     @staticmethod
     def _extract_room_id_from_path(url: str, exclude_domains: List[str] = None) -> Optional[str]:
@@ -691,8 +691,8 @@ class RoomChecker:
         Returns:
             Tuple[bool, Optional[str]]: (是否重复, 重复原因)
         """
-        start_time = time.time()
-        logger.info(f"开始检查直播间是否重复: {live_url}")
+        #start_time = time.time()
+        # logger.info(f"开始检查直播间是否重复: {live_url}")
         
         try:
             # 早期退出：空URL检查
@@ -704,11 +704,11 @@ class RoomChecker:
             if existing_recordings is None:
                 # 只有当参数为None时才使用默认录制列表
                 existing_recordings = app.record_manager.recordings
-                logger.info(f"使用默认录制列表，当前共有 {len(existing_recordings)} 个录制项")
+                # logger.info(f"使用默认录制列表，当前共有 {len(existing_recordings)} 个录制项")
             
             # 早期退出：空录制列表检查
             if not existing_recordings:
-                logger.info("录制列表为空，无需去重检查")
+                # logger.info("录制列表为空，无需去重检查")
                 return False, None
 
             # 1. 获取直播间的真实信息（只获取一次）
@@ -717,13 +717,13 @@ class RoomChecker:
                 logger.warning(f"无法识别平台: {live_url}")
                 return False, None
 
-            logger.info(f"识别到平台: {platform} ({platform_key})")
+            # logger.info(f"识别到平台: {platform} ({platform_key})")
 
             # 2. 按优先级顺序检查重复
             # 2.1 最高优先级：检查URL是否完全相同（可以早期退出）
             for recording in existing_recordings:
                 if recording.url == live_url:
-                    logger.info("发现重复: URL完全相同")
+                    # logger.info("发现重复: URL完全相同")
                     return True, "duplicate_reason_identical_url"
             
             # 2.2 次优先级：检查主播ID（主播名称）
@@ -754,15 +754,12 @@ class RoomChecker:
                 if duplicate_found:
                     return True, "duplicate_reason_same_room_id"
 
-            logger.info("未发现重复直播间")
+            # logger.info("未发现重复直播间")
             return False, None
 
         except Exception as e:
             logger.error(f"检查重复直播间失败: {e}")
             return False, None
-        finally:
-            duration = time.time() - start_time
-            logger.info(f"去重检查耗时: {duration:.3f}秒")
 
     @staticmethod
     async def _resolve_short_url_room_id(
@@ -772,7 +769,7 @@ class RoomChecker:
         # 首先检查缓存
         cached_room_id = RoomChecker._get_cached_short_url_result(live_url)
         if cached_room_id is not None:
-            logger.info(f"从缓存获取到短链接房间ID: {cached_room_id}")
+            # logger.info(f"从缓存获取到短链接房间ID: {cached_room_id}")
             return cached_room_id
         
         # 缓存中没有，尝试网络解析
@@ -784,7 +781,7 @@ class RoomChecker:
             recorder = LiveStreamRecorder(app, None, recording_info_dict)
             room_id = await recorder.get_room_id_from_short_url(live_url)
             if room_id:
-                logger.info(f"从短链接获取到真实房间ID: {room_id}")
+                # logger.info(f"从短链接获取到真实房间ID: {room_id}")
                 # 缓存结果
                 RoomChecker._set_cached_short_url_result(live_url, room_id)
                 return room_id
@@ -815,7 +812,7 @@ class RoomChecker:
             
             if stream_info and stream_info.anchor_name:
                 real_anchor_name = stream_info.anchor_name
-                logger.info(f"获取到主播名称: {real_anchor_name}")
+                # logger.info(f"获取到主播名称: {real_anchor_name}")
                 return real_anchor_name
             else:
                 logger.warning(f"无法获取主播名称: {live_url}")
@@ -840,8 +837,8 @@ class RoomChecker:
             if platform_key == existing_platform_key:
                 existing_room_id = RoomChecker.extract_room_id(recording.url)
                 if existing_room_id and existing_room_id == room_id:
-                    logger.info(f"现有录制项房间ID: {existing_room_id}")
-                    logger.info(f"发现重复: 同平台房间ID相同 ({room_id})")
+                    # logger.info(f"现有录制项房间ID: {existing_room_id}")
+                    # logger.info(f"发现重复: 同平台房间ID相同 ({room_id})")
                     return True
         
         return False
@@ -860,9 +857,9 @@ class RoomChecker:
             
             # 只检查同平台的主播名称
             if platform_key == existing_platform_key and recording.streamer_name == real_anchor_name:
-                logger.info(f"主播名称匹配: {real_anchor_name}")
-                logger.info(f"平台匹配: {platform_key}")
-                logger.info(f"发现重复: 同平台同名主播 ({real_anchor_name})")
+                # logger.info(f"主播名称匹配: {real_anchor_name}")
+                # logger.info(f"平台匹配: {platform_key}")
+                # logger.info(f"发现重复: 同平台同名主播 ({real_anchor_name})")
                 return True
         
         return False
@@ -916,7 +913,7 @@ class RoomChecker:
         
         # 如果现有录制列表为空，需要对输入的直播间列表内部进行去重检查
         if not existing_recordings:
-            logger.info("现有录制列表为空，将对输入的直播间列表内部进行去重检查")
+            # logger.info("现有录制列表为空，将对输入的直播间列表内部进行去重检查")
             # 创建一个临时的去重检查机制
             processed_urls = set()
             processed_streamer_names = {}  # platform_key -> set(streamer_names)
@@ -1009,7 +1006,7 @@ class RoomChecker:
                     f.write(f"原因: {reason}\n")
                     f.write("-" * 50 + "\n")
             
-            logger.info(f"过滤文件已保存至: {diff_file}")
+            # logger.info(f"过滤文件已保存至: {diff_file}")
             return diff_file
         except Exception as e:
             logger.error(f"保存过滤文件失败: {e}")

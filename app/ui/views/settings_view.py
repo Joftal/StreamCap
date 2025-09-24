@@ -163,7 +163,7 @@ class SettingsPage(PageBase):
             self.app.language_manager.notify_observers()
             self.page.run_task(self.load)
             await self.config_manager.save_user_config(self.user_config)
-            logger.success("Default configuration restored.")
+            # logger.success("Default configuration restored.")
             await self.app.snack_bar.show_snack_bar(self._["success_restore_tip"], bgcolor=ft.Colors.GREEN)
             await close_dialog(None)
 
@@ -204,7 +204,7 @@ class SettingsPage(PageBase):
             self.page.run_task(self.app.record_manager.persist_recordings)
             
         if key == "language":
-            logger.info(f"语言设置已更改为: {e.data}")
+            # logger.info(f"语言设置已更改为: {e.data}")
             # 更新语言设置
             self.load_language()
             self.app.language_manager.load()
@@ -345,9 +345,9 @@ class SettingsPage(PageBase):
             selected = [cb.data for cb in checkboxes if cb.value and cb.data]
             
             # 记录选择变更
-            old_selected = self.get_config_value("default_platform_with_proxy", "").split(",")
-            new_selected = selected
-            logger.info(f"代理平台选择变更 - 旧选择: {old_selected}, 新选择: {new_selected}")
+            #old_selected = self.get_config_value("default_platform_with_proxy", "").split(",")
+            #new_selected = selected
+            # logger.info(f"代理平台选择变更 - 旧选择: {old_selected}, 新选择: {new_selected}")
             
             # 保存到用户配置
             self.user_config["default_platform_with_proxy"] = ",".join(selected)
@@ -1288,12 +1288,13 @@ class SettingsPage(PageBase):
                 
                 # 登录成功后，立即关闭服务器
                 try:
-                    logger.info("登录成功，立即关闭B站登录服务器")
+                    # logger.info("登录成功，立即关闭B站登录服务器")
                     await server.stop()
-                    logger.info("B站登录服务器已关闭")
+                    # logger.info("B站登录服务器已关闭")
                 except Exception as e:
-                    logger.info(f"关闭B站登录服务器时出错: {str(e)}")
+                    # logger.info(f"关闭B站登录服务器时出错: {str(e)}")
                     # 不记录为错误，因为可能是正常的时序问题
+                    pass
             
             # 启动服务器并打开浏览器
             url = await server.start_with_browser(cookie_callback=save_cookie)
@@ -1314,13 +1315,15 @@ class SettingsPage(PageBase):
                     try:
                         # 检查服务器是否还在运行状态
                         if hasattr(server, '_is_running') and server._is_running:
-                            logger.info("监控任务：30秒超时，关闭B站登录服务器")
+                            # logger.info("监控任务：30秒超时，关闭B站登录服务器")
                             await server.stop()
                     except Exception as e:
-                        logger.info(f"监控任务关闭B站登录服务器时出错: {str(e)}")
+                        # logger.info(f"监控任务关闭B站登录服务器时出错: {str(e)}")
                         # 不记录为错误，因为可能是正常的时序问题
+                        pass
                 except Exception as e:
-                    logger.info(f"B站登录服务器监控任务出错: {str(e)}")
+                    # logger.info(f"B站登录服务器监控任务出错: {str(e)}")
+                    pass
             
             # 启动监控任务
             asyncio.create_task(monitor_server())
@@ -1828,7 +1831,7 @@ class SettingsPage(PageBase):
 
     async def unload(self):
         """页面卸载时清理资源"""
-        logger.debug("设置页面开始卸载...")
+        # logger.debug("设置页面开始卸载...")
         
         # 先检查是否有未保存的更改
         await self.is_changed()
@@ -1836,4 +1839,4 @@ class SettingsPage(PageBase):
         # 移除事件处理器
         self.page.on_keyboard_event = None
         
-        logger.debug("设置页面卸载完成")
+        # logger.debug("设置页面卸载完成")

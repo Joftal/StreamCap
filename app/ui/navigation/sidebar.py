@@ -66,19 +66,19 @@ class NavigationColumn(ft.Column):
         destination_index = e.control.destination.index
         
         # 记录点击的导航项
-        logger.debug(f"导航项被点击: {destination_name}, index={destination_index}")
+        # logger.debug(f"导航项被点击: {destination_name}, index={destination_index}")
         
         # 检查是否已经在该页面
         current_page = self.app.current_page
         current_page_name = getattr(current_page, 'page_name', None) if current_page else None
         
         if current_page_name == destination_name:
-            logger.debug(f"已经在 {destination_name} 页面，忽略导航请求")
+            # logger.debug(f"已经在 {destination_name} 页面，忽略导航请求")
             return
         
         # 检查应用是否正在加载页面
         if getattr(self.app, '_loading_page', False):
-            logger.debug(f"应用正在加载页面，将请求排队: {destination_name}")
+            # logger.debug(f"应用正在加载页面，将请求排队: {destination_name}")
             # 记录请求但不立即执行
             self.app._pending_page_request = destination_name
             # 更新选中状态，提供视觉反馈
@@ -91,14 +91,14 @@ class NavigationColumn(ft.Column):
         self.update_selected_item()
         
         # 使用app_manager来切换页面，而不是直接调用page.go
-        logger.debug(f"请求切换到页面: {destination_name}")
+        # logger.debug(f"请求切换到页面: {destination_name}")
         try:
             self.page.run_task(self.app.switch_page, destination_name)
         except Exception as e:
             logger.error(f"请求切换到页面 {destination_name} 时出错: {e}")
             # 如果出错，尝试使用page.go作为备选方案
             try:
-                logger.debug(f"尝试使用备选方式切换到页面: {destination_name}")
+                # logger.debug(f"尝试使用备选方式切换到页面: {destination_name}")
                 self.page.go(f"/{destination_name}")
             except Exception as backup_error:
                 logger.error(f"备选页面切换方式也失败: {backup_error}")
@@ -133,7 +133,7 @@ class LeftNavigationMenu(ft.Column):
         self.load()
 
     def load(self):
-        logger.debug("正在重新加载左侧导航菜单...")
+        # logger.debug("正在重新加载左侧导航菜单...")
         self._ = self.app.language_manager.language.get("sidebar")
         
         # 重新创建导航列
@@ -276,7 +276,7 @@ class LeftNavigationMenu(ft.Column):
         if hasattr(self.rail, 'update_selected_item'):
             self.rail.update_selected_item()
         
-        logger.debug("左侧导航菜单重新加载完成")
+        # logger.debug("左侧导航菜单重新加载完成")
 
     async def theme_changed(self, _):
         page = self.app.page
@@ -331,14 +331,14 @@ class LeftNavigationMenu(ft.Column):
                 total_recordings = len(recordings)
                 total_batches = (total_recordings + batch_size - 1) // batch_size
                 
-                logger.info(f"开始批量更新录制卡片速度显示状态，共 {total_recordings} 个，分 {total_batches} 批处理")
+                # logger.info(f"开始批量更新录制卡片速度显示状态，共 {total_recordings} 个，分 {total_batches} 批处理")
                 
                 for batch_index in range(total_batches):
                     start_idx = batch_index * batch_size
                     end_idx = min(start_idx + batch_size, total_recordings)
                     batch_recordings = recordings[start_idx:end_idx]
                     
-                    logger.debug(f"更新第 {batch_index+1}/{total_batches} 批卡片，{len(batch_recordings)} 个")
+                    # logger.debug(f"更新第 {batch_index+1}/{total_batches} 批卡片，{len(batch_recordings)} 个")
                     
                     # 并行更新当前批次的卡片
                     update_tasks = []
@@ -370,21 +370,23 @@ class LeftNavigationMenu(ft.Column):
             
             # 为所有正在直播或录制的项目启动缩略图捕获任务（考虑单个房间设置）
             if hasattr(self.app, 'record_manager') and hasattr(self.app, 'thumbnail_manager'):
-                logger.info("开启缩略图功能，为所有直播中或录制中的直播间启动缩略图捕获任务")
+                # logger.info("开启缩略图功能，为所有直播中或录制中的直播间启动缩略图捕获任务")
                 active_recordings = [r for r in self.app.record_manager.recordings 
                                     if (r.is_live or r.recording) and r.monitor_status]
                 
                 if active_recordings:
-                    logger.info(f"找到 {len(active_recordings)} 个直播中或录制中的直播间，开始启动缩略图捕获")
+                    # logger.info(f"找到 {len(active_recordings)} 个直播中或录制中的直播间，开始启动缩略图捕获")
                     for recording in active_recordings:
                         # 检查单个房间的缩略图设置
                         if recording.is_thumbnail_enabled(show_live_thumbnail):
-                            logger.info(f"为直播间 {recording.streamer_name} (ID: {recording.rec_id}) 启动缩略图捕获")
+                            # logger.info(f"为直播间 {recording.streamer_name} (ID: {recording.rec_id}) 启动缩略图捕获")
                             self.app.page.run_task(self.app.thumbnail_manager.start_thumbnail_capture, recording)
                         else:
-                            logger.info(f"直播间 {recording.streamer_name} (ID: {recording.rec_id}) 的缩略图功能已关闭，跳过启动")
+                            # logger.info(f"直播间 {recording.streamer_name} (ID: {recording.rec_id}) 的缩略图功能已关闭，跳过启动")
+                            pass
                 else:
-                    logger.info("未找到直播中或录制中的直播间，无需启动缩略图捕获任务")
+                    # logger.info("未找到直播中或录制中的直播间，无需启动缩略图捕获任务")
+                    pass
         else:
             self.thumbnail_display_text.value = self._["hide_thumbnail"]
             self.thumbnail_display_icon.icon = ft.Icons.PHOTO_LIBRARY_OUTLINED
@@ -394,7 +396,7 @@ class LeftNavigationMenu(ft.Column):
             
             # 停止所有缩略图捕获任务（只停止使用全局设置的房间）
             if hasattr(self.app, 'thumbnail_manager') and hasattr(self.app, 'record_manager'):
-                logger.info("关闭缩略图功能，停止所有使用全局设置的直播间缩略图捕获任务")
+                # logger.info("关闭缩略图功能，停止所有使用全局设置的直播间缩略图捕获任务")
                 for recording in self.app.record_manager.recordings:
                     # 只停止那些使用全局设置（thumbnail_enabled为None）的房间
                     if recording.thumbnail_enabled is None:
@@ -413,14 +415,14 @@ class LeftNavigationMenu(ft.Column):
                 total_recordings = len(recordings)
                 total_batches = (total_recordings + batch_size - 1) // batch_size
                 
-                logger.info(f"开始批量更新录制卡片缩略图显示状态，共 {total_recordings} 个，分 {total_batches} 批处理")
+                # logger.info(f"开始批量更新录制卡片缩略图显示状态，共 {total_recordings} 个，分 {total_batches} 批处理")
                 
                 for batch_index in range(total_batches):
                     start_idx = batch_index * batch_size
                     end_idx = min(start_idx + batch_size, total_recordings)
                     batch_recordings = recordings[start_idx:end_idx]
                     
-                    logger.debug(f"更新第 {batch_index+1}/{total_batches} 批卡片，{len(batch_recordings)} 个")
+                    # logger.debug(f"更新第 {batch_index+1}/{total_batches} 批卡片，{len(batch_recordings)} 个")
                     
                     # 并行更新当前批次的卡片
                     update_tasks = []

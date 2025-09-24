@@ -153,7 +153,7 @@ class PlatformHandler(abc.ABC):
         instance_exists = instance_key in cls._instances
         
         if instance_exists:
-            logger.info(f"实例管理 - 复用现有实例: {platform or 'unknown'}-{record_quality or 'default'}")
+            # logger.info(f"实例管理 - 复用现有实例: {platform or 'unknown'}-{record_quality or 'default'}")
             # 更新最后使用时间
             with cls._lock:
                 cls._instance_last_used[instance_key] = time.time()
@@ -182,8 +182,8 @@ class PlatformHandler(abc.ABC):
                     # 同时在强引用字典中保存一份
                     cls._active_instances[instance_key] = instance
                     cls._instance_last_used[instance_key] = time.time()
-                    logger.info(f"实例管理 - 创建新实例: {platform or 'unknown'}-{record_quality or 'default'}, "
-                               f"总创建数: {cls._instance_creation_count}, 当前缓存数: {len(cls._instances)}")
+                    # logger.info(f"实例管理 - 创建新实例: {platform or 'unknown'}-{record_quality or 'default'}, "
+                    #                f"总创建数: {cls._instance_creation_count}, 当前缓存数: {len(cls._instances)}")
 
         return cls._instances[instance_key]
     
@@ -206,7 +206,7 @@ class PlatformHandler(abc.ABC):
             total_to_clean = len(inactive_keys)
             if total_to_clean > 10:
                 # 如果需要清理的实例过多，分批处理以避免阻塞
-                logger.info(f"实例清理 - 发现大量需要清理的实例({total_to_clean})，将分批处理")
+                # logger.info(f"实例清理 - 发现大量需要清理的实例({total_to_clean})，将分批处理")
                 
                 # 每批处理的实例数
                 batch_size = 10
@@ -230,7 +230,8 @@ class PlatformHandler(abc.ABC):
                     cleaned_count += len(batch)
                     # 每批处理后记录进度
                     if len(batches) > 1:
-                        logger.debug(f"实例清理进度: {cleaned_count}/{total_to_clean} ({(cleaned_count/total_to_clean)*100:.1f}%)")
+                        # logger.debug(f"实例清理进度: {cleaned_count}/{total_to_clean} ({(cleaned_count/total_to_clean)*100:.1f}%)")
+                        pass
                     
                     # 每批次处理后短暂暂停，避免长时间阻塞
                     if len(batches) > 1:
@@ -260,12 +261,12 @@ class PlatformHandler(abc.ABC):
             gc.collect()
             
             after_count = len(cls._instances)
-            logger.info(f"实例清理 - 清理前: {before_count}, 清理后: {after_count}, "
-                       f"减少: {before_count - after_count}, 主动清理: {len(inactive_keys)}")
-            logger.info(f"实例统计 - 总创建数: {cls._instance_creation_count}, "
-                       f"总访问数: {cls._instance_access_count}, "
-                       f"使用时间记录数: {len(cls._instance_last_used)}, "
-                       f"强引用实例数: {len(cls._active_instances)}")
+            # logger.info(f"实例清理 - 清理前: {before_count}, 清理后: {after_count}, "
+            #            f"减少: {before_count - after_count}, 主动清理: {len(inactive_keys)}")
+            # logger.info(f"实例统计 - 总创建数: {cls._instance_creation_count}, "
+            #            f"总访问数: {cls._instance_access_count}, "
+            #            f"使用时间记录数: {len(cls._instance_last_used)}, "
+            #            f"强引用实例数: {len(cls._active_instances)}")
             
     @classmethod
     def get_instances_count(cls) -> int:

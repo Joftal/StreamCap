@@ -50,7 +50,7 @@ class RecordingManager:
         recordings_data = self.app.config_manager.load_recordings_config()
         if not GlobalRecordingState.recordings:
             GlobalRecordingState.recordings = [Recording.from_dict(rec) for rec in recordings_data]
-        logger.info(f"Live Recordings: Loaded {len(self.recordings)} items")
+        # logger.info(f"Live Recordings: Loaded {len(self.recordings)} items")
 
     def initialize_dynamic_state(self):
         """Initialize dynamic state for all recordings."""
@@ -68,7 +68,7 @@ class RecordingManager:
             # 如果缩略图功能已开启，且直播间处于直播或录制状态，启动缩略图捕获任务
             if self.app.settings.user_config.get("show_live_thumbnail", False) and hasattr(self.app, 'thumbnail_manager'):
                 if recording.is_live or recording.recording:
-                    logger.info(f"为新添加的直播间 {recording.streamer_name} 启动缩略图捕获任务")
+                    # logger.info(f"为新添加的直播间 {recording.streamer_name} 启动缩略图捕获任务")
                     self.app.page.run_task(self.app.thumbnail_manager.start_thumbnail_capture, recording)
             
             return recording
@@ -133,10 +133,11 @@ class RecordingManager:
             if self.app.settings.user_config.get("show_live_thumbnail", False) and hasattr(self.app, 'thumbnail_manager'):
                 # 检查单个房间的缩略图设置
                 if recording.is_thumbnail_enabled(self.app.settings.user_config.get("show_live_thumbnail", False)):
-                    logger.info(f"主播开播，启动缩略图捕获任务: {recording.streamer_name}")
+                    # logger.info(f"主播开播，启动缩略图捕获任务: {recording.streamer_name}")
                     self.app.page.run_task(self.app.thumbnail_manager.start_thumbnail_capture, recording)
                 else:
-                    logger.info(f"直播间 {recording.streamer_name} 的缩略图功能已关闭，跳过启动缩略图捕获")
+                    # logger.info(f"直播间 {recording.streamer_name} 的缩略图功能已关闭，跳过启动缩略图捕获")
+                    pass
             
             # 确保在当前页面是主页时重新应用筛选条件
             if hasattr(self.app, 'current_page') and hasattr(self.app.current_page, 'apply_filter'):
@@ -167,7 +168,7 @@ class RecordingManager:
             recording.end_notification_sent = False
             if hasattr(recording, 'was_recording'):
                 recording.was_recording = False
-            logger.info(f"手动停止监控，重置通知状态: {recording.streamer_name}")
+            # logger.info(f"手动停止监控，重置通知状态: {recording.streamer_name}")
             
             # 如果启用了缩略图功能，停止捕获缩略图
             if hasattr(self.app, 'thumbnail_manager'):
@@ -204,7 +205,7 @@ class RecordingManager:
                 success_count += 1
                     
         self.app.page.run_task(self.persist_recordings)
-        logger.info(f"Batch Start Monitor Recordings: {[i.rec_id for i in pre_start_monitor_recordings]}, 成功: {success_count}")
+        # logger.info(f"Batch Start Monitor Recordings: {[i.rec_id for i in pre_start_monitor_recordings]}, 成功: {success_count}")
         return success_count > 0
 
     async def stop_monitor_recordings(self, selected_recordings: list[Recording | None] | None = None):
@@ -219,7 +220,7 @@ class RecordingManager:
         for recording in pre_stop_monitor_recordings:
             self.app.page.run_task(self.stop_monitor_recording, recording, auto_save=False)
         self.app.page.run_task(self.persist_recordings)
-        logger.info(f"Batch Stop Monitor Recordings: {[i.rec_id for i in pre_stop_monitor_recordings]}")
+        # logger.info(f"Batch Stop Monitor Recordings: {[i.rec_id for i in pre_stop_monitor_recordings]}")
 
     async def get_selected_recordings(self):
         return [recording for recording in self.recordings if recording.selected]
@@ -229,7 +230,7 @@ class RecordingManager:
         for recording in recordings:
             if recording in self.recordings:
                 await self.remove_recording(recording)
-                logger.info(f"Delete Items: {recording.rec_id}-{recording.streamer_name}")
+                # logger.info(f"Delete Items: {recording.rec_id}-{recording.streamer_name}")
 
     def find_recording_by_id(self, rec_id: str):
         """Find a recording by its ID (hash of dict representation)."""
@@ -280,7 +281,7 @@ class RecordingManager:
                 in_scheduled = utils.is_current_time_within_range(scheduled_time_range)
                 if not in_scheduled:
                     recording.status_info = RecordingStatus.NOT_IN_SCHEDULED_CHECK
-                    logger.info(f"Skip Detection: {recording.url} not in scheduled check range {scheduled_time_range}")
+                    # logger.info(f"Skip Detection: {recording.url} not in scheduled check range {scheduled_time_range}")
                     return
 
             recording.is_checking = True
@@ -310,7 +311,7 @@ class RecordingManager:
             recorder = LiveStreamRecorder(self.app, recording, recording_info)
 
             stream_info = await recorder.fetch_stream()
-            logger.info(f"Stream Data: {stream_info}")
+            # logger.info(f"Stream Data: {stream_info}")
             if not stream_info:
                 logger.error(f"Fetch stream data failed: {recording.url}")
                 recording.is_checking = False
@@ -351,27 +352,28 @@ class RecordingManager:
                 recording.end_notification_sent = False
                 # 重置直播标题缓存，确保新开播时能重新翻译
                 recording.last_live_title = None
-                logger.info(f"主播开播，重置关播通知状态: {recording.streamer_name}")
+                # logger.info(f"主播开播，重置关播通知状态: {recording.streamer_name}")
                 
                 # 如果缩略图功能已开启，启动缩略图捕获任务
                 if self.app.settings.user_config.get("show_live_thumbnail", False) and hasattr(self.app, 'thumbnail_manager'):
                     # 检查单个房间的缩略图设置
                     if recording.is_thumbnail_enabled(self.app.settings.user_config.get("show_live_thumbnail", False)):
-                        logger.info(f"主播开播，启动缩略图捕获任务: {recording.streamer_name}")
+                        # logger.info(f"主播开播，启动缩略图捕获任务: {recording.streamer_name}")
                         self.app.page.run_task(self.app.thumbnail_manager.start_thumbnail_capture, recording)
                     else:
-                        logger.info(f"直播间 {recording.streamer_name} 的缩略图功能已关闭，跳过启动缩略图捕获")
+                        # logger.info(f"直播间 {recording.streamer_name} 的缩略图功能已关闭，跳过启动缩略图捕获")
+                        pass
             
             # 如果直播状态从在线变为离线，重置通知状态并更新UI
             if was_live and not recording.is_live:
                 recording.notification_sent = False
                 # 重置直播标题缓存，确保下次开播时能重新翻译
                 recording.last_live_title = None
-                logger.info(f"直播已结束，重置通知状态: {recording.streamer_name}")
+                # logger.info(f"直播已结束，重置通知状态: {recording.streamer_name}")
                 
                 # 如果启用了缩略图功能，停止缩略图捕获任务
                 if hasattr(self.app, 'thumbnail_manager'):
-                    logger.info(f"直播已结束，停止缩略图捕获任务: {recording.streamer_name}")
+                    # logger.info(f"直播已结束，停止缩略图捕获任务: {recording.streamer_name}")
                     self.app.page.run_task(self.app.thumbnail_manager.stop_thumbnail_capture, recording)
                 
                 # 添加这部分代码，处理直播结束状态的更新
@@ -424,7 +426,7 @@ class RecordingManager:
                             msg_title = self.settings.user_config.get("custom_notification_title", "").strip()
                             msg_title = msg_title or self._["status_notify"]
 
-                            logger.info(f"直播结束通知: {msg_title} - {push_content}")
+                            # logger.info(f"直播结束通知: {msg_title} - {push_content}")
                             msg_manager = MessagePusher(self.settings)
                             
                             # 优化: 只在Windows系统且启用Windows通知时才获取平台代码
@@ -439,7 +441,8 @@ class RecordingManager:
                             # 设置已发送关闭通知标志，避免重复发送
                             recording.end_notification_sent = True
                         else:
-                            logger.info(f"已经发送过关播通知，跳过重复发送: {recording.streamer_name}")
+                            # logger.info(f"已经发送过关播通知，跳过重复发送: {recording.streamer_name}")
+                            pass
                 
                 # 由于已经处理了状态更新和UI刷新，如果当前检测是正确的（直播已结束），
                 # 可以在这里提前结束check_if_live函数，以避免后面的不必要处理
@@ -478,7 +481,7 @@ class RecordingManager:
                         is_record = False
                         # 设置状态为"直播中（未录制）"，确保UI显示正确
                         recording.status_info = RecordingStatus.NOT_RECORDING
-                        logger.info(f"全局已启用'仅通知不录制'，跳过录制: {recording.streamer_name}")
+                        # logger.info(f"全局已启用'仅通知不录制'，跳过录制: {recording.streamer_name}")
                     else:
                         # 重置为默认循环时间
                         recording.loop_time_seconds = self.loop_time_seconds
@@ -502,10 +505,10 @@ class RecordingManager:
                             serverchan_enabled or windows_notify_enabled
                         )
                         
-                        logger.info(f"推送渠道状态: bark={bark_enabled}, wechat={wechat_enabled}, "
-                                   f"dingtalk={dingtalk_enabled}, ntfy={ntfy_enabled}, "
-                                   f"telegram={telegram_enabled}, email={email_enabled}, "
-                                   f"serverchan={serverchan_enabled}, windows={windows_notify_enabled}")
+                        # logger.info(f"推送渠道状态: bark={bark_enabled}, wechat={wechat_enabled}, "
+                        #            f"dingtalk={dingtalk_enabled}, ntfy={ntfy_enabled}, "
+                        #            f"telegram={telegram_enabled}, email={email_enabled}, "
+                        #            f"serverchan={serverchan_enabled}, windows={windows_notify_enabled}")
                         
                         # 检查是否已经发送过通知，避免重复发送
                         if any_channel_enabled and not recording.notification_sent:
@@ -521,7 +524,7 @@ class RecordingManager:
                             msg_title = self.settings.user_config.get("custom_notification_title").strip()
                             msg_title = msg_title or self._["status_notify"]
 
-                            logger.info(f"自动录制模式下触发消息推送: {msg_title} - {push_content}")
+                            # logger.info(f"自动录制模式下触发消息推送: {msg_title} - {push_content}")
                             msg_manager = MessagePusher(self.settings)
                             
                             # 优化: 只在Windows系统且启用Windows通知时才获取平台代码
@@ -536,9 +539,11 @@ class RecordingManager:
                             # 设置通知已发送标志
                             recording.notification_sent = True
                         elif recording.notification_sent:
-                            logger.info(f"已经发送过开播通知，跳过重复发送: {recording.streamer_name}")
+                            # logger.info(f"已经发送过开播通知，跳过重复发送: {recording.streamer_name}")
+                            pass
                         else:
-                            logger.info("没有启用任何推送渠道，跳过消息推送")
+                            # logger.info("没有启用任何推送渠道，跳过消息推送")
+                            pass
 
                     if is_record:
                         self.start_update(recording)
@@ -576,10 +581,10 @@ class RecordingManager:
                             serverchan_enabled or windows_notify_enabled
                         )
                         
-                        logger.info(f"推送渠道状态: bark={bark_enabled}, wechat={wechat_enabled}, "
-                                  f"dingtalk={dingtalk_enabled}, ntfy={ntfy_enabled}, "
-                                  f"telegram={telegram_enabled}, email={email_enabled}, "
-                                  f"serverchan={serverchan_enabled}, windows={windows_notify_enabled}")
+                        # logger.info(f"推送渠道状态: bark={bark_enabled}, wechat={wechat_enabled}, "
+                        #           f"dingtalk={dingtalk_enabled}, ntfy={ntfy_enabled}, "
+                        #           f"telegram={telegram_enabled}, email={email_enabled}, "
+                        #           f"serverchan={serverchan_enabled}, windows={windows_notify_enabled}")
                         
                         # 检查是否已经发送过通知，避免重复发送
                         # 如果是从"录制中"状态变为"直播中（未录制）"状态，则不发送通知
@@ -596,7 +601,7 @@ class RecordingManager:
                             msg_title = self.settings.user_config.get("custom_notification_title").strip()
                             msg_title = msg_title or self._["status_notify"]
 
-                            logger.info(f"手动录制模式下直播中（未录制）状态触发消息推送: {msg_title} - {push_content}")
+                            # logger.info(f"手动录制模式下直播中（未录制）状态触发消息推送: {msg_title} - {push_content}")
                             msg_manager = MessagePusher(self.settings)
                             
                             # 优化: 只在Windows系统且启用Windows通知时才获取平台代码
@@ -611,13 +616,17 @@ class RecordingManager:
                             # 设置通知已发送标志
                             recording.notification_sent = True
                         elif recording.notification_sent:
-                            logger.info(f"已经发送过开播通知，跳过重复发送: {recording.streamer_name}")
+                            # logger.info(f"已经发送过开播通知，跳过重复发送: {recording.streamer_name}")
+                            pass
                         elif was_recording:
-                            logger.info(f"从录制中状态变为直播中（未录制）状态，跳过消息推送: {recording.streamer_name}")
+                            # logger.info(f"从录制中状态变为直播中（未录制）状态，跳过消息推送: {recording.streamer_name}")
+                            pass
                         else:
-                            logger.info("没有启用任何推送渠道，跳过消息推送")
+                            # logger.info("没有启用任何推送渠道，跳过消息推送")
+                            pass
                     else:
-                        logger.info("全局推送开关和单独推送设置必须同时启用，跳过消息推送")
+                        # logger.info("全局推送开关和单独推送设置必须同时启用，跳过消息推送")
+                        pass
                     
                     # 重置was_recording标志
                     recording.was_recording = False
@@ -642,7 +651,7 @@ class RecordingManager:
                     "recording": True,
                 }
             )
-            logger.info(f"Started recording for {recording.title}")
+            # logger.info(f"Started recording for {recording.title}")
 
     @staticmethod
     def stop_recording(recording: Recording, manually_stopped: bool = True):
@@ -657,7 +666,7 @@ class RecordingManager:
             recording.start_time = None
             recording.recording = False
             recording.manually_stopped = manually_stopped
-            logger.info(f"Stopped recording for {recording.title}")
+            # logger.info(f"Stopped recording for {recording.title}")
             
             # 当直播结束时（而不是仅仅停止录制时），重置notification_sent标志
             # 这样下次直播开始时可以再次发送通知
@@ -665,18 +674,18 @@ class RecordingManager:
                 recording.notification_sent = False
                 # 同时重置end_notification_sent标志，以便下次直播结束时可以再次发送通知
                 recording.end_notification_sent = False
-                logger.info(f"直播已结束，重置通知状态: {recording.streamer_name}")
+                # logger.info(f"直播已结束，重置通知状态: {recording.streamer_name}")
             else:
                 # 如果直播仍在进行中，设置was_recording标志
                 # 这样在下次检测到直播状态时知道这是从"录制中"状态变为"直播中（未录制）"状态
                 recording.was_recording = True
-                logger.info(f"直播仍在进行中，保持通知状态，避免重复推送: {recording.streamer_name}")
+                # logger.info(f"直播仍在进行中，保持通知状态，避免重复推送: {recording.streamer_name}")
         # 无论是否正在录制，如果直播已经结束，都确保重置通知状态
         elif not recording.is_live and hasattr(recording, 'notification_sent') and recording.notification_sent:
             recording.notification_sent = False
             # 同时重置end_notification_sent标志
             recording.end_notification_sent = False
-            logger.info(f"从\"直播中（未录制）\"变为\"未开播\"状态，重置通知状态: {recording.streamer_name}")
+            # logger.info(f"从\"直播中（未录制）\"变为\"未开播\"状态，重置通知状态: {recording.streamer_name}")
 
     def get_duration(self, recording: Recording):
         """Get the duration of the current recording session in a formatted string."""
@@ -710,7 +719,7 @@ class RecordingManager:
             
             # 如果当前平台没有剩余录制项，自动切换到全部平台视图
             if not remaining_items:
-                logger.info(f"批量删除后平台 {current_platform} 下没有剩余直播间，自动切换到全部平台视图")
+                # logger.info(f"批量删除后平台 {current_platform} 下没有剩余直播间，自动切换到全部平台视图")
                 home_page.current_platform_filter = "all"
         
         # 删除后更新主页筛选区域
@@ -768,10 +777,11 @@ class RecordingManager:
             # 如果距离上次推送不足60秒，则跳过推送消息，但仍然显示对话框
             skip_push = False
             if self.app.disk_space_notification_sent and elapsed_seconds < 60:
-                logger.info(f"跳过磁盘空间不足推送通知: 距离上次通知仅过了 {elapsed_seconds:.1f}秒 (小于60秒)")
+                # logger.info(f"跳过磁盘空间不足推送通知: 距离上次通知仅过了 {elapsed_seconds:.1f}秒 (小于60秒)")
                 skip_push = True
             else:
-                logger.info(f"发送磁盘空间不足通知: 距离上次通知已过了 {elapsed_seconds:.1f}秒")
+                # logger.info(f"发送磁盘空间不足通知: 距离上次通知已过了 {elapsed_seconds:.1f}秒")
+                pass
             
             # 更新通知状态和时间
             self.app.disk_space_notification_sent = True
@@ -779,7 +789,7 @@ class RecordingManager:
             
             # 显示磁盘空间不足警告对话框 - 确保这个调用在主UI线程中执行
             # 重要修改：无论何时检测到磁盘空间不足，都显示警告对话框
-            logger.info("准备显示磁盘空间不足警告对话框...")
+            # logger.info("准备显示磁盘空间不足警告对话框...")
             await self.app.show_disk_space_warning_dialog(threshold, free_space)
             
             # 如果需要跳过推送消息，则直接返回
@@ -793,7 +803,7 @@ class RecordingManager:
             # 1. 检查全局推送开关是否打开
             global_push_enabled = user_config.get("stream_start_notification_enabled", False)
             if not global_push_enabled:
-                logger.info("全局消息推送开关未启用，跳过磁盘空间不足消息推送")
+                # logger.info("全局消息推送开关未启用，跳过磁盘空间不足消息推送")
                 return
                 
             # 2. 检查是否有至少一个推送渠道被启用
@@ -813,14 +823,14 @@ class RecordingManager:
             )
             
             if not any_channel_enabled:
-                logger.info("没有启用任何推送渠道，跳过磁盘空间不足消息推送")
+                # logger.info("没有启用任何推送渠道，跳过磁盘空间不足消息推送")
                 return
                 
             # 记录当前启用的推送渠道信息
-            logger.info(f"推送渠道状态: bark={bark_enabled}, wechat={wechat_enabled}, "
-                       f"dingtalk={dingtalk_enabled}, ntfy={ntfy_enabled}, "
-                       f"telegram={telegram_enabled}, email={email_enabled}, "
-                       f"serverchan={serverchan_enabled}, windows={windows_notify_enabled}")
+            # logger.info(f"推送渠道状态: bark={bark_enabled}, wechat={wechat_enabled}, "
+            #            f"dingtalk={dingtalk_enabled}, ntfy={ntfy_enabled}, "
+            #            f"telegram={telegram_enabled}, email={email_enabled}, "
+            #            f"serverchan={serverchan_enabled}, windows={windows_notify_enabled}")
             
             # 准备推送内容
             msg_title = self._["disk_space_insufficient_title"]
@@ -829,7 +839,7 @@ class RecordingManager:
             # 添加实际剩余空间信息
             push_content += f" 当前剩余: {free_space:.2f}GB"
             
-            logger.info(f"发送磁盘空间不足通知: {msg_title} - {push_content}")
+            # logger.info(f"发送磁盘空间不足通知: {msg_title} - {push_content}")
             msg_manager = MessagePusher(self.settings)
             
             # 优化: 只在Windows系统且启用Windows通知时才传递平台代码
@@ -840,7 +850,7 @@ class RecordingManager:
                 # 其他情况不传递平台代码
                 self.app.page.run_task(msg_manager.push_messages, msg_title, push_content)
             
-            logger.info("磁盘空间不足通知已发送")
+            # logger.info("磁盘空间不足通知已发送")
             
         except Exception as e:
             logger.error(f"发送磁盘空间不足通知时出错: {e}", exc_info=True)
@@ -941,11 +951,11 @@ class RecordingManager:
         
         # 优先使用监控系统已获取的直播源地址
         if recording.record_url and recording.is_live:
-            logger.debug(f"使用监控系统已获取的直播源地址: {recording.record_url}")
+            # logger.debug(f"使用监控系统已获取的直播源地址: {recording.record_url}")
             return recording.record_url, None
         
         # 如果没有缓存的直播源地址，则重新获取
-        logger.debug(f"监控系统未获取到直播源地址，重新获取: {recording.url}")
+        # logger.debug(f"监控系统未获取到直播源地址，重新获取: {recording.url}")
         platform, platform_key = get_platform_info(recording.url)
         output_dir = self.settings.get_video_save_path()
         recording_info = {
