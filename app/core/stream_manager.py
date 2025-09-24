@@ -89,7 +89,7 @@ class LiveStreamRecorder:
         """
         # 如果全局代理开关未启用，直接返回False
         if not self.user_config.get("enable_proxy"):
-            logger.info(f"代理检查 - 全局代理开关未启用，平台 {self.platform_key} 不使用代理")
+            #logger.info(f"代理检查 - 全局代理开关未启用，平台 {self.platform_key} 不使用代理")
             return False
             
         # 获取默认使用代理的平台列表
@@ -97,7 +97,7 @@ class LiveStreamRecorder:
         
         # 如果平台列表为空，不使用代理
         if not default_proxy_platform:
-            logger.info(f"代理检查 - 默认使用代理的平台列表为空，平台 {self.platform_key} 不使用代理")
+            #logger.info(f"代理检查 - 默认使用代理的平台列表为空，平台 {self.platform_key} 不使用代理")
             return False
             
         # 处理平台列表，去除空项和多余空格
@@ -108,14 +108,14 @@ class LiveStreamRecorder:
         
         # 如果处理后的列表为空，不使用代理
         if not proxy_list:
-            logger.info(f"代理检查 - 处理后的代理平台列表为空，平台 {self.platform_key} 不使用代理")
+            #logger.info(f"代理检查 - 处理后的代理平台列表为空，平台 {self.platform_key} 不使用代理")
             return False
         
         # 检查当前平台是否在代理列表中
         should_use = self.platform_key in proxy_list
         
-        logger.info(f"代理检查 - 平台: {self.platform_key}, 是否启用代理: {should_use}")
-        logger.info(f"代理检查 - 代理平台列表: {proxy_list}")
+        #logger.info(f"代理检查 - 平台: {self.platform_key}, 是否启用代理: {should_use}")
+        #logger.info(f"代理检查 - 代理平台列表: {proxy_list}")
         
         return should_use
 
@@ -124,17 +124,17 @@ class LiveStreamRecorder:
         配置并返回代理地址，如果不应该使用代理则返回None
         """
         if not self.should_use_proxy():
-            logger.info(f"代理配置 - 平台 {self.platform_key} 不需要使用代理")
+            #logger.info(f"代理配置 - 平台 {self.platform_key} 不需要使用代理")
             return None
             
         proxy_address = self.user_config.get("proxy_address")
-        logger.info(f"代理配置 - 尝试使用代理地址: {proxy_address}")
+        #logger.info(f"代理配置 - 尝试使用代理地址: {proxy_address}")
         
         if not self.validate_proxy_address(proxy_address):
             #logger.warning(f"代理配置 - 无效的代理地址: {proxy_address}，将不使用代理")
             return None
             
-        logger.info(f"代理配置 - 成功配置代理: {proxy_address}")
+        #logger.info(f"代理配置 - 成功配置代理: {proxy_address}")
         return proxy_address
     
     def validate_proxy_address(self, proxy_address: str | None) -> bool:
@@ -186,7 +186,8 @@ class LiveStreamRecorder:
             else:
                 logger.warning("代理验证 - 代理地址格式不正确，请检查IP地址或域名格式")
         else:
-            logger.info(f"代理验证 - 地址格式有效: {proxy_address}")
+            #logger.info(f"代理验证 - 地址格式有效: {proxy_address}")
+            pass
             
         return is_valid
         
@@ -194,7 +195,7 @@ class LiveStreamRecorder:
         """
         验证并返回有效的保存格式，同时处理视频和音频格式
         """
-        logger.info(f"格式验证 - 输入格式: {format_name}")
+        #logger.info(f"格式验证 - 输入格式: {format_name}")
         
         if not format_name:
             logger.warning(f"格式验证 - 未指定保存格式，使用默认格式: {self.DEFAULT_SAVE_FORMAT}")
@@ -252,7 +253,7 @@ class LiveStreamRecorder:
         """
         验证并返回有效的分段时间
         """
-        logger.info(f"分段时间验证 - 输入时间: {segment_time}")
+        #logger.info(f"分段时间验证 - 输入时间: {segment_time}")
         
         if not segment_time:
             logger.info(f"分段时间验证 - 未指定分段时间，使用默认值: {self.DEFAULT_SEGMENT_TIME}")
@@ -391,7 +392,7 @@ class LiveStreamRecorder:
         # 检查 soop 平台的 cookie
         if self.platform_key == "soop":
             if not self.cookies:
-                logger.info("Soop平台建议配置cookie以访问19+直播间，但未找到cookie配置")
+                #logger.info("Soop平台建议配置cookie以访问19+直播间，但未找到cookie配置")
                 # 只在程序运行期间第一次显示 cookie 缺失建议
                 if not LiveStreamRecorder._soop_cookie_missing_notified:
                     await self.app.show_suggestion_message(
@@ -401,7 +402,7 @@ class LiveStreamRecorder:
                     LiveStreamRecorder._soop_cookie_missing_notified = True
             elif "AuthTicket=" not in self.cookies:
                 # cookie 过期提示保持每次都显示，但改为建议提示
-                logger.info("Soop平台的cookie无效或已过期，建议更新cookie以访问19+直播间")
+                #logger.info("Soop平台的cookie无效或已过期，建议更新cookie以访问19+直播间")
                 await self.app.show_suggestion_message(
                     self._["cookie_suggestion_title"],
                     self._["soop_cookie_invalid_message"]
@@ -470,7 +471,7 @@ class LiveStreamRecorder:
             
             if handler is None:
                 lang_code = getattr(self.app, "language_code", "zh_CN").lower()
-                logger.info(f"当前语言环境: {lang_code}")
+                #logger.info(f"当前语言环境: {lang_code}")
                 if not lang_code or "zh" in lang_code:
                     msg = f"未找到适配的直播平台处理器: live_url={self.live_url}, platform={self.platform}, platform_key={self.platform_key}"
                 else:
@@ -696,7 +697,7 @@ class LiveStreamRecorder:
                         msg_title = msg_title or self._["status_notify"]
 
                         # 使用队列方式处理消息推送
-                        logger.info(f"关播推送：{self.recording.streamer_name}，将消息加入推送队列")
+                        #logger.info(f"关播推送：{self.recording.streamer_name}，将消息加入推送队列")
                         msg_manager = MessagePusher(self.settings)
                         
                         # 优化: 只在Windows系统且启用Windows通知时才获取平台代码
@@ -940,7 +941,7 @@ class LiveStreamRecorder:
         """
         当用户配置中的默认录制格式被修改时，更新所有录制卡片的显示
         """
-        logger.info("正在更新所有录制卡片的格式显示...")
+        #logger.info("正在更新所有录制卡片的格式显示...")
         
         # 等待一小段时间确保配置已保存
         await asyncio.sleep(0.5)
@@ -973,7 +974,7 @@ class LiveStreamRecorder:
         """
         当用户配置中的默认分段时间被修改时，更新所有录制卡片的显示
         """
-        logger.info("正在更新所有录制卡片的分段时间显示...")
+        #logger.info("正在更新所有录制卡片的分段时间显示...")
         
         # 等待一小段时间确保配置已保存
         await asyncio.sleep(0.5)
