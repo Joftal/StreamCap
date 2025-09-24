@@ -115,9 +115,9 @@ class EnhancedSoopHandler(PlatformHandler):
             best_title = self._select_best_title(title_candidates)
             
             if best_title:
-                logger.debug(f"从SOOP数据中提取到title候选: {title_candidates}")
-                logger.debug(f"选择的最佳title: '{best_title}'")
-            
+                #logger.debug(f"从SOOP数据中提取到title候选: {title_candidates}")
+                #logger.debug(f"选择的最佳title: '{best_title}'")
+                pass
             return best_title
             
         except json.JSONDecodeError as e:
@@ -133,7 +133,7 @@ class EnhancedSoopHandler(PlatformHandler):
     async def _extract_title_from_webpage(self, live_url: str) -> Optional[str]:
         """从网页中提取title"""
         try:
-            logger.debug(f"尝试从网页抓取SOOP title: {live_url}")
+            #logger.debug(f"尝试从网页抓取SOOP title: {live_url}")
             
             # 设置请求头，模拟浏览器
             headers = {
@@ -220,10 +220,10 @@ class EnhancedSoopHandler(PlatformHandler):
                         best_candidate = filtered_candidates[0]
                         # 解码HTML实体编码
                         decoded_title = self._decode_html_entities(best_candidate['title'])
-                        logger.debug(f"从网页提取到title: '{decoded_title}' (方法: {best_candidate['method']})")
+                        #logger.debug(f"从网页提取到title: '{decoded_title}' (方法: {best_candidate['method']})")
                         return decoded_title
                 
-                logger.debug(f"未能从网页中提取到有效的title: {live_url}")
+                #logger.debug(f"未能从网页中提取到有效的title: {live_url}")
                 return None
                 
         except httpx.TimeoutException as e:
@@ -336,7 +336,7 @@ class EnhancedSoopHandler(PlatformHandler):
         
         if filtered_candidates:
             best_candidate = filtered_candidates[0]
-            logger.debug(f"选择最佳title: '{best_candidate['title']}' (路径: {best_candidate['path']}, 优先级: {best_candidate['priority']})")
+            #logger.debug(f"选择最佳title: '{best_candidate['title']}' (路径: {best_candidate['path']}, 优先级: {best_candidate['priority']})")
             return best_candidate['title']
         
         return None
@@ -367,7 +367,8 @@ class EnhancedSoopHandler(PlatformHandler):
             
             # 记录解码前后的变化（仅在调试模式下）
             if decoded_text != text:
-                logger.debug(f"HTML实体解码: '{text}' -> '{decoded_text}'")
+                #logger.debug(f"HTML实体解码: '{text}' -> '{decoded_text}'")
+                pass
             
             return decoded_text
         except Exception as e:

@@ -246,7 +246,7 @@ class LiveStreamRecorder:
                 return self.DEFAULT_AUDIO_FORMAT
             return self.DEFAULT_SAVE_FORMAT
             
-        logger.info(f"格式验证 - 使用有效格式: {format_name}")
+        #logger.info(f"格式验证 - 使用有效格式: {format_name}")
         return format_name
         
     def validate_segment_time(self, segment_time: str | None) -> str:
@@ -288,7 +288,7 @@ class LiveStreamRecorder:
                 
                 return self.DEFAULT_SEGMENT_TIME
                 
-            logger.info(f"分段时间验证 - 使用有效值: {time_value}")
+            #logger.info(f"分段时间验证 - 使用有效值: {time_value}")
             return str(time_value)
         except (ValueError, TypeError):
             logger.warning(f"分段时间验证 - 无效的分段时间格式: {segment_time}，使用默认值: {self.DEFAULT_SEGMENT_TIME}")
