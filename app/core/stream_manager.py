@@ -1019,7 +1019,7 @@ class LiveStreamRecorder:
         """
         try:
             pid = process.pid
-            logger.debug(f"开始监测录制速度，进程ID: {pid}")
+            #logger.debug(f"开始监测录制速度，进程ID: {pid}")
             
             # 初始化速度
             self.recording.speed = "0 KB/s"
@@ -1108,7 +1108,7 @@ class LiveStreamRecorder:
             else:
                 speed = f"{bytes_per_sec:.1f} B/s"
                 
-            logger.debug(f"进程IO - 速度: {speed}, 进程ID: {process.pid}")
+            #logger.debug(f"进程IO - 速度: {speed}, 进程ID: {process.pid}")
             return speed
         except Exception as e:
             # 只记录调试级别日志，避免大量错误日志
