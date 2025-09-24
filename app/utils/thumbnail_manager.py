@@ -8,6 +8,7 @@ import tempfile
 import threading
 import random
 import sys
+import platform as sys_platform
 from typing import Dict, List, Optional, Tuple
 
 from ..models.recording_model import Recording
@@ -329,12 +330,23 @@ class ThumbnailManager:
             
             # 获取文件锁并运行ffmpeg命令
             with FileLock.acquire(thumbnail_path):
-                # 运行ffmpeg命令
-                process = await asyncio.create_subprocess_exec(
-                    *cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE
-                )
+                # 运行ffmpeg命令，隐藏控制台窗口
+                if sys_platform.system() == "Windows":
+                    # Windows下使用CREATE_NO_WINDOW标志隐藏控制台窗口
+                    process = await asyncio.create_subprocess_exec(
+                        *cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        creationflags=subprocess.CREATE_NO_WINDOW
+                    )
+                else:
+                    # Linux/macOS下使用start_new_session隐藏控制台窗口
+                    process = await asyncio.create_subprocess_exec(
+                        *cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        start_new_session=True
+                    )
                 
                 # 设置超时
                 try:
