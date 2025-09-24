@@ -137,7 +137,8 @@ class MessagePusher:
                 tasks.append(task)
                 # logger.info("钉钉消息推送任务已创建")
             else:
-                logger.warning("钉钉推送已启用，但未配置Webhook URL")
+                #logger.warning("钉钉推送已启用，但未配置Webhook URL")
+                pass
 
         if user_config.get("wechat_enabled"):
             webhook_url = user_config.get("wechat_webhook_url", "")
@@ -151,7 +152,8 @@ class MessagePusher:
                 tasks.append(task)
                 # logger.info("微信消息推送任务已创建")
             else:
-                logger.warning("微信推送已启用，但未配置Webhook URL")
+                #logger.warning("微信推送已启用，但未配置Webhook URL")
+                pass
 
         if user_config.get("bark_enabled"):
             bark_url = user_config.get("bark_webhook_url", "")
@@ -169,7 +171,8 @@ class MessagePusher:
                 tasks.append(task)
                 # logger.info("Bark消息推送任务已创建")
             else:
-                logger.warning("Bark推送已启用，但未配置Webhook URL")
+                #logger.warning("Bark推送已启用，但未配置Webhook URL")
+                pass
 
         if user_config.get("ntfy_enabled"):
             ntfy_url = user_config.get("ntfy_server_url", "")
@@ -188,7 +191,8 @@ class MessagePusher:
                 tasks.append(task)
                 # logger.info("Ntfy消息推送任务已创建")
             else:
-                logger.warning("Ntfy推送已启用，但未配置Server URL")
+                #logger.warning("Ntfy推送已启用，但未配置Server URL")
+                pass
 
         if user_config.get("telegram_enabled"):
             chat_id = user_config.get("telegram_chat_id")
@@ -205,7 +209,8 @@ class MessagePusher:
                 tasks.append(task)
                 # logger.info("Telegram消息推送任务已创建")
             else:
-                logger.warning("Telegram推送已启用，但未配置完整的Chat ID或API Token")
+                #logger.warning("Telegram推送已启用，但未配置完整的Chat ID或API Token")
+                pass
 
         if user_config.get("email_enabled"):
             email_host = user_config.get("smtp_server", "")
@@ -231,7 +236,8 @@ class MessagePusher:
                 tasks.append(task)
                 # logger.info("Email消息推送任务已创建")
             else:
-                logger.warning("Email推送已启用，但配置不完整")
+                #logger.warning("Email推送已启用，但配置不完整")
+                pass
         
         if user_config.get("serverchan_enabled"):
             sendkey = user_config.get("serverchan_sendkey", "")
@@ -247,7 +253,8 @@ class MessagePusher:
                 tasks.append(task)
                 # logger.info("ServerChan消息推送任务已创建")
             else:
-                logger.warning("ServerChan推送已启用，但未配置SendKey")
+                #logger.warning("ServerChan推送已启用，但未配置SendKey")
+                pass
         
         # 添加Windows系统通知渠道
         if user_config.get("windows_notify_enabled") and sys.platform == "win32":
@@ -258,7 +265,8 @@ class MessagePusher:
             # logger.info("Windows系统通知任务已创建")
         
         if not tasks:
-            logger.warning("没有创建任何推送任务，可能是因为所有渠道都未启用或配置不正确")
+            #logger.warning("没有创建任何推送任务，可能是因为所有渠道都未启用或配置不正确")
+            pass
             
         # 等待所有推送任务完成
         for task in tasks:
@@ -290,7 +298,8 @@ class MessagePusher:
                         # logger.info(f"使用系统通知图标: {icon_path}")
                     else:
                         # 如果系统图标不存在，尝试使用默认图标
-                        logger.warning(f"系统通知图标不存在: {system_icon_path}，将使用默认图标")
+                        #logger.warning(f"系统通知图标不存在: {system_icon_path}，将使用默认图标")
+                        pass
                 else:
                     # 查找平台特定的.ico图标
                     ico_platform_path = os.path.join(

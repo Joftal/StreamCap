@@ -154,13 +154,13 @@ class LogCleanupScheduler:
                                     retention_days_value = user_config["log_retention_days"]
                                     # 检查是否为空字符串
                                     if retention_days_value == "":
-                                        logger.warning("日志保留天数设置为空，使用默认值: 7天")
+                                        #logger.warning("日志保留天数设置为空，使用默认值: 7天")
                                         retention_days = 7
                                     else:
                                         retention_days = int(retention_days_value)
                                         # 确保是正整数
                                         if retention_days <= 0:
-                                            logger.warning(f"日志保留天数 {retention_days} 无效（必须大于0），使用默认值: 7天")
+                                            #logger.warning(f"日志保留天数 {retention_days} 无效（必须大于0），使用默认值: 7天")
                                             retention_days = 7
                                         else:
                                             # logger.info(f"从配置中获取日志保留天数: {retention_days}")
@@ -209,10 +209,10 @@ def cleanup_old_logs(days=7, log_dir=None):
     try:
         days = int(days)
         if days <= 0:
-            logger.warning(f"日志保留天数 {days} 无效（必须大于0），使用默认值: 7天")
+            #logger.warning(f"日志保留天数 {days} 无效（必须大于0），使用默认值: 7天")
             days = 7
     except (ValueError, TypeError):
-        logger.warning("日志保留天数格式无效，使用默认值: 7天")
+        #logger.warning("日志保留天数格式无效，使用默认值: 7天")
         days = 7
         
     #logger.info(f"开始清理日志文件，保留最近 {days} 天的日志")
@@ -221,7 +221,7 @@ def cleanup_old_logs(days=7, log_dir=None):
         log_dir = os.path.join(script_path, "logs")
     
     if not os.path.exists(log_dir):
-        logger.warning(f"日志目录不存在: {log_dir}，跳过清理")
+        #logger.warning(f"日志目录不存在: {log_dir}，跳过清理")
         return
     
     # 计算截止时间
@@ -420,7 +420,7 @@ try:
         try:
             auto_clean_enabled = bool(user_config.get("auto_clean_logs", False))
         except (ValueError, TypeError):
-            logger.warning("auto_clean_logs配置值无效，默认为False")
+            #logger.warning("auto_clean_logs配置值无效，默认为False")
             auto_clean_enabled = False
             
         if auto_clean_enabled:

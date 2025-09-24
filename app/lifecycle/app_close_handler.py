@@ -41,8 +41,8 @@ async def handle_app_close(page: ft.Page, app, save_progress_overlay) -> None:
             if hasattr(app, 'tray_manager') and app.tray_manager:
                 app.tray_manager.minimize_to_tray(None)
             else:
-                logger.warning("托盘管理器未初始化，无法最小化到托盘")
-                
+                #logger.warning("托盘管理器未初始化，无法最小化到托盘")
+                pass
         except Exception as ex:
             logger.error(f"最小化到托盘时出错: {ex}")
 
@@ -74,7 +74,7 @@ async def handle_app_close(page: ft.Page, app, save_progress_overlay) -> None:
                         
                         app.settings.user_config["window_width"] = safe_width
                         app.settings.user_config["window_height"] = safe_height
-                        logger.warning(f"窗口大小({width}x{height})超出屏幕分辨率({screen.width}x{screen.height})，调整为: {safe_width}x{safe_height}")
+                        #logger.warning(f"窗口大小({width}x{height})超出屏幕分辨率({screen.width}x{screen.height})，调整为: {safe_width}x{safe_height}")
                     else:
                         app.settings.user_config["window_width"] = width
                         app.settings.user_config["window_height"] = height

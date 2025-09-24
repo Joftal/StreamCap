@@ -73,10 +73,10 @@ class ThumbnailManager:
             self.update_interval = int(update_interval) if isinstance(update_interval, int | str) else 60
             # 确保值在合理范围内
             if self.update_interval < 15:
-                logger.warning(f"缩略图更新间隔过小 ({self.update_interval}秒)，使用最小值15秒")
+                #logger.warning(f"缩略图更新间隔过小 ({self.update_interval}秒)，使用最小值15秒")
                 self.update_interval = 15
             elif self.update_interval > 300:
-                logger.warning(f"缩略图更新间隔过大 ({self.update_interval}秒)，使用最大值300秒")
+                #logger.warning(f"缩略图更新间隔过大 ({self.update_interval}秒)，使用最大值300秒")
                 self.update_interval = 300
         except (ValueError, TypeError) as e:
             logger.error(f"初始化时解析缩略图更新间隔出错: {e}，使用默认值60秒")
@@ -186,7 +186,7 @@ class ThumbnailManager:
                 
                 # 检查录制状态
                 if not recording.is_live and not recording.recording:
-                    logger.debug(f"直播间 {recording.streamer_name} 未在直播，跳过缩略图捕获")
+                    #logger.debug(f"直播间 {recording.streamer_name} 未在直播，跳过缩略图捕获")
                     await asyncio.sleep(self.update_interval)
                     continue
                 
@@ -197,10 +197,10 @@ class ThumbnailManager:
                     self.update_interval = int(update_interval) if isinstance(update_interval, int | str) else 60
                     # 确保值在合理范围内
                     if self.update_interval < 15:
-                        logger.warning(f"缩略图更新间隔过小 ({self.update_interval}秒)，使用最小值15秒")
+                        #logger.warning(f"缩略图更新间隔过小 ({self.update_interval}秒)，使用最小值15秒")
                         self.update_interval = 15
                     elif self.update_interval > 300:
-                        logger.warning(f"缩略图更新间隔过大 ({self.update_interval}秒)，使用最大值300秒")
+                        #logger.warning(f"缩略图更新间隔过大 ({self.update_interval}秒)，使用最大值300秒")
                         self.update_interval = 300
                 except (ValueError, TypeError) as e:
                     logger.error(f"解析缩略图更新间隔时出错: {e}，使用默认值60秒")
@@ -215,7 +215,7 @@ class ThumbnailManager:
                         logger.warning(f"获取直播流URL时发生警告: {error_msg}")
                     
                     if not stream_url:
-                        logger.debug(f"未获取到直播间 {recording.streamer_name} 的流URL，跳过缩略图捕获")
+                        #logger.debug(f"未获取到直播间 {recording.streamer_name} 的流URL，跳过缩略图捕获")
                         await asyncio.sleep(self.update_interval)
                         continue
                 except Exception as e:
@@ -326,7 +326,7 @@ class ThumbnailManager:
                 else:
                     safe_cmd[safe_cmd.index(stream_url)] = "[已隐藏URL]"
             
-            logger.debug(f"执行ffmpeg命令: {' '.join(safe_cmd)}")
+            #logger.debug(f"执行ffmpeg命令: {' '.join(safe_cmd)}")
             
             # 获取文件锁并运行ffmpeg命令
             with FileLock.acquire(thumbnail_path):
@@ -484,7 +484,7 @@ class ThumbnailManager:
                         if os.path.exists(file_path):  # 再次检查文件是否存在
                             os.remove(file_path)
                             deleted_count += 1
-                            logger.debug(f"删除缩略图: {file_path}")
+                            #logger.debug(f"删除缩略图: {file_path}")
                     except Exception as e:
                         logger.error(f"删除缩略图文件失败: {file_path}, 错误: {e}")
             

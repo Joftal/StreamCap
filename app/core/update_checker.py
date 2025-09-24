@@ -45,7 +45,7 @@ class UpdateChecker:
             
         # 严格要求用户填写完整的http://代理地址，不自动补全
         if not proxy_address.startswith('http://'):
-            logger.warning(f"更新检查 - 代理地址必须以http://开头: {proxy_address}")
+            #logger.warning(f"更新检查 - 代理地址必须以http://开头: {proxy_address}")
             return None
             
         return proxy_address
@@ -95,7 +95,7 @@ class UpdateChecker:
         )
         
         if not sources:
-            logger.warning("No available update sources configured")
+            #logger.warning("No available update sources configured")
             return {"has_update": False, "error": "No available update sources configured"}
         
         tasks = []

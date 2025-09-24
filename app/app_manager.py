@@ -155,7 +155,7 @@ class App:
 
     async def switch_page(self, page_name):
         if self._loading_page:
-            logger.debug(f"页面切换请求被忽略，正在加载页面: {page_name}")
+            #logger.debug(f"页面切换请求被忽略，正在加载页面: {page_name}")
             # 保存被忽略的请求，以便在当前操作完成后处理
             self._pending_page_request = page_name
             return
@@ -169,13 +169,13 @@ class App:
             previous_page = self.current_page
             previous_page_name = getattr(previous_page, 'page_name', 'unknown') if previous_page else 'none'
             
-            logger.debug(f"页面切换: {previous_page_name} -> {page_name}")
+            #logger.debug(f"页面切换: {previous_page_name} -> {page_name}")
             
             # 如果有上一个页面，尝试调用其unload方法
             if previous_page:
                 try:
                     if hasattr(previous_page, 'unload') and callable(previous_page.unload):
-                        logger.debug(f"调用{previous_page_name}页面的unload方法")
+                        #logger.debug(f"调用{previous_page_name}页面的unload方法")
                         await previous_page.unload()
                 except Exception as e:
                     logger.error(f"调用页面{previous_page_name}的unload方法时出错: {e}")
@@ -185,7 +185,7 @@ class App:
                 await previous_page.is_changed()
                 # 刷新磁盘空间显示，因为可能修改了录制保存路径
                 if hasattr(self, 'disk_space_display'):
-                    logger.debug("从设置页面切换，刷新磁盘空间显示")
+                    #logger.debug("从设置页面切换，刷新磁盘空间显示")
                     # 延迟一点时间确保设置已保存
                     await asyncio.sleep(0.1)
                     self.disk_space_display.update_disk_space()
@@ -198,7 +198,7 @@ class App:
             total_delay = base_delay + additional_delay
             
             # 清除内容区域前先等待一段时间，确保所有UI更新完成
-            logger.debug(f"页面切换延迟: {total_delay:.2f}秒 (直播间数量: {recordings_count})")
+            #logger.debug(f"页面切换延迟: {total_delay:.2f}秒 (直播间数量: {recordings_count})")
             await asyncio.sleep(total_delay)
             await self.clear_content_area()
             
@@ -209,11 +209,11 @@ class App:
                 
                 # 设置当前页面
                 self.current_page = page
-                logger.debug(f"当前页面已设置为: {page_name}")
+                #logger.debug(f"当前页面已设置为: {page_name}")
                 
                 # 如果是切换到主页，确保内存状态良好
                 if isinstance(page, HomePage):
-                    logger.debug("准备加载主页面")
+                    #logger.debug("准备加载主页面")
                     # 获取当前内存使用情况
                     memory_info = self._get_memory_usage()
                     is_high_memory = memory_info["percent"] >= MEMORY_CLEANUP_THRESHOLD
@@ -222,7 +222,7 @@ class App:
                     is_from_other_page = previous_page and not isinstance(previous_page, HomePage)
                     
                     if is_from_other_page:
-                        logger.debug(f"从{previous_page_name}切换到主页面")
+                        #logger.debug(f"从{previous_page_name}切换到主页面")
                         # 先加载页面UI，确保用户看到界面
                         await page.load()
                         # 页面加载后，再执行清理，避免阻塞UI
@@ -246,13 +246,13 @@ class App:
                             await self._perform_full_cleanup()
                     else:
                         # 正常加载页面
-                        logger.debug("正常加载主页面")
+                        #logger.debug("正常加载主页面")
                         await page.load()
                         # 更新路由状态
                         self._update_route(page_name)
                 else:
                     # 非主页面，正常加载
-                    logger.debug(f"加载非主页面: {page_name}")
+                    #logger.debug(f"加载非主页面: {page_name}")
                     await page.load()
                     # 更新路由状态
                     self._update_route(page_name)
@@ -283,7 +283,7 @@ class App:
         
         # 检查当前路由是否需要更新
         if current_route != target_route:
-            logger.debug(f"更新路由状态: {current_route} -> {target_route}")
+            #logger.debug(f"更新路由状态: {current_route} -> {target_route}")
             # 临时禁用路由事件处理
             original_handler = self.page.on_route_change
             self.page.on_route_change = None

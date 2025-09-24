@@ -92,7 +92,7 @@ def setup_window(page: ft.Page, is_web: bool, user_config: dict = None) -> None:
                             # 调整窗口大小
                             width = int(saved_width / scale_ratio)
                             height = int(saved_height / scale_ratio)
-                            logger.warning(f"保存的窗口大小({saved_width}x{saved_height})超出屏幕分辨率({logical_width}x{logical_height})，已调整为: {width}x{height}")
+                            #logger.warning(f"保存的窗口大小({saved_width}x{saved_height})超出屏幕分辨率({logical_width}x{logical_height})，已调整为: {width}x{height}")
                         else:
                             width = saved_width
                             height = saved_height
@@ -115,7 +115,7 @@ def setup_window(page: ft.Page, is_web: bool, user_config: dict = None) -> None:
                 page.window.left = max(0, min(logical_width - width, int((logical_width - width) / 2)))
                 page.window.top = max(0, min(logical_height - height, int((logical_height - height) / 2)))
             except IndexError:
-                logger.warning("No monitors detected, using default window size.")
+                #logger.warning("No monitors detected, using default window size.")
                 page.window.width = DEFAULT_WIDTH
                 page.window.height = DEFAULT_HEIGHT
             except Exception as e:
@@ -149,17 +149,17 @@ def handle_route_change(page: ft.Page, app: App) -> callable:
             current_page = app.current_page
             current_page_name = getattr(current_page, 'page_name', None) if current_page else None
             
-            logger.debug(f"路由变更: 当前页面={current_page_name}, 目标页面={page_name}")
+            #logger.debug(f"路由变更: 当前页面={current_page_name}, 目标页面={page_name}")
             
             # 只有当目标页面与当前页面不同时才切换
             if current_page_name != page_name:
                 # 检查应用是否正在加载页面
                 if getattr(app, '_loading_page', False):
-                    logger.debug(f"应用正在加载页面，将路由请求排队: {page_name}")
+                    #logger.debug(f"应用正在加载页面，将路由请求排队: {page_name}")
                     # 记录请求但不立即执行
                     app._pending_page_request = page_name
                 else:
-                    logger.debug(f"路由变更触发页面切换: {page_name}")
+                    #logger.debug(f"路由变更触发页面切换: {page_name}")
                     page.run_task(app.switch_page, page_name)
             else:
                 logger.debug(f"路由变更目标与当前页面相同，不触发切换: {page_name}")
@@ -208,7 +208,7 @@ def handle_window_resize(page: ft.Page, app: App) -> callable:
             app.settings.user_config["window_height"] = height
             
             # 记录窗口大小变更
-            logger.debug(f"窗口大小已调整为: {width}x{height}（将在程序关闭时保存）")
+            #logger.debug(f"窗口大小已调整为: {width}x{height}（将在程序关闭时保存）")
     
     return on_window_resize
 

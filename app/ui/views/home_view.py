@@ -123,7 +123,7 @@ class HomePage(PageBase):
                 if pagination_exists and pagination_container:
                     pagination_container.content = self.pagination_controls
                     pagination_container.update()
-                    logger.debug("语言变更：更新了已存在分页控件的内容")
+                    #logger.debug("语言变更：更新了已存在分页控件的内容")
                 else:
                     # 否则添加新的容器
                     self.pagination_controls.key = 'home_pagination'
@@ -138,7 +138,7 @@ class HomePage(PageBase):
                             padding=ft.padding.only(bottom=10),  # 只保留底部间距
                         )
                     )
-                    logger.debug("语言变更：创建并添加了新的分页控件")
+                    #logger.debug("语言变更：创建并添加了新的分页控件")
             
             # 更新分页控件文本
             self.update_pagination_texts()
@@ -383,7 +383,7 @@ class HomePage(PageBase):
                     # 重新显示已存在的分页控件
                     overlay_item.visible = True
                     overlay_item.update()
-                    logger.debug("已显示现有分页控件")
+                    #logger.debug("已显示现有分页控件")
                     break
                     
             # 如果不存在分页控件，则创建新的
@@ -405,7 +405,7 @@ class HomePage(PageBase):
                         padding=ft.padding.only(bottom=10),  # 只保留底部间距
                     )
                 )
-                logger.debug("已创建并添加新的分页控件")
+                #logger.debug("已创建并添加新的分页控件")
             
             self.content_area.update()
             self.page.update()
@@ -937,7 +937,7 @@ class HomePage(PageBase):
                 end_idx = min(start_idx + batch_size, len(cards_to_create))
                 batch_recordings = cards_to_create[start_idx:end_idx]
                 
-                logger.debug(f"加载第 {batch_index+1}/{total_batches} 批卡片，{len(batch_recordings)} 个")
+                #logger.debug(f"加载第 {batch_index+1}/{total_batches} 批卡片，{len(batch_recordings)} 个")
                 
                 # 处理当前批次
                 results = await asyncio.gather(*[
@@ -1150,7 +1150,7 @@ class HomePage(PageBase):
             end_idx = min(start_idx + batch_size, total_recordings)
             batch_recordings = recordings[start_idx:end_idx]
             
-            logger.debug(f"刷新第 {batch_index+1}/{total_batches} 批卡片，{len(batch_recordings)} 个")
+            #logger.debug(f"刷新第 {batch_index+1}/{total_batches} 批卡片，{len(batch_recordings)} 个")
             
             # 并行更新当前批次的卡片
             update_tasks = []
@@ -1371,7 +1371,7 @@ class HomePage(PageBase):
 
     async def unload(self):
         """页面卸载时清理资源"""
-        logger.debug("主页面开始卸载...")
+        #logger.debug("主页面开始卸载...")
         
         # 不做任何可能阻止或延迟页面切换的操作
         # 仅隐藏分页控件，保留其状态
@@ -1379,10 +1379,10 @@ class HomePage(PageBase):
             if hasattr(overlay_item, 'key') and overlay_item.key == 'home_pagination_container':
                 overlay_item.visible = False
                 overlay_item.update()
-                logger.debug("分页控件已隐藏")
+                #logger.debug("分页控件已隐藏")
         
         # 移除事件处理器
         self.page.on_keyboard_event = None
         self.page.on_resized = None
         
-        logger.debug("主页面卸载完成")
+        #logger.debug("主页面卸载完成")

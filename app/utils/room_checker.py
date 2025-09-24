@@ -697,7 +697,7 @@ class RoomChecker:
         try:
             # 早期退出：空URL检查
             if not live_url:
-                logger.warning("URL为空，无法进行去重检查")
+                #logger.warning("URL为空，无法进行去重检查")
                 return False, None
             
             # 处理录制列表参数
@@ -904,7 +904,7 @@ class RoomChecker:
         if streamer_names is None:
             streamer_names = [None] * len(live_urls)
         elif len(streamer_names) != len(live_urls):
-            logger.warning("主播名称列表长度与URL列表不一致，将使用None填充")
+            #logger.warning("主播名称列表长度与URL列表不一致，将使用None填充")
             streamer_names = streamer_names + [None] * (len(live_urls) - len(streamer_names))
         
         # 处理录制列表参数
