@@ -109,7 +109,7 @@ class LogCleanupScheduler:
             
             self.scheduler_thread = threading.Thread(target=self._scheduler_loop, daemon=True)
             self.scheduler_thread.start()
-            logger.info("日志定时清理任务已启动")
+            #logger.info("日志定时清理任务已启动")
             logger.info(f"下次日志清理时间: {self.next_cleanup_time.strftime('%Y-%m-%d %H:%M:%S')}")
     
     def _calculate_next_cleanup_time(self):
@@ -137,7 +137,7 @@ class LogCleanupScheduler:
                 
                 # 检查是否到达清理时间
                 if now >= self.next_cleanup_time:
-                    logger.info("到达计划清理时间点，检查清理设置")
+                    #logger.info("到达计划清理时间点，检查清理设置")
                     
                     # 从配置中获取日志保留天数和是否启用自动清理
                     retention_days = 7  # 默认保留7天
@@ -211,7 +211,7 @@ def cleanup_old_logs(days=7, log_dir=None):
         logger.warning("日志保留天数格式无效，使用默认值: 7天")
         days = 7
         
-    logger.info(f"开始清理日志文件，保留最近 {days} 天的日志")
+    #logger.info(f"开始清理日志文件，保留最近 {days} 天的日志")
     
     if log_dir is None:
         log_dir = os.path.join(script_path, "logs")
@@ -418,7 +418,7 @@ try:
             auto_clean_enabled = False
             
         if auto_clean_enabled:
-            logger.info("日志自动清理功能已启用，启动定时清理任务")
+            #logger.info("日志自动清理功能已启用，启动定时清理任务")
             log_cleanup_scheduler = LogCleanupScheduler.get_instance()
             log_cleanup_scheduler.start(config_manager)
         else:

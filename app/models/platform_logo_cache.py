@@ -36,11 +36,11 @@ class PlatformLogoCache:
         if getattr(sys, 'frozen', False):
             # 如果是打包后的可执行文件，使用可执行文件所在目录
             base_path = os.path.dirname(sys.executable)
-            logger.info(f"运行在打包环境中，基础路径: {base_path}")
+            #logger.info(f"运行在打包环境中，基础路径: {base_path}")
         else:
             # 开发环境，使用项目根目录
             base_path = Path(__file__).parent.parent.parent
-            logger.info(f"运行在开发环境中，基础路径: {base_path}")
+            #logger.info(f"运行在开发环境中，基础路径: {base_path}")
         return base_path
     
     def _convert_to_relative_path(self, absolute_path):
@@ -98,21 +98,21 @@ class PlatformLogoCache:
                             if os.path.exists(new_path):
                                 fixed_cache[rec_id] = new_path
                                 fixed_items += 1
-                                logger.info(f"已修复平台logo路径: {platform_key} -> {new_path}")
+                                #logger.info(f"已修复平台logo路径: {platform_key} -> {new_path}")
                             else:
                                 # 使用默认logo
                                 default_logo = os.path.join(platform_logo_dir, "moren.png")
                                 if os.path.exists(default_logo):
                                     fixed_cache[rec_id] = default_logo
                                     fixed_items += 1
-                                    logger.info(f"未找到平台 {platform_key} 的logo，已使用默认logo")
+                                    #logger.info(f"未找到平台 {platform_key} 的logo，已使用默认logo")
                         else:
                             # 无法识别平台，使用默认logo
                             default_logo = os.path.join(platform_logo_dir, "moren.png")
                             if os.path.exists(default_logo):
                                 fixed_cache[rec_id] = default_logo
                                 fixed_items += 1
-                                logger.info("无法识别平台logo路径，已使用默认logo")
+                                #logger.info("无法识别平台logo路径，已使用默认logo")
                 
                 # 更新缓存数据
                 self.cache_data = fixed_cache
@@ -122,7 +122,7 @@ class PlatformLogoCache:
                     logger.info(f"已修复 {fixed_items} 个无效的平台logo路径")
                     self.save_cache()
                 
-                logger.info(f"已加载平台logo缓存，共{len(self.cache_data)}项")
+                #logger.info(f"已加载平台logo缓存，共{len(self.cache_data)}项")
             else:
                 logger.info("平台logo缓存文件不存在，将创建新缓存")
                 self.cache_data = {}
@@ -135,7 +135,7 @@ class PlatformLogoCache:
         try:
             with open(self.cache_file, 'w', encoding='utf-8') as f:
                 json.dump(self.cache_data, f, ensure_ascii=False, indent=2)
-            logger.info(f"已保存平台logo缓存，共{len(self.cache_data)}项")
+            #logger.info(f"已保存平台logo缓存，共{len(self.cache_data)}项")
         except Exception as e:
             logger.error(f"保存平台logo缓存失败: {str(e)}")
     
@@ -195,7 +195,7 @@ class PlatformLogoCache:
         if rec_id in self.cache_data:
             del self.cache_data[rec_id]
             self.save_cache()
-            logger.info(f"已删除直播间 {rec_id} 的平台logo缓存")
+            #logger.info(f"已删除直播间 {rec_id} 的平台logo缓存")
     
     def remove_multiple_logo_cache(self, rec_ids):
         """
@@ -217,7 +217,7 @@ class PlatformLogoCache:
         """清空所有缓存"""
         self.cache_data = {}
         self.save_cache()
-        logger.info("已清空平台logo缓存")
+        #logger.info("已清空平台logo缓存")
     
     def get_platform_logo_path(self, platform_key):
         """

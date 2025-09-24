@@ -930,7 +930,7 @@ class HomePage(PageBase):
             batch_size = 10
             total_batches = (len(cards_to_create) + batch_size - 1) // batch_size
             
-            logger.info(f"开始批量加载录制卡片，共 {len(cards_to_create)} 个，分 {total_batches} 批处理")
+            #logger.info(f"开始批量加载录制卡片，共 {len(cards_to_create)} 个，分 {total_batches} 批处理")
             
             for batch_index in range(total_batches):
                 start_idx = batch_index * batch_size
@@ -1143,7 +1143,7 @@ class HomePage(PageBase):
         total_recordings = len(recordings)
         total_batches = (total_recordings + batch_size - 1) // batch_size
         
-        logger.info(f"开始批量刷新录制卡片，共 {total_recordings} 个，分 {total_batches} 批处理")
+        #logger.info(f"开始批量刷新录制卡片，共 {total_recordings} 个，分 {total_batches} 批处理")
         
         for batch_index in range(total_batches):
             start_idx = batch_index * batch_size

@@ -42,7 +42,7 @@ class BackgroundService:
                 self.is_running = True
                 self.worker_thread = threading.Thread(target=self._process_tasks, daemon=False)
                 self.worker_thread.start()
-                logger.info("后台服务已启动")
+                #logger.info("后台服务已启动")
     
     def _process_tasks(self):
         while True:
@@ -50,7 +50,7 @@ class BackgroundService:
             with self._lock:
                 if not self.tasks:
                     self.is_running = False
-                    logger.info("所有后台任务已完成，服务停止")
+                    #logger.info("所有后台任务已完成，服务停止")
                     break
                 task_func, args, kwargs = self.tasks.pop(0)
                 task = (task_func, args, kwargs)

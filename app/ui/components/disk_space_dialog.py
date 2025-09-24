@@ -121,7 +121,7 @@ class DiskSpaceDialog(ft.AlertDialog):
             
     async def close_dialog(self, _e):
         """关闭对话框但不重置通知标记"""
-        logger.info("用户选择稍后处理磁盘空间不足问题")
+        #logger.info("用户选择稍后处理磁盘空间不足问题")
         
         # 设置最后一次通知时间以遵循推送间隔机制
         # 但不重置disk_space_notification_sent标志，这样点击按钮时仍会显示弹窗
@@ -137,7 +137,7 @@ class DiskSpaceDialog(ft.AlertDialog):
         
     async def confirm_processed(self, _e):
         """用户确认已处理磁盘空间问题，重置通知标记"""
-        logger.info("用户确认已处理磁盘空间不足问题，重置通知标记")
+        #logger.info("用户确认已处理磁盘空间不足问题，重置通知标记")
         
         # 重置磁盘空间通知标记
         self.app.disk_space_notification_sent = False

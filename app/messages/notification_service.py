@@ -19,7 +19,7 @@ if sys.platform == "win32":
     try:
         from winotify import Notification, audio
         WINDOWS_NOTIFY_AVAILABLE = True
-        logger.info("成功导入winotify库")
+        #logger.info("成功导入winotify库")
     except ImportError:
         logger.warning("未安装winotify库，Windows通知功能将不可用")
     except Exception as e:
@@ -39,18 +39,18 @@ class NotificationService:
         if getattr(sys, 'frozen', False):
             # 如果是打包后的可执行文件，使用可执行文件所在目录
             base_path = os.path.dirname(sys.executable)
-            logger.info(f"通知服务运行在打包环境中，基础路径: {base_path}")
+            #logger.info(f"通知服务运行在打包环境中，基础路径: {base_path}")
         else:
             # 开发环境，使用项目根目录
             base_path = Path(__file__).parent.parent.parent
-            logger.info(f"通知服务运行在开发环境中，基础路径: {base_path}")
+            #logger.info(f"通知服务运行在开发环境中，基础路径: {base_path}")
         return base_path
 
     async def _async_post(self, url: str, json_data: dict[str, Any]) -> dict[str, Any]:
         try:
-            logger.info(f"发送POST请求到: {url}")
-            logger.info(f"请求头: {self.headers}")
-            logger.info(f"请求数据: {json_data}")
+            #logger.info(f"发送POST请求到: {url}")
+            #logger.info(f"请求头: {self.headers}")
+            #logger.info(f"请求数据: {json_data}")
             
             async with httpx.AsyncClient() as client:
                 response = await client.post(url, json=json_data, headers=self.headers)
@@ -59,12 +59,12 @@ class NotificationService:
                 
                 try:
                     response_json = response.json()
-                    logger.info(f"响应内容: {response_json}")
+                    #logger.info(f"响应内容: {response_json}")
                     return response_json
                 except Exception as json_error:
                     logger.error(f"解析响应JSON失败: {str(json_error)}")
                     response_text = response.text
-                    logger.info(f"响应文本: {response_text}")
+                    #logger.info(f"响应文本: {response_text}")
                     return {"error": f"解析JSON失败: {str(json_error)}", "text": response_text}
         except httpx.RequestError as req_error:
             error_msg = f"请求错误: {str(req_error)}"
@@ -171,14 +171,14 @@ class NotificationService:
     ) -> dict[str, Any]:
         results = {"success": [], "error": []}
         api_list = api.replace("，", ",").split(",") if api.strip() else []
-        logger.info(f"Bark API列表: {api_list}")
+        #logger.info(f"Bark API列表: {api_list}")
         
         if not api_list:
             logger.error("Bark API地址为空，无法发送推送")
             return {"success": [], "error": ["API地址为空"]}
             
         for _api in api_list:
-            logger.info(f"正在向Bark API发送请求: {_api}")
+            #logger.info(f"正在向Bark API发送请求: {_api}")
             json_data = {
                 "title": title,
                 "body": content,
@@ -192,13 +192,13 @@ class NotificationService:
                 "url": url,
             }
             try:
-                logger.info(f"Bark请求数据: {json_data}")
+                # logger.info(f"Bark请求数据: {json_data}")
                 resp = await self._async_post(_api, json_data)
-                logger.info(f"Bark响应结果: {resp}")
+                # logger.info(f"Bark响应结果: {resp}")
                 
                 if resp.get("code") == 200:
                     results["success"].append(_api)
-                    logger.info(f"Bark推送成功: {_api}")
+                    # logger.info(f"Bark推送成功: {_api}")
                 else:
                     results["error"].append(_api)
                     error_msg = resp.get("message", "未知错误")
@@ -329,7 +329,7 @@ class NotificationService:
                 for icon in possible_icons:
                     if os.path.exists(icon):
                         icon_path = icon
-                        logger.info(f"使用默认图标: {icon_path}")
+                        #logger.info(f"使用默认图标: {icon_path}")
                         break
             else:
                 # 验证指定的图标路径是否存在
@@ -340,7 +340,7 @@ class NotificationService:
                         new_icon_path = os.path.join(self.base_path, "assets", "icons", "icoplatforms", file_name)
                         if os.path.exists(new_icon_path):
                             icon_path = new_icon_path
-                            logger.info(f"已修复图标路径: {icon_path}")
+                            #logger.info(f"已修复图标路径: {icon_path}")
                         else:
                             icon_path = None
                     except:
@@ -355,7 +355,7 @@ class NotificationService:
                         for icon in possible_icons:
                             if os.path.exists(icon):
                                 icon_path = icon
-                                logger.info(f"使用默认图标: {icon_path}")
+                                #logger.info(f"使用默认图标: {icon_path}")
                                 break
             
             # 使用winotify库发送通知
