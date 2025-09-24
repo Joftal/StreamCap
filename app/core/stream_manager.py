@@ -131,7 +131,7 @@ class LiveStreamRecorder:
         logger.info(f"代理配置 - 尝试使用代理地址: {proxy_address}")
         
         if not self.validate_proxy_address(proxy_address):
-            logger.warning(f"代理配置 - 无效的代理地址: {proxy_address}，将不使用代理")
+            #logger.warning(f"代理配置 - 无效的代理地址: {proxy_address}，将不使用代理")
             return None
             
         logger.info(f"代理配置 - 成功配置代理: {proxy_address}")
@@ -143,7 +143,7 @@ class LiveStreamRecorder:
         """
         # 检查空值
         if not proxy_address:
-            logger.warning("代理验证 - 代理地址为空")
+            #logger.warning("代理验证 - 代理地址为空")
             return False
             
         # 去除首尾空格
@@ -151,7 +151,7 @@ class LiveStreamRecorder:
         
         # 检查是否为空字符串
         if not proxy_address:
-            logger.warning("代理验证 - 代理地址为空白字符")
+            #logger.warning("代理验证 - 代理地址为空白字符")
             return False
         
         # 记录原始地址
@@ -948,7 +948,7 @@ class LiveStreamRecorder:
         # 获取当前页面和录制卡片管理器
         home_page = self.app.current_page
         if not home_page or not hasattr(self.app, "record_card_manager"):
-            logger.warning("无法更新录制卡片：主页或录制卡片管理器不可用")
+            #logger.warning("无法更新录制卡片：主页或录制卡片管理器不可用")
             return
             
         # 更新所有录制项的格式
@@ -981,7 +981,7 @@ class LiveStreamRecorder:
         # 获取当前页面和录制卡片管理器
         home_page = self.app.current_page
         if not home_page or not hasattr(self.app, "record_card_manager"):
-            logger.warning("无法更新录制卡片：主页或录制卡片管理器不可用")
+            #logger.warning("无法更新录制卡片：主页或录制卡片管理器不可用")
             return
             
         # 更新所有录制项的分段时间
